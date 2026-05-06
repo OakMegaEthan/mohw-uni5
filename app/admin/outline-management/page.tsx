@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Pencil, Settings2 } from "lucide-react"
+import { ArrowLeft, Pencil, Settings2, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FilingScheduleDialog } from "@/components/admin/filing-schedule-dialog"
@@ -127,7 +127,7 @@ export default function FilingItemManagementPage() {
                     <span className="text-sm text-gray-500">{getFilingPeriod(quotaFilingConfig)}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center justify-end">
+                    <div className="flex items-center justify-end gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -136,6 +136,12 @@ export default function FilingItemManagementPage() {
                       >
                         <Settings2 className="w-3.5 h-3.5" />
                         <span className="text-xs">開放設定</span>
+                      </Button>
+                      <Button asChild variant="ghost" size="sm" className="gap-1.5 h-8">
+                        <Link href="/admin/society-quota-limit">
+                          <SlidersHorizontal className="w-3.5 h-3.5" />
+                          <span className="text-xs">容額上限設定</span>
+                        </Link>
                       </Button>
                     </div>
                   </td>
