@@ -74,6 +74,18 @@ export const mockSocieties = [
   { id: "23", name: "台灣重症醫學會" },
 ]
 
+// 學會層級的目前階段管理（按文件類型）
+// 為了 demo 展示，各文件類型設定不同階段
+// 注意：必須在 generateMockSubmissionsForDocType 之前定義
+export const societyCurrentStages: Record<string, string> = {
+  "screening-principle": "pending-review",        // 待審查
+  "hospital-accreditation": "group-meeting",      // 分組會議審查
+  "training-curriculum": "rrc-meeting",           // RRC 大會審核
+  "evaluation-standards": "pending-announcement", // 待公告
+  "quota-allocation": "pending-review",           // 待審查
+  "improvement-guide": "pending-announcement",    // 待公告
+}
+
 // 生成該文件類型的案件（所有案件都處於同一階段）
 const generateMockSubmissionsForDocType = (documentTypeId: string) => {
   // 取得該文件類型目前所在階段
@@ -137,17 +149,6 @@ export const stageColors: Record<string, string> = {
   "rrc-meeting": "bg-pink-100 text-pink-800 border-pink-200",
   "pending-announcement": "bg-amber-100 text-amber-800 border-amber-200",
   announced: "bg-green-100 text-green-800 border-green-200",
-}
-
-// 學會層級的目前階段管理（按文件類型）
-// 為了 demo 展示，各文件類型設定不同階段
-export const societyCurrentStages: Record<string, string> = {
-  "screening-principle": "pending-review",        // 待審查
-  "hospital-accreditation": "group-meeting",      // 分組會議審查
-  "training-curriculum": "rrc-meeting",           // RRC 大會審核
-  "evaluation-standards": "pending-announcement", // 待公告
-  "quota-allocation": "pending-review",           // 待審查
-  "improvement-guide": "pending-announcement",    // 待公告
 }
 
 export function getDocumentTypes() {
