@@ -5,44 +5,72 @@ export const mockHospitalQuotaSocieties = [
     year: "115 年度",
     submittedDate: "2025-01-15",
     stage: "pending" as const,
-    mohwReviewed: false,
-    mohwiReviewed: false,
+    reviewResult: "pending" as "pending" | "approved" | "needs-revision",
   },
   {
     id: "2",
     name: "台灣外科醫學會",
     year: "115 年度",
     submittedDate: "2025-01-18",
-    stage: "group-review" as const,
-    mohwReviewed: true,
-    mohwiReviewed: true,
+    stage: "pending" as const,
+    reviewResult: "approved" as "pending" | "approved" | "needs-revision",
   },
   {
     id: "3",
     name: "台灣小兒科醫學會",
     year: "115 年度",
     submittedDate: "2025-01-20",
-    stage: "main-review" as const,
-    mohwReviewed: false,
-    mohwiReviewed: false,
+    stage: "pending" as const,
+    reviewResult: "needs-revision" as "pending" | "approved" | "needs-revision",
   },
   {
     id: "4",
     name: "台灣婦產科醫學會",
     year: "115 年度",
     submittedDate: "2025-01-10",
+    stage: "group-review" as const,
+    reviewResult: "approved" as "pending" | "approved" | "needs-revision",
+  },
+  {
+    id: "5",
+    name: "台灣骨科醫學會",
+    year: "115 年度",
+    submittedDate: "2025-01-12",
+    stage: "group-review" as const,
+    reviewResult: "pending" as "pending" | "approved" | "needs-revision",
+  },
+  {
+    id: "6",
+    name: "台灣神經科醫學會",
+    year: "115 年度",
+    submittedDate: "2025-01-08",
+    stage: "main-review" as const,
+    reviewResult: "approved" as "pending" | "approved" | "needs-revision",
+  },
+  {
+    id: "7",
+    name: "台灣精神醫學會",
+    year: "115 年度",
+    submittedDate: "2025-01-05",
     stage: "upload-pending" as const,
-    mohwReviewed: false,
-    mohwiReviewed: false,
+    reviewResult: "approved" as "pending" | "approved" | "needs-revision",
   },
 ]
 
 export const hospitalQuotaStageConfig = {
   pending: { color: "bg-yellow-100 text-yellow-800 border-yellow-200", label: "待審查" },
-  "group-review": { color: "bg-blue-100 text-blue-800 border-blue-200", label: "分組會議審核" },
+  "group-review": { color: "bg-blue-100 text-blue-800 border-blue-200", label: "分組會議審查" },
   "main-review": { color: "bg-purple-100 text-purple-800 border-purple-200", label: "RRC 大會審核" },
   "upload-pending": { color: "bg-green-100 text-green-800 border-green-200", label: "待公告" },
 }
+
+// 流程階段順序
+export const hospitalQuotaStages = [
+  { value: "pending", label: "待審查" },
+  { value: "group-review", label: "分組會議審查" },
+  { value: "main-review", label: "RRC 大會審核" },
+  { value: "upload-pending", label: "待公告" },
+]
 
 // 詳細的醫院容額資料
 export const mockHospitalQuotaDetails: Record<string, {
@@ -100,17 +128,46 @@ export const mockHospitalQuotaDetails: Record<string, {
     ],
     disqualifiedHospitals: [],
     reviewComment: "",
-    groupReviewData: {
-      meetingDate: "114/02/15",
-      meetingRecord: "114年度第一次分組會議記錄.pdf",
-      decision: "通過",
-    },
   },
   "3": {
     society: mockHospitalQuotaSocieties[2],
     hospitals: [
       { id: 1, code: "0601180014", name: "台大兒童醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 8, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
       { id: 2, code: "0601180015", name: "馬偕兒童醫院", status: "新申請", statusColor: "bg-blue-100 text-blue-700", expiry: "有效至 2026/7/31", extension: "-", limit: 6, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
+    ],
+    disqualifiedHospitals: [],
+    reviewComment: "",
+  },
+  "4": {
+    society: mockHospitalQuotaSocieties[3],
+    hospitals: [
+      { id: 1, code: "0701180014", name: "台大醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 10, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
+    ],
+    disqualifiedHospitals: [],
+    reviewComment: "",
+    groupReviewData: {
+      meetingDate: "114/02/10",
+      meetingRecord: "114年度第一次分組會議記錄.pdf",
+      decision: "通過",
+    },
+  },
+  "5": {
+    society: mockHospitalQuotaSocieties[4],
+    hospitals: [
+      { id: 1, code: "0801180014", name: "台大醫院骨科", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 6, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
+    ],
+    disqualifiedHospitals: [],
+    reviewComment: "",
+    groupReviewData: {
+      meetingDate: "114/02/18",
+      meetingRecord: "114年度第一次分組會議記錄.pdf",
+      decision: "待討論",
+    },
+  },
+  "6": {
+    society: mockHospitalQuotaSocieties[5],
+    hospitals: [
+      { id: 1, code: "0901180014", name: "台大神經內科", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 5, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
     ],
     disqualifiedHospitals: [],
     reviewComment: "分組會議建議通過，請提交 RRC 大會審核。",
@@ -120,10 +177,10 @@ export const mockHospitalQuotaDetails: Record<string, {
       decision: "通過",
     },
   },
-  "4": {
-    society: mockHospitalQuotaSocieties[3],
+  "7": {
+    society: mockHospitalQuotaSocieties[6],
     hospitals: [
-      { id: 1, code: "0701180014", name: "台大醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 10, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
+      { id: 1, code: "1001180014", name: "台大精神科", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 8, prevQuota: 3, currentQuota: 3, groupId: null, isSubRow: false },
     ],
     disqualifiedHospitals: [],
     reviewComment: "RRC 大會審核通過，待公告。",
@@ -147,3 +204,20 @@ export function getHospitalQuotaDetail(id: string) {
   return mockHospitalQuotaDetails[id] || null
 }
 
+// 取得特定階段的醫學會列表（含審查結果統計）
+export function getAdvanceCheckStatsForQuota(fromStage: string) {
+  const societies = getHospitalQuotaSocieties()
+  const inStage = societies.filter((s) => s.stage === fromStage)
+
+  const approved = inStage.filter((s) => s.reviewResult === "approved")
+  const needsRevision = inStage.filter((s) => s.reviewResult === "needs-revision")
+  const pending = inStage.filter((s) => s.reviewResult === "pending")
+
+  return {
+    total: inStage.length,
+    societies: inStage,
+    approved: { count: approved.length, names: approved.map((s) => s.name) },
+    needsRevision: { count: needsRevision.length, names: needsRevision.map((s) => s.name) },
+    pendingReview: { count: pending.length, names: pending.map((s) => s.name) },
+  }
+}

@@ -23,7 +23,9 @@ export default function HospitalQuotaDetailPage({
   const stageConfig = getHospitalQuotaStageConfig()
 
   const [reviewComment, setReviewComment] = useState(detail?.reviewComment || "")
-  const [selectedStage, setSelectedStage] = useState(detail?.society.stage || "pending")
+  const [reviewResult, setReviewResult] = useState<"pending" | "approved" | "needs-revision">(
+    detail?.society.reviewResult || "pending"
+  )
 
   if (!detail) {
     return (
@@ -93,7 +95,7 @@ export default function HospitalQuotaDetailPage({
           <Card className="mb-6 border-purple-200 bg-purple-50/30">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-medium text-purple-900">
-                分組會議審查資料
+                分組會議審查結果
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -278,25 +280,25 @@ export default function HospitalQuotaDetailPage({
               </div>
             </div>
 
-            {/* 審查階段操作 */}
+            {/* 審查結果 */}
             <div className="space-y-2">
-              <Label>變更審查階段</Label>
-              <div className="flex items-center gap-4">
-                <Select value={selectedStage} onValueChange={setSelectedStage}>
-                  <SelectTrigger className="w-64">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">待審查</SelectItem>
-                    <SelectItem value="group-review">分組會議審核</SelectItem>
-                    <SelectItem value="main-review">RRC 大會審核</SelectItem>
-                    <SelectItem value="upload-pending">待公告</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-muted-foreground">
-                  目前階段：{stageConfig[society.stage].label}
-                </span>
-              </div>
+              <Label>審查結果 <span className="text-destructive">*</span></Label>
+              <Select value={reviewResult} onValueChange={(v) => setReviewResult(v as typeof reviewResult)}>
+                <SelectTrigger className="w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="approved">
+                    <span className="text-green-600 font-medium">通過</span>
+                  </SelectItem>
+                  <SelectItem value="needs-revision">
+                    <span className="text-orange-600 font-medium">需補件</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                審查結果記錄後，由列表頁統一批次推進至下一階段。
+              </p>
             </div>
 
             {/* 操作按鈕 */}
