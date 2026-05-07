@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { ReviewSimpleNav } from "@/components/review/simple-nav"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -133,8 +132,6 @@ export default function HospitalQuotaReviewPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ReviewSimpleNav />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
