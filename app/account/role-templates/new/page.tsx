@@ -23,10 +23,9 @@ export default function NewRoleTemplatePage() {
 
         {/* 頁面標題 */}
         <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">新增角色模板</h1>
-              <p className="text-sm text-muted-foreground mt-1">建立新的角色權限模板</p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">新增角色模板</h1>
+            <p className="text-sm text-muted-foreground mt-1">建立新的角色權限模板</p>
           </div>
           <div className="flex gap-2">
             <Link href="/account/role-templates">

@@ -34,19 +34,18 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
 
         {/* 頁面標題 */}
         <div className="mb-6 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-foreground">編輯角色模板</h1>
-                {template.isSystem && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    系統預設
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                最後修改：{template.lastModified} | 使用人數：{template.userCount}
-              </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground">編輯角色模板</h1>
+              {template.isSystem && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  系統預設
+                </Badge>
+              )}
             </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              最後修改：{template.lastModified} | 使用人數：{template.userCount}
+            </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline">
