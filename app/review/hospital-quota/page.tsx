@@ -137,24 +137,6 @@ export default function HospitalQuotaReviewPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">醫院容額分配審查</h1>
             <p className="text-base text-gray-500 mt-1">審查各醫學會提交的醫院訓練容額分配申請</p>
-            <div className="flex items-center gap-3 mt-3">
-              <span className="text-base text-gray-600">目前階段：</span>
-              <Badge className={`${stageConfig[activeTab as keyof typeof stageConfig]?.color || "bg-gray-100 text-gray-800"} text-base px-3 py-1`}>
-                {currentStageLabel}
-              </Badge>
-              {nextStage && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 ml-2"
-                  onClick={handleOpenAdvanceDialog}
-                  disabled={societiesByStage(activeTab).length === 0}
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  推進至{nextStage.label}
-                </Button>
-              )}
-            </div>
           </div>
 
           <Button
@@ -192,11 +174,38 @@ export default function HospitalQuotaReviewPage() {
             ))}
           </TabsList>
 
-          {hospitalQuotaStages.map((stage) => (
-            <TabsContent key={stage.value} value={stage.value}>
-              {renderTable(stage.value)}
-            </TabsContent>
-          ))}
+          {hospitalQuotaStages.map((stage) => {
+            const stageIndex = hospitalQuotaStages.findIndex((s) => s.value === stage.value)
+            const nextStageForTab = hospitalQuotaStages[stageIndex + 1] ?? null
+            const isActiveStage = stage.value === activeTab
+
+            return (
+              <TabsContent key={stage.value} value={stage.value}>
+                {/* 目前階段標示與推進按鈕 */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-base text-gray-600">目前階段：</span>
+                    <Badge className={`${stageConfig[stage.value as keyof typeof stageConfig]?.color || "bg-gray-100 text-gray-800"} text-base px-3 py-1`}>
+                      {stageConfig[stage.value as keyof typeof stageConfig]?.label || stage.label}
+                    </Badge>
+                  </div>
+                  {nextStageForTab && isActiveStage && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={handleOpenAdvanceDialog}
+                      disabled={societiesByStage(stage.value).length === 0}
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                      推進至{nextStageForTab.label}
+                    </Button>
+                  )}
+                </div>
+                {renderTable(stage.value)}
+              </TabsContent>
+            )
+          })}
         </Tabs>
 
         {/* 批次推進 Dialog */}

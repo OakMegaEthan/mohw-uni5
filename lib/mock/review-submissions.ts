@@ -215,6 +215,12 @@ export function getAdvanceCheckStats(documentTypeId: string) {
       count: pendingReview.length,
       societies: getSocietyNames(pendingReview),
     },
+    // 所有已送件的醫學會（含 id 與 reviewResult，供 checkbox 列表使用）
+    uploadedSocieties: uploaded.map((s) => ({
+      id: s.societyId,
+      name: societies.find((soc) => soc.id === s.societyId)?.name || s.societyId,
+      reviewResult: s.reviewResult as "approved" | "needs-revision" | "pending",
+    })),
   }
 }
 

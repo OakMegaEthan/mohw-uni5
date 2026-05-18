@@ -6,6 +6,7 @@ import { Clock, ChevronRight, AlertCircle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -29,6 +30,7 @@ import {
 export default function SubmissionsReviewPage() {
   const [activeDocumentType, setActiveDocumentType] = useState("screening-principle")
   const [showAdvanceDialog, setShowAdvanceDialog] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [, forceUpdate] = useState(0)
 
   const documentTypes = getDocumentTypes()
@@ -56,9 +58,35 @@ export default function SubmissionsReviewPage() {
   const nextStageLabel = hasNextStage ? allStagesForActiveType[nextStageIndex].label : null
   const advanceStats = getAdvanceCheckStats(activeDocumentType)
 
+  const handleOpenAdvanceDialog = () => {
+    // 預設全選已審查通過的醫學會
+    setSelectedIds(
+      advanceStats.uploadedSocieties
+        .filter((s) => s.reviewResult === "approved")
+        .map((s) => s.id)
+    )
+    setShowAdvanceDialog(true)
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    const all = advanceStats.uploadedSocieties
+    if (selectedIds.length === all.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(all.map((s) => s.id))
+    }
+  }
+
   const handleAdvanceStage = () => {
     if (advanceDocumentTypeToNextStage(activeDocumentType)) {
       setShowAdvanceDialog(false)
+      setSelectedIds([])
       // 強制重新渲染以反映新的階段
       forceUpdate((n) => n + 1)
     }
@@ -128,7 +156,7 @@ export default function SubmissionsReviewPage() {
                           variant="outline"
                           size="sm"
                           className="gap-1.5"
-                          onClick={() => setShowAdvanceDialog(true)}
+                          onClick={handleOpenAdvanceDialog}
                         >
                           <ArrowRight className="h-4 w-4" />
                           推進至{docNextStageLabel}
@@ -217,88 +245,89 @@ export default function SubmissionsReviewPage() {
         <Dialog open={showAdvanceDialog} onOpenChange={setShowAdvanceDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>推進至下一階段</DialogTitle>
+              <DialogTitle>
+                選擇推進至{nextStageLabel}的醫學會
+              </DialogTitle>
             </DialogHeader>
             <div className="py-2 space-y-4">
-              <div>
-                <p className="text-base text-gray-600">
-                  即將推進 <span className="font-medium">{documentTypes.find((d) => d.id === activeDocumentType)?.name}</span> 至{" "}
-                  <span className="font-medium">{nextStageLabel}</span>
-                </p>
-              </div>
-
-              {/* 送件狀態統計 */}
-              <div className="space-y-3">
-                <p className="text-base font-medium text-gray-700">送件狀態</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-green-700">已送件</span>
-                      <Badge className="bg-green-100 text-green-700">{advanceStats.uploaded.count} 件</Badge>
-                    </div>
-                  </div>
-                  <div className={`border rounded-lg p-3 ${advanceStats.notUploaded.count > 0 ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-200"}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm ${advanceStats.notUploaded.count > 0 ? "text-orange-700" : "text-gray-600"}`}>未送件</span>
-                      <Badge className={advanceStats.notUploaded.count > 0 ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"}>
-                        {advanceStats.notUploaded.count} 件
-                      </Badge>
-                    </div>
-                    {advanceStats.notUploaded.count > 0 && (
-                      <p className="text-sm text-orange-600 mt-1 line-clamp-2">
-                        {advanceStats.notUploaded.societies.slice(0, 3).join("、")}
-                        {advanceStats.notUploaded.societies.length > 3 && `...等 ${advanceStats.notUploaded.societies.length} 間`}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <p className="text-base text-gray-600">
+                可選擇部分醫學會推進至下一階段，未選取的醫學會將繼續留在「{currentStageLabel}」。
+              </p>
 
               {/* 審查狀態統計 */}
-              <div className="space-y-3">
-                <p className="text-base font-medium text-gray-700">審查狀態</p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <span className="text-base text-green-700">已審查通過</span>
-                    <Badge className="bg-green-100 text-green-700">{advanceStats.approved.count} 件</Badge>
-                  </div>
-                  <div className={`flex items-center justify-between p-3 border rounded-lg ${advanceStats.needsRevision.count > 0 ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-200"}`}>
-                    <div>
-                      <span className={`text-base ${advanceStats.needsRevision.count > 0 ? "text-orange-700" : "text-gray-600"}`}>需補件</span>
-                      {advanceStats.needsRevision.count > 0 && (
-                        <p className="text-base text-orange-600 mt-0.5">
-                          {advanceStats.needsRevision.societies.slice(0, 3).join("、")}
-                          {advanceStats.needsRevision.societies.length > 3 && `...等`}
-                        </p>
-                      )}
-                    </div>
-                    <Badge className={advanceStats.needsRevision.count > 0 ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"}>
-                      {advanceStats.needsRevision.count} 件
-                    </Badge>
-                  </div>
-                  <div className={`flex items-center justify-between p-3 border rounded-lg ${advanceStats.pendingReview.count > 0 ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
-                    <div>
-                      <span className={`text-base ${advanceStats.pendingReview.count > 0 ? "text-amber-700" : "text-gray-600"}`}>尚未審查</span>
-                      {advanceStats.pendingReview.count > 0 && (
-                        <p className="text-base text-amber-600 mt-0.5">
-                          {advanceStats.pendingReview.societies.slice(0, 3).join("、")}
-                          {advanceStats.pendingReview.societies.length > 3 && `...等`}
-                        </p>
-                      )}
-                    </div>
-                    <Badge className={advanceStats.pendingReview.count > 0 ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}>
-                      {advanceStats.pendingReview.count} 件
-                    </Badge>
-                  </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <p className="text-base text-green-600 mb-0.5">審查通過</p>
+                  <p className="text-xl font-bold text-green-700">{advanceStats.approved.count}</p>
+                </div>
+                <div className={`border rounded-lg p-3 text-center ${advanceStats.needsRevision.count > 0 ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-200"}`}>
+                  <p className={`text-base mb-0.5 ${advanceStats.needsRevision.count > 0 ? "text-orange-600" : "text-gray-500"}`}>需補件</p>
+                  <p className={`text-xl font-bold ${advanceStats.needsRevision.count > 0 ? "text-orange-700" : "text-gray-400"}`}>{advanceStats.needsRevision.count}</p>
+                </div>
+                <div className={`border rounded-lg p-3 text-center ${advanceStats.pendingReview.count > 0 ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
+                  <p className={`text-base mb-0.5 ${advanceStats.pendingReview.count > 0 ? "text-amber-600" : "text-gray-500"}`}>尚未審查</p>
+                  <p className={`text-xl font-bold ${advanceStats.pendingReview.count > 0 ? "text-amber-700" : "text-gray-400"}`}>{advanceStats.pendingReview.count}</p>
                 </div>
               </div>
 
-              {/* 警告提示 */}
-              {(advanceStats.notUploaded.count > 0 || advanceStats.pendingReview.count > 0) && (
+              {/* 勾選列表 */}
+              {advanceStats.uploadedSocieties.length > 0 ? (
+                <div className="border rounded-lg overflow-hidden">
+                  {/* 全選 */}
+                  <div
+                    className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b cursor-pointer"
+                    onClick={toggleSelectAll}
+                  >
+                    <Checkbox
+                      checked={selectedIds.length === advanceStats.uploadedSocieties.length && advanceStats.uploadedSocieties.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span className="text-base font-medium text-gray-700">
+                      全選（{advanceStats.uploadedSocieties.length} 個醫學會）
+                    </span>
+                  </div>
+                  {advanceStats.uploadedSocieties.map((society) => (
+                    <div
+                      key={society.id}
+                      className={`flex items-center gap-3 px-4 py-3 border-b last:border-b-0 cursor-pointer transition-colors ${
+                        selectedIds.includes(society.id) ? "bg-blue-50" : "hover:bg-gray-50"
+                      }`}
+                      onClick={() => toggleSelect(society.id)}
+                    >
+                      <Checkbox
+                        checked={selectedIds.includes(society.id)}
+                        onCheckedChange={() => toggleSelect(society.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span className="flex-1 text-base font-medium">{society.name}</span>
+                      <div className="shrink-0">
+                        {society.reviewResult === "approved" && (
+                          <Badge className="bg-green-100 text-green-700 text-sm">審查通過</Badge>
+                        )}
+                        {society.reviewResult === "needs-revision" && (
+                          <Badge className="bg-orange-100 text-orange-700 text-sm">需補件</Badge>
+                        )}
+                        {society.reviewResult === "pending" && (
+                          <Badge className="bg-gray-100 text-gray-600 text-sm">待審查</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-base text-center text-gray-400 py-4">目前沒有已送件的醫學會</p>
+              )}
+
+              {/* 警告提示：選了尚未完成審查的醫學會 */}
+              {selectedIds.some((id) => {
+                const s = advanceStats.uploadedSocieties.find((soc) => soc.id === id)
+                return s && s.reviewResult !== "approved"
+              }) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-base text-amber-700">
                     <AlertCircle className="h-4 w-4 inline-block mr-1 -mt-0.5" />
-                    有 {advanceStats.notUploaded.count + advanceStats.pendingReview.count} 件案件尚未完成送件或審查，推進後這些案件將一併進入下一階段。
+                    您選擇了尚未完成審查的醫學會，推進後這些案件將一併進入下一階段。
                   </p>
                 </div>
               )}
@@ -307,9 +336,13 @@ export default function SubmissionsReviewPage() {
               <Button variant="outline" onClick={() => setShowAdvanceDialog(false)}>
                 取消
               </Button>
-              <Button onClick={handleAdvanceStage} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
+              <Button
+                disabled={selectedIds.length === 0}
+                onClick={handleAdvanceStage}
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+              >
                 <ArrowRight className="h-4 w-4" />
-                確認推進
+                確認推進 {selectedIds.length > 0 && `(${selectedIds.length} 個)`}
               </Button>
             </DialogFooter>
           </DialogContent>
