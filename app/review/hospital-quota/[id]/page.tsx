@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Upload, FileText, Download, Eye } from "lucide-react"
 import { getHospitalQuotaDetail, getHospitalQuotaStageConfig } from "@/lib/mock/review-hospital-quota"
 import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
+import { societyQuotaLimits } from "@/lib/mock/society-quota-limits"
 
 export default function HospitalQuotaDetailPage({
   params,
@@ -169,6 +170,88 @@ export default function HospitalQuotaDetailPage({
             </CardContent>
           </Card>
         )}
+
+        {/* 容額上限與使用進度 */}
+        {(() => {
+          const societyLimit = societyQuotaLimits.find((s) => s.societyId === society.id)
+          if (!societyLimit?.totalLimit) return null
+
+          const mainRows = hospitals.filter((h) => !h.isSubRow)
+          const totalCurrentQuota = mainRows.reduce((sum, h) => sum + (h.currentQuota ?? 0), 0)
+          const usagePercentage = (totalCurrentQuota / societyLimit.totalLimit) * 100
+          const isExceeded = totalCurrentQuota > societyLimit.totalLimit
+          const isNearLimit = usagePercentage >= 80 && !isExceeded
+
+          return (
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-foreground mb-4">容額上限與使用進度</h3>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-3 gap-6">
+                    {/* 設定容額上限 */}
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">設定容額上限</p>
+                      <p className="text-3xl font-bold text-foreground">{societyLimit.totalLimit}</p>
+                      <p className="text-xs text-muted-foreground mt-1">由管理專區設定</p>
+                    </div>
+
+                    {/* 已核定容額 */}
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">本年度已核定容額</p>
+                      <p className={`text-3xl font-bold ${isExceeded ? "text-red-600" : "text-foreground"}`}>
+                        {totalCurrentQuota}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">訓練醫院容額總和</p>
+                    </div>
+
+                    {/* 使用進度 */}
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">使用進度</p>
+                      <div className="flex items-end gap-2">
+                        <p className={`text-3xl font-bold ${isExceeded ? "text-red-600" : isNearLimit ? "text-amber-600" : "text-foreground"}`}>
+                          {Math.round(usagePercentage)}%
+                        </p>
+                        {isExceeded && (
+                          <span className="text-xs text-red-600 font-medium mb-1">已超額</span>
+                        )}
+                        {isNearLimit && !isExceeded && (
+                          <span className="text-xs text-amber-600 font-medium mb-1">接近上限</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 進度條 */}
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-foreground">容額使用率</span>
+                      <span className="text-sm text-muted-foreground">
+                        {totalCurrentQuota} / {societyLimit.totalLimit}
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          isExceeded
+                            ? "bg-red-500"
+                            : isNearLimit
+                            ? "bg-amber-500"
+                            : "bg-green-500"
+                        }`}
+                        style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                      />
+                    </div>
+                    {isExceeded && (
+                      <p className="text-xs text-red-600 mt-2">
+                        ⚠️ 已超過容額上限 {totalCurrentQuota - societyLimit.totalLimit} 個
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )
+        })()}
 
         {/* 訓練醫院名單與容額分配 */}
         <div className="mb-6">
