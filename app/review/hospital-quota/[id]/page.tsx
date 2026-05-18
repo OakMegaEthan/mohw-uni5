@@ -171,95 +171,42 @@ export default function HospitalQuotaDetailPage({
           </Card>
         )}
 
-        {/* 容額上限與使用進度 */}
-        {(() => {
-          const societyLimit = societyQuotaLimits.find((s) => s.societyId === society.id)
-          const hasLimit = societyLimit?.totalLimit != null
-
-          const mainRows = hospitals.filter((h) => !h.isSubRow)
-          const totalCurrentQuota = mainRows.reduce((sum, h) => sum + (h.currentQuota ?? 0), 0)
-          const usagePercentage = hasLimit ? (totalCurrentQuota / societyLimit!.totalLimit!) * 100 : 0
-          const isExceeded = hasLimit && totalCurrentQuota > societyLimit!.totalLimit!
-          const isNearLimit = hasLimit && usagePercentage >= 80 && !isExceeded
-
-          return (
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-foreground mb-4">容額上限與使用進度</h3>
-              <Card>
-                <CardContent className="p-6">
-                  {!hasLimit ? (
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="text-base font-medium text-foreground">尚未設定容額上限</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          請至管理專區 &gt; 填報項目管理設定此醫學會的容額上限。
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-sm text-muted-foreground">本年度已核定容額</p>
-                        <p className="text-2xl font-bold text-foreground">{totalCurrentQuota}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-8">
-                      {/* 設定容額上限 */}
-                      <div>
-                        <p className="text-sm text-muted-foreground">設定容額上限</p>
-                        <p className="text-2xl font-bold text-foreground">{societyLimit!.totalLimit}</p>
-                        <p className="text-sm text-muted-foreground">由管理專區設定</p>
-                      </div>
-
-                      <div className="text-muted-foreground text-xl font-light">/</div>
-
-                      {/* 已核定容額 */}
-                      <div>
-                        <p className="text-sm text-muted-foreground">本年度已核定容額</p>
-                        <p className={`text-2xl font-bold ${isExceeded ? "text-red-600" : "text-foreground"}`}>
-                          {totalCurrentQuota}
-                        </p>
-                        <p className="text-sm text-muted-foreground">訓練醫院容額總和</p>
-                      </div>
-
-                      <div className="text-muted-foreground text-xl font-light">=</div>
-
-                      {/* 使用進度 */}
-                      <div>
-                        <p className="text-sm text-muted-foreground">使用進度</p>
-                        <div className="flex items-baseline gap-2">
-                          <p className={`text-2xl font-bold ${isExceeded ? "text-red-600" : isNearLimit ? "text-amber-600" : "text-foreground"}`}>
-                            {Math.round(usagePercentage)}%
-                          </p>
-                          {isExceeded && (
-                            <span className="text-sm text-red-600 font-medium">已超額</span>
-                          )}
-                          {isNearLimit && (
-                            <span className="text-sm text-amber-600 font-medium">接近上限</span>
-                          )}
-                        </div>
-                        {isExceeded && (
-                          <p className="text-sm text-red-600">
-                            超出 {totalCurrentQuota - societyLimit!.totalLimit!} 個
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )
-        })()}
-
         {/* 訓練醫院認定合格名單及訓練容額 */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-foreground mb-4">訓練醫院認定合格名單及訓練容額</h3>
           {(() => {
+            const societyLimit = societyQuotaLimits.find((s) => s.societyId === society.id)
+            const hasLimit = societyLimit?.totalLimit != null
             const mainRows = hospitals.filter((h) => !h.isSubRow)
             const totalLimit = mainRows.reduce((sum, h) => sum + (h.limit ?? 0), 0)
             const totalPrevQuota = mainRows.reduce((sum, h) => sum + (h.prevQuota ?? 0), 0)
             const totalCurrentQuota = mainRows.reduce((sum, h) => sum + (h.currentQuota ?? 0), 0)
+            const isExceeded = hasLimit && totalCurrentQuota > societyLimit!.totalLimit!
             return (
           <Card>
+            {/* 容額資訊列 */}
+            {(hasLimit || totalCurrentQuota > 0) && (
+              <div className="flex items-center gap-6 px-6 py-3 border-b bg-muted/30">
+                {hasLimit && (
+                  <span className="text-sm text-muted-foreground">
+                    設定容額上限：<span className="font-semibold text-foreground">{societyLimit!.totalLimit}</span>
+                  </span>
+                )}
+                {!hasLimit && (
+                  <span className="text-sm text-muted-foreground">設定容額上限：<span className="font-medium text-foreground">未設定</span></span>
+                )}
+                <span className="text-muted-foreground">|</span>
+                <span className="text-sm text-muted-foreground">
+                  本年度已核定容額：
+                  <span className={`font-semibold ${isExceeded ? "text-red-600" : "text-foreground"}`}>
+                    {totalCurrentQuota}
+                  </span>
+                  {isExceeded && (
+                    <span className="ml-2 text-xs text-red-600 font-medium">（已超額 {totalCurrentQuota - societyLimit!.totalLimit!} 個）</span>
+                  )}
+                </span>
+              </div>
+            )}
             <CardContent className="p-0">
               <div className="overflow-x-auto">
               <Table>
@@ -469,7 +416,7 @@ export default function HospitalQuotaDetailPage({
               </div>
             </div>
 
-            {/* 審查結果 */}
+            {/* 審��結果 */}
             <div className="space-y-2">
               <Label>審查結果 <span className="text-destructive">*</span></Label>
               <Select value={reviewResult} onValueChange={(v) => setReviewResult(v as typeof reviewResult)}>
