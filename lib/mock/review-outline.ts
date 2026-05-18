@@ -30,6 +30,65 @@ export interface FilingItemConfig {
   isManualControl: boolean
 }
 
+export interface SocietyFilingConfig {
+  societyId: string
+  isOpen: boolean
+  lastAnnouncedDate: string | null  // ISO date string, null = 從未公告
+}
+
+// 25 個醫學會對應的年度公告日期
+// 同一年度的公告統一在同一天，時間在 9-10 月
+const ANNOUNCEMENT_DATES: { year: number; date: string }[] = [
+  { year: 2025, date: "2025/09/03" },
+  { year: 2024, date: "2024/10/01" },
+  { year: 2023, date: "2023/09/25" },
+  { year: 2022, date: "2022/09/15" },
+  { year: 2021, date: "2021/10/08" },
+]
+
+// 每個醫學會最後一次公告的年度（用 index 對應 allSocieties 的 id 1-25）
+// null 表示從未公告
+const SOCIETY_LAST_YEAR: (number | null)[] = [
+  2025, // 1 台灣家庭醫學醫學會
+  2025, // 2 台灣內科醫學會
+  2024, // 3 台灣外科醫學會
+  2025, // 4 臺灣兒科醫學會
+  2025, // 5 台灣婦產科醫學會
+  2024, // 6 中華民國骨科醫學會
+  2023, // 7 社團法人台灣神經外科醫學會
+  2025, // 8 台灣泌尿科醫學會
+  2024, // 9 台灣耳鼻喉頭頸外科醫學會
+  2025, // 10 中華民國眼科醫學會
+  2021, // 11 社團法人臺灣皮膚科醫學會
+  2025, // 12 台灣神經學學會
+  2024, // 13 台灣精神醫學會
+  2023, // 14 台灣復健醫學會
+  2025, // 15 台灣麻醉醫學會
+  2022, // 16 社團法人中華民國放射線醫學會
+  2025, // 17 台灣放射腫瘤學會
+  2024, // 18 台灣病理學會
+  2025, // 19 台灣臨床病理暨檢驗醫學會
+  2023, // 20 中華民國核醫學學會
+  2025, // 21 社團法人台灣急診醫學會
+  2024, // 22 中華民國環境職業醫學會
+  2021, // 23 台灣整形外科醫學會
+  2025, // 24 重症醫學專科醫師聯合訓練及甄審籌備委員會
+  2025, // 25 台灣感染症醫學會
+]
+
+function getAnnouncementDate(year: number | null): string | null {
+  if (year === null) return null
+  return ANNOUNCEMENT_DATES.find((d) => d.year === year)?.date ?? null
+}
+
+export const mockSocietyFilingConfigs: SocietyFilingConfig[] = SOCIETY_LAST_YEAR.map(
+  (lastYear, idx) => ({
+    societyId: String(idx + 1),
+    isOpen: [1, 2, 4, 5, 8, 10, 12, 15, 17, 19, 21, 24, 25].includes(idx + 1),
+    lastAnnouncedDate: getAnnouncementDate(lastYear),
+  })
+)
+
 export const outlineMeta: Record<string, { name: string }> = {
   "training-plan": { name: "訓練計畫認定基準" },
   "training-curriculum": { name: "訓練課程基準" },
