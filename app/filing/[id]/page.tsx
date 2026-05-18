@@ -193,10 +193,6 @@ export default function FilingDetailPage({
   // Revision notes per section
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({})
   
-  // Apply unified note to all
-  const [applyUnifiedNote, setApplyUnifiedNote] = useState(false)
-  const [unifiedNote, setUnifiedNote] = useState("")
-
   const hasReviewComments = status === "需補件"
   const isReadOnly = status === "通過" || status === "審查中"
   const isReviewInProgress = status === "審查中"
@@ -254,7 +250,7 @@ export default function FilingDetailPage({
   const stats = useMemo(() => {
     const sectionsWithChanges = initialData.filter((s) => sectionHasChanges(s.id))
     const notesFilledCount = sectionsWithChanges.filter((s) => {
-      const note = applyUnifiedNote ? unifiedNote : revisionNotes[s.id]
+      const note = revisionNotes[s.id] || ""
       return note && note.trim() !== ""
     }).length
     return {
@@ -262,7 +258,7 @@ export default function FilingDetailPage({
       notesFilled: notesFilledCount,
       pending: sectionsWithChanges.length - notesFilledCount,
     }
-  }, [currentYearContent, revisionNotes, applyUnifiedNote, unifiedNote, initialData])
+    }, [currentYearContent, revisionNotes, initialData])
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
@@ -382,37 +378,6 @@ export default function FilingDetailPage({
 
           {/* Unified Note Option - Only show when editing */}
           {!isReadOnly && !isPreviousYearOnly && documentMethod === "change" && stats.totalChanges > 1 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="apply-unified"
-                  checked={applyUnifiedNote}
-                  onCheckedChange={(checked) => setApplyUnifiedNote(!!checked)}
-                  className="mt-0.5"
-                />
-                <div className="flex-1">
-                  <label
-                    htmlFor="apply-unified"
-                    className="text-sm font-medium text-blue-800 cursor-pointer"
-                  >
-                    套用統一修訂說明到所有修訂處
-                  </label>
-                  <p className="text-sm text-blue-600 mt-0.5">
-                    勾選後，下方所有修訂項目將使用相同的說明文字
-                  </p>
-                  {applyUnifiedNote && (
-                    <Textarea
-                      value={unifiedNote}
-                      onChange={(e) => setUnifiedNote(e.target.value)}
-                      placeholder="例如：因應衛福部 114 年法規修正公告..."
-                      className="mt-3 bg-white min-h-20"
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Stats Bar - Only show when editing */}
           {!isReadOnly && !isPreviousYearOnly && documentMethod === "change" && stats.totalChanges > 0 && (
             <div className="flex items-center gap-4 text-sm">
@@ -464,8 +429,6 @@ export default function FilingDetailPage({
                     const prevContent = getPreviousYearContent(section.id)
                     const currContent = currentYearContent[section.id] || ""
                     const hasChanges = prevContent !== currContent
-                    const currentNote = applyUnifiedNote ? unifiedNote : (revisionNotes[section.id] || "")
-                    const noteIsFilled = currentNote.trim() !== ""
 
                     return (
                       <Collapsible
@@ -545,17 +508,23 @@ export default function FilingDetailPage({
 
                                 {/* Right: Revision Note (inline, scrolls with content) */}
                                 {hasChanges && !isReadOnly && documentMethod === "change" && (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
+                                    <div className="space-y-2">
                                       <span className="text-sm font-medium text-muted-foreground">
-                                        修訂說明
+                                        修訂說明 <span className="text-destructive">*</span>
                                       </span>
-                                      {!applyUnifiedNote && (
-                                        <span
-                                          className={`h-2 w-2 rounded-full ${
-                                            noteIsFilled ? "bg-green-500" : "bg-amber-400"
-                                          }`}
-                                        />
+                                      <Textarea
+                                        value={revisionNotes[section.id] || ""}
+                                        onChange={(e) =>
+                                          updateRevisionNote(section.id, e.target.value)
+                                        }
+                                        placeholder="請說明此處修訂原因..."
+                                        className="min-h-28 text-sm resize-none"
+                                      />
+                                      {!revisionNotes[section.id] && (
+                                        <p className="text-sm text-amber-600 flex items-center gap-1">
+                                          <AlertCircle className="h-3 w-3" />
+                                          此處修訂尚未填寫說明
+                                        </p>
                                       )}
                                     </div>
                                     {applyUnifiedNote ? (
