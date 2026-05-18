@@ -101,25 +101,34 @@ export default function HospitalQuotaDetailPage({
             <CardTitle className="text-lg">訓練醫院申請家數</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                <p className="text-sm text-blue-600 mb-1">申請家數</p>
-                <p className="text-2xl font-bold text-blue-700">{totalApplied}</p>
-                <p className="text-sm text-blue-600/70 mt-1">
-                  {mainTrainingCount} 家主訓、{cooperationCount} 家合作
-                </p>
+            <div className="grid grid-cols-2 gap-4">
+              {/* 左側：申請家數（含子分類） */}
+              <div className="rounded-lg border border-blue-200 overflow-hidden">
+                {/* 上層：申請家數 */}
+                <div className="px-5 py-4 bg-blue-50 border-b border-blue-200">
+                  <p className="text-sm text-blue-600 mb-1">申請家數</p>
+                  <p className="text-3xl font-bold text-blue-700">{totalApplied}</p>
+                  <p className="text-sm text-blue-600/70 mt-1">
+                    {mainTrainingCount} 家主訓、{cooperationCount} 家合作
+                  </p>
+                </div>
+                {/* 下層：合格 / 不合格 */}
+                <div className="grid grid-cols-2 divide-x divide-blue-100">
+                  <div className="px-5 py-3 bg-green-50/60">
+                    <p className="text-sm text-green-600 mb-0.5">合格</p>
+                    <p className="text-2xl font-bold text-green-700">{qualifiedCount}</p>
+                  </div>
+                  <div className={`px-5 py-3 ${disqualifiedCount > 0 ? "bg-red-50/60" : "bg-gray-50/60"}`}>
+                    <p className={`text-sm mb-0.5 ${disqualifiedCount > 0 ? "text-red-600" : "text-gray-500"}`}>不合格</p>
+                    <p className={`text-2xl font-bold ${disqualifiedCount > 0 ? "text-red-700" : "text-gray-400"}`}>{disqualifiedCount}</p>
+                  </div>
+                </div>
               </div>
-              <div className="p-4 rounded-lg bg-green-50 border border-green-100">
-                <p className="text-sm text-green-600 mb-1">合格家數</p>
-                <p className="text-2xl font-bold text-green-700">{qualifiedCount}</p>
-              </div>
-              <div className={`p-4 rounded-lg border ${disqualifiedCount > 0 ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"}`}>
-                <p className={`text-sm mb-1 ${disqualifiedCount > 0 ? "text-red-600" : "text-gray-500"}`}>不合格家數</p>
-                <p className={`text-2xl font-bold ${disqualifiedCount > 0 ? "text-red-700" : "text-gray-400"}`}>{disqualifiedCount}</p>
-              </div>
-              <div className={`p-4 rounded-lg border ${notAppliedCount > 0 ? "bg-amber-50 border-amber-100" : "bg-gray-50 border-gray-100"}`}>
+
+              {/* 右側：未申請家數 */}
+              <div className={`rounded-lg border p-5 flex flex-col justify-center ${notAppliedCount > 0 ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-100"}`}>
                 <p className={`text-sm mb-1 ${notAppliedCount > 0 ? "text-amber-600" : "text-gray-500"}`}>未申請家數</p>
-                <p className={`text-2xl font-bold ${notAppliedCount > 0 ? "text-amber-700" : "text-gray-400"}`}>{notAppliedCount}</p>
+                <p className={`text-3xl font-bold ${notAppliedCount > 0 ? "text-amber-700" : "text-gray-400"}`}>{notAppliedCount}</p>
               </div>
             </div>
           </CardContent>
