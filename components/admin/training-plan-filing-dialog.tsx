@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle } from "lucide-react"
+import { Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { allSocieties } from "@/lib/data/societies"
 import { mockSocietyFilingConfigs } from "@/lib/mock/review-outline"
 import type { SocietyFilingConfig } from "@/lib/mock/review-outline"
@@ -173,9 +173,8 @@ export function TrainingPlanFilingDialog({
               已開放 <span className="font-semibold text-foreground">{openCount}</span> / {filtered.length} 個醫學會
               {search && <span className="ml-1">（搜尋結果）</span>}
             </span>
-            <div className="flex items-center gap-1.5 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              <span>橘色標示：距前次公告已超過 4 年</span>
+            <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+              橘色標示：距前次公告已超過 4 年
             </div>
           </div>
         </div>
@@ -226,14 +225,9 @@ export function TrainingPlanFilingDialog({
                     </td>
                     <td className="px-5 py-3">
                       {config.lastAnnouncedDate ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className={stale ? "text-amber-700 font-medium" : "text-gray-600"}>
-                            {config.lastAnnouncedDate}
-                          </span>
-                          {stale && (
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          )}
-                        </div>
+                        <span className={stale ? "text-amber-700 font-medium" : "text-gray-600"}>
+                          {config.lastAnnouncedDate}
+                        </span>
                       ) : (
                         <span className="text-muted-foreground italic">從未公告</span>
                       )}
