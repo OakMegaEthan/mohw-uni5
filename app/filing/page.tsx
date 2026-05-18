@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
+import { HospitalMultiSelect, type Hospital } from "@/components/filing/hospital-multi-select"
 import { filingItemsConfig } from "@/lib/mock/review-outline"
 import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
 
@@ -364,8 +365,7 @@ function QuotaFilingSection({
 
   // 新增不合格醫院 Dialog state
   const [showAddDisqualifiedDialog, setShowAddDisqualifiedDialog] = useState(false)
-  const [disqualifiedHospitalCode, setDisqualifiedHospitalCode] = useState("")
-  const [disqualifiedHospitalName, setDisqualifiedHospitalName] = useState("")
+  const [selectedDisqualifiedHospital, setSelectedDisqualifiedHospital] = useState<string[]>([])
   const [disqualifiedReason, setDisqualifiedReason] = useState("")
 
   // 送件確認 Dialog state
@@ -669,55 +669,40 @@ function QuotaFilingSection({
               <DialogTitle>新增不合格醫院</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm text-muted-foreground mb-2 block">
-                    醫事機構代碼 <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    value={disqualifiedHospitalCode}
-                    onChange={(e) => setDisqualifiedHospitalCode(e.target.value)}
-                    placeholder="輸入醫事機構代碼"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground mb-2 block">
-                    訓練醫院全銜 <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    value={disqualifiedHospitalName}
-                    onChange={(e) => setDisqualifiedHospitalName(e.target.value)}
-                    placeholder="輸入醫院名稱"
-                  />
-                </div>
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">
+                  選擇醫院 <span className="text-destructive">*</span>
+                </Label>
+                <HospitalMultiSelect
+                  hospitals={availableHospitals as Hospital[]}
+                  selected={selectedDisqualifiedHospital}
+                  onSelect={setSelectedDisqualifiedHospital}
+                  mode="single"
+                  triggerLabel="請選擇不合格醫院"
+                />
+                {selectedDisqualifiedHospital.length > 0 && (
+                  <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      已選擇：<span className="font-medium text-foreground">
+                        {availableHospitals.find((h) => h.code === selectedDisqualifiedHospital[0])?.name}
+                      </span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      醫事機構代碼：{selectedDisqualifiedHospital[0]}
+                    </p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground mb-2 block">
                   不合格原因 <span className="text-destructive">*</span>
                 </Label>
-                <Select value={disqualifiedReason} onValueChange={setDisqualifiedReason}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="選擇不合格原因" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="未符合訓練醫院認證基準第1條：未具有衛生福利部教學醫院評鑑合格">
-                      未符合訓練醫院認證基準第1條：未具有衛生福利部教學醫院評鑑合格
-                    </SelectItem>
-                    <SelectItem value="未符合訓練醫院認證基準第2條：主訓練醫院未通過基準二專科專任主治醫師人數">
-                      未符合訓練醫院認證基準第2條：主訓練醫院未通過基準二專科專任主治醫師人數
-                    </SelectItem>
-                    <SelectItem value="未符合訓練醫院認證基準第3條：專任主治醫師人數不足">
-                      未符合訓練醫院認證基準第3條：專任主治醫師人數不足
-                    </SelectItem>
-                    <SelectItem value="未符合訓練醫院認證基準第4條：訓練設施或設備不符規定">
-                      未符合訓練醫院認證基準第4條：訓練設施或設備不符規定
-                    </SelectItem>
-                    <SelectItem value="未符合訓練醫院認證基準第5條：訓練計畫內容不符規定">
-                      未符合訓練醫院認證基準第5條：訓練計畫內容不符規定
-                    </SelectItem>
-                    <SelectItem value="其他">其他</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Textarea
+                  value={disqualifiedReason}
+                  onChange={(e) => setDisqualifiedReason(e.target.value)}
+                  placeholder="請輸入不合格原因說明..."
+                  className="min-h-[120px]"
+                />
               </div>
             </div>
             <DialogFooter>
@@ -725,8 +710,7 @@ function QuotaFilingSection({
                 variant="outline"
                 onClick={() => {
                   setShowAddDisqualifiedDialog(false)
-                  setDisqualifiedHospitalCode("")
-                  setDisqualifiedHospitalName("")
+                  setSelectedDisqualifiedHospital([])
                   setDisqualifiedReason("")
                 }}
               >
@@ -734,12 +718,11 @@ function QuotaFilingSection({
               </Button>
               <Button
                 className="bg-[#2d3a8c] hover:bg-[#252f73] text-white"
-                disabled={!disqualifiedHospitalCode || !disqualifiedHospitalName || !disqualifiedReason}
+                disabled={selectedDisqualifiedHospital.length === 0 || !disqualifiedReason.trim()}
                 onClick={() => {
                   // TODO: 實際新增邏輯
                   setShowAddDisqualifiedDialog(false)
-                  setDisqualifiedHospitalCode("")
-                  setDisqualifiedHospitalName("")
+                  setSelectedDisqualifiedHospital([])
                   setDisqualifiedReason("")
                 }}
               >
