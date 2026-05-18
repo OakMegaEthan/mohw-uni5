@@ -525,7 +525,6 @@ export default function FilingDetailPage({
                                         </p>
                                       )}
                                     </div>
-                                  </div>
                                 )}
                               </div>
                             </div>
