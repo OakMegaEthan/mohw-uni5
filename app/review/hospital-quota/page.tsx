@@ -104,7 +104,7 @@ export default function HospitalQuotaReviewPage() {
                     <TableCell>
                       <Badge variant="outline" className="text-sm">{society.year}</Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-500">{society.submittedDate}</TableCell>
+                    <TableCell className="text-muted-foreground">{society.submittedDate}</TableCell>
                     <TableCell>{renderReviewResultBadge(society.reviewResult)}</TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="outline">
@@ -118,7 +118,7 @@ export default function HospitalQuotaReviewPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-gray-500">
+                  <TableCell colSpan={5} className="text-center py-12 text-base text-gray-500">
                     目前沒有符合條件的醫學會
                   </TableCell>
                 </TableRow>
@@ -137,24 +137,6 @@ export default function HospitalQuotaReviewPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">醫院容額分配審查</h1>
             <p className="text-base text-gray-500 mt-1">審查各醫學會提交的醫院訓練容額分配申請</p>
-            <div className="flex items-center gap-3 mt-3">
-              <span className="text-sm text-gray-600">目前階段：</span>
-              <Badge className={`${stageConfig[activeTab as keyof typeof stageConfig]?.color || "bg-gray-100 text-gray-800"} text-sm px-3 py-1`}>
-                {currentStageLabel}
-              </Badge>
-              {nextStage && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 ml-2"
-                  onClick={handleOpenAdvanceDialog}
-                  disabled={societiesByStage(activeTab).length === 0}
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  推進至{nextStage.label}
-                </Button>
-              )}
-            </div>
           </div>
 
           <Button
@@ -181,9 +163,9 @@ export default function HospitalQuotaReviewPage() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 h-11">
             {hospitalQuotaStages.map((stage) => (
-              <TabsTrigger key={stage.value} value={stage.value} className="flex items-center gap-2">
+              <TabsTrigger key={stage.value} value={stage.value} className="text-base px-5 flex items-center gap-2">
                 {stage.label}
                 <Badge variant="secondary" className="ml-1">
                   {societiesByStage(stage.value).length}
@@ -192,11 +174,38 @@ export default function HospitalQuotaReviewPage() {
             ))}
           </TabsList>
 
-          {hospitalQuotaStages.map((stage) => (
-            <TabsContent key={stage.value} value={stage.value}>
-              {renderTable(stage.value)}
-            </TabsContent>
-          ))}
+          {hospitalQuotaStages.map((stage) => {
+            const stageIndex = hospitalQuotaStages.findIndex((s) => s.value === stage.value)
+            const nextStageForTab = hospitalQuotaStages[stageIndex + 1] ?? null
+            const isActiveStage = stage.value === activeTab
+
+            return (
+              <TabsContent key={stage.value} value={stage.value}>
+                {/* 目前階段標示與推進按鈕 */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-base text-gray-600">目前階段：</span>
+                    <Badge className={`${stageConfig[stage.value as keyof typeof stageConfig]?.color || "bg-gray-100 text-gray-800"} text-base px-3 py-1`}>
+                      {stageConfig[stage.value as keyof typeof stageConfig]?.label || stage.label}
+                    </Badge>
+                  </div>
+                  {nextStageForTab && isActiveStage && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={handleOpenAdvanceDialog}
+                      disabled={societiesByStage(stage.value).length === 0}
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                      推進至{nextStageForTab.label}
+                    </Button>
+                  )}
+                </div>
+                {renderTable(stage.value)}
+              </TabsContent>
+            )
+          })}
         </Tabs>
 
         {/* 批次推進 Dialog */}
@@ -206,23 +215,23 @@ export default function HospitalQuotaReviewPage() {
               <DialogTitle>選擇推進至{nextStage?.label}的醫學會</DialogTitle>
             </DialogHeader>
             <div className="py-2 space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-base text-gray-600">
                 可選擇部分醫學會推進至下一階段，未選取的醫學會將繼續留在「{currentStageLabel}」。
               </p>
 
               {/* 審查狀態統計 */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 text-center">
-                  <p className="text-sm text-green-600 mb-0.5">審查通過</p>
-                  <p className="text-lg font-bold text-green-700">{advanceStats.approved.count}</p>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <p className="text-base text-green-600 mb-0.5">審查通過</p>
+                  <p className="text-xl font-bold text-green-700">{advanceStats.approved.count}</p>
                 </div>
-                <div className={`border rounded-lg p-2.5 text-center ${advanceStats.needsRevision.count > 0 ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-200"}`}>
-                  <p className={`text-sm mb-0.5 ${advanceStats.needsRevision.count > 0 ? "text-orange-600" : "text-gray-500"}`}>需補件</p>
-                  <p className={`text-lg font-bold ${advanceStats.needsRevision.count > 0 ? "text-orange-700" : "text-gray-400"}`}>{advanceStats.needsRevision.count}</p>
+                <div className={`border rounded-lg p-3 text-center ${advanceStats.needsRevision.count > 0 ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-200"}`}>
+                  <p className={`text-base mb-0.5 ${advanceStats.needsRevision.count > 0 ? "text-orange-600" : "text-gray-500"}`}>需補件</p>
+                  <p className={`text-xl font-bold ${advanceStats.needsRevision.count > 0 ? "text-orange-700" : "text-gray-400"}`}>{advanceStats.needsRevision.count}</p>
                 </div>
                 <div className={`border rounded-lg p-2.5 text-center ${advanceStats.pendingReview.count > 0 ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
-                  <p className={`text-sm mb-0.5 ${advanceStats.pendingReview.count > 0 ? "text-amber-600" : "text-gray-500"}`}>尚未審查</p>
-                  <p className={`text-lg font-bold ${advanceStats.pendingReview.count > 0 ? "text-amber-700" : "text-gray-400"}`}>{advanceStats.pendingReview.count}</p>
+                  <p className={`text-base mb-0.5 ${advanceStats.pendingReview.count > 0 ? "text-amber-600" : "text-gray-500"}`}>尚未審查</p>
+                  <p className={`text-xl font-bold ${advanceStats.pendingReview.count > 0 ? "text-amber-700" : "text-gray-400"}`}>{advanceStats.pendingReview.count}</p>
                 </div>
               </div>
 
@@ -231,7 +240,7 @@ export default function HospitalQuotaReviewPage() {
                 <div className="border rounded-lg overflow-hidden">
                   {/* 全選 */}
                   <div
-                    className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 border-b cursor-pointer"
+                    className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b cursor-pointer"
                     onClick={toggleSelectAll}
                   >
                     <Checkbox
@@ -239,7 +248,7 @@ export default function HospitalQuotaReviewPage() {
                       onCheckedChange={toggleSelectAll}
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <span className="text-sm font-medium text-gray-700">全選（{advanceStats.societies.length} 個醫學會）</span>
+                    <span className="text-base font-medium text-gray-700">全選（{advanceStats.societies.length} 個醫學會）</span>
                   </div>
                   {advanceStats.societies.map((society) => (
                     <div
@@ -255,7 +264,7 @@ export default function HospitalQuotaReviewPage() {
                         onClick={(e) => e.stopPropagation()}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{society.name}</p>
+                        <p className="text-base font-medium">{society.name}</p>
                       </div>
                       <div className="shrink-0">
                         {society.reviewResult === "approved" && (
@@ -272,7 +281,7 @@ export default function HospitalQuotaReviewPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-center text-gray-400 py-4">目前此階段沒有醫學會</p>
+                <p className="text-base text-center text-gray-400 py-4">目前此階段沒有醫學會</p>
               )}
 
               {/* 警告 */}
@@ -281,8 +290,8 @@ export default function HospitalQuotaReviewPage() {
                 return s && s.reviewResult !== "approved"
               }) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-sm text-amber-700">
-                    <AlertCircle className="h-3.5 w-3.5 inline-block mr-1 -mt-0.5" />
+                  <p className="text-base text-amber-700">
+                    <AlertCircle className="h-4 w-4 inline-block mr-1 -mt-0.5" />
                     您選擇了尚未完成審查的醫學會，推進後這些案件將一併進入下一階段。
                   </p>
                 </div>

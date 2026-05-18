@@ -14,7 +14,9 @@ import {
 import { ChevronLeft, Save, X } from "lucide-react"
 
 import Link from "next/link"
+import { Textarea } from "@/components/ui/textarea"
 import { HospitalMultiSelect, type Hospital } from "@/components/filing/hospital-multi-select"
+import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
 
 const availableHospitals: Hospital[] = [
   { code: "0401180014", name: "台大醫院", county: "台北市", district: "中山區" },
@@ -109,6 +111,7 @@ export default function QuotaEditPage({
   const [extensionYears, setExtensionYears] = useState(hospital.extensionYears)
   const [quotaLimit, setQuotaLimit] = useState(hospital.quotaLimit.toString())
   const [currentQuota, setCurrentQuota] = useState(hospital.currentQuota.toString())
+  const [note, setNote] = useState(quotaNotesStore.hospitalNotes[id] ?? "")
 
   const calculateExtensionDate = (years: string) => {
     if (years === "0") return ""
@@ -329,6 +332,21 @@ export default function QuotaEditPage({
             </div>
           </div>
 
+          <div className="mt-10">
+            <h2 className="text-lg font-bold text-foreground mb-4">備註</h2>
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2 block">
+                備註內容（選填）
+              </Label>
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="輸入此訓練醫院的特殊說明，將自動彙整至填報頁面備註區塊"
+                className="text-base min-h-[100px]"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center justify-end gap-3 mt-10 pt-6 border-t">
             <Link href="/filing?tab=quota">
               <Button variant="outline">取消</Button>
@@ -341,6 +359,14 @@ export default function QuotaEditPage({
                 !quotaLimit || Number(quotaLimit) < 1 || Number(quotaLimit) > 50 ||
                 !currentQuota || Number(currentQuota) < 1 || Number(currentQuota) > 50
               }
+              onClick={() => {
+                // 儲存備註至 store
+                if (note.trim()) {
+                  quotaNotesStore.hospitalNotes[id] = note.trim()
+                } else {
+                  delete quotaNotesStore.hospitalNotes[id]
+                }
+              }}
             >
               <Save className="h-4 w-4" />
               儲存變更

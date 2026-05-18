@@ -2,7 +2,6 @@
 
 import { use, useState } from "react"
 import Link from "next/link"
-import { ReviewSimpleNav } from "@/components/review/simple-nav"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowLeft, Upload, FileText, Download, Eye } from "lucide-react"
 import { getHospitalQuotaDetail, getHospitalQuotaStageConfig } from "@/lib/mock/review-hospital-quota"
+import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
+import { societyQuotaLimits } from "@/lib/mock/society-quota-limits"
 
 export default function HospitalQuotaDetailPage({
   params,
@@ -30,7 +31,6 @@ export default function HospitalQuotaDetailPage({
   if (!detail) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <ReviewSimpleNav />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-20">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">找不到該醫學會</h2>
@@ -63,11 +63,18 @@ export default function HospitalQuotaDetailPage({
     }
   }
 
+  // 統計數字計算
+  const mainRows = hospitals.filter((h) => !h.isSubRow)
+  const mainTrainingCount = mainRows.filter((h) => !h.groupId).length
+  const cooperationCount = mainRows.reduce((acc, h) => acc + (h.partnerHospitalCodes?.length ?? 0), 0)
+  const totalApplied = mainRows.length
+  const disqualifiedCount = disqualifiedHospitals.length
+  const qualifiedCount = totalApplied - disqualifiedCount
+  const notAppliedCount = 0 // 未申請家數（mock 資料暫無此欄位）
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <ReviewSimpleNav />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <Link
           href="/review/hospital-quota"
@@ -85,8 +92,46 @@ export default function HospitalQuotaDetailPage({
               <Badge className={stageConfig[society.stage].color}>
                 {stageConfig[society.stage].label}
               </Badge>
-              <span className="text-sm text-gray-500">送件日期：{society.submittedDate}</span>
+              <span className="text-base text-gray-500">送件日期：{society.submittedDate}</span>
             </div>
+          </div>
+        </div>
+
+        {/* 訓練醫院申請家數統計 */}
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-foreground mb-4">訓練醫院申請家數</h3>
+          <div className="grid grid-cols-3 gap-4">
+            {/* 申請家數（含子分類：合格/不合格） */}
+            <div className="rounded-lg border border-blue-200 overflow-hidden bg-blue-50 flex">
+              {/* 左：申請總數 */}
+              <div className="flex-1 px-5 py-4 flex flex-col justify-center">
+                <p className="text-sm text-blue-600 mb-1">申請家數</p>
+                <p className="text-3xl font-bold text-blue-700">{totalApplied}</p>
+                <p className="text-sm text-blue-600/70 mt-1.5">
+                  {mainTrainingCount} 家主訓、{cooperationCount} 家合作
+                </p>
+              </div>
+              {/* 右：合格/不合格 上下堆疊 */}
+              <div className="flex flex-col divide-y divide-blue-200 border-l border-blue-200 w-28">
+                <div className="px-4 py-3 bg-green-50/80 flex-1 flex flex-col justify-center">
+                  <p className="text-sm text-green-600 mb-0.5">合格</p>
+                  <p className="text-xl font-bold text-green-700">{qualifiedCount}</p>
+                </div>
+                <div className={`px-4 py-3 flex-1 flex flex-col justify-center ${disqualifiedCount > 0 ? "bg-red-50/80" : "bg-gray-50/60"}`}>
+                  <p className={`text-sm mb-0.5 ${disqualifiedCount > 0 ? "text-red-600" : "text-gray-500"}`}>不合格</p>
+                  <p className={`text-xl font-bold ${disqualifiedCount > 0 ? "text-red-700" : "text-gray-400"}`}>{disqualifiedCount}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 未申請家數 */}
+            <div className={`rounded-lg border px-5 py-4 flex flex-col justify-center ${notAppliedCount > 0 ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-100"}`}>
+              <p className={`text-sm mb-1 ${notAppliedCount > 0 ? "text-amber-600" : "text-gray-500"}`}>未申請家數</p>
+              <p className={`text-3xl font-bold ${notAppliedCount > 0 ? "text-amber-700" : "text-gray-400"}`}>{notAppliedCount}</p>
+            </div>
+
+            {/* 佔位 - 保持三欄對齊 */}
+            <div></div>
           </div>
         </div>
 
@@ -101,10 +146,10 @@ export default function HospitalQuotaDetailPage({
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-base text-gray-600">
                     會議日期：<span className="font-medium text-gray-900">{groupReviewData.meetingDate}</span>
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-base text-gray-600">
                     審查決議：<Badge variant="outline" className="ml-1 bg-green-50 text-green-700 border-green-200">{groupReviewData.decision}</Badge>
                   </p>
                 </div>
@@ -119,135 +164,220 @@ export default function HospitalQuotaDetailPage({
                   </Button>
                 </div>
               </div>
-              <p className="text-sm text-gray-500">
+              <p className="text-base text-gray-500">
                 檔案：{groupReviewData.meetingRecord}
               </p>
             </CardContent>
           </Card>
         )}
 
-        {/* 訓練醫院名單與容額分配 */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">訓練醫院名單與容額分配</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-16">序號</TableHead>
-                  <TableHead>醫事機構代碼</TableHead>
-                  <TableHead>主訓醫院</TableHead>
-                  <TableHead>狀態</TableHead>
-                  <TableHead>效期</TableHead>
-                  <TableHead>延長效期</TableHead>
-                  <TableHead className="text-center">容額上限</TableHead>
-                  <TableHead className="text-center">前年度核定容額</TableHead>
-                  <TableHead className="text-center">本年度容額</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {hospitals.map((hospital) => {
-                  const groupStyle = hospital.groupId ? groupColors[hospital.groupId] : ""
-                  return (
-                    <TableRow
-                      key={hospital.id}
-                      className={`${groupStyle ? `border-l-4 ${groupStyle}` : ""} ${hospital.isSubRow ? "bg-muted/20" : ""}`}
-                    >
-                      <TableCell className="text-muted-foreground whitespace-nowrap">
-                        {!hospital.isSubRow ? hospital.id : ""}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {hospital.code}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {hospital.groupId && !hospital.isSubRow ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-sm bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">主訓</span>
-                              {(hospital.mainHospitalCodes ?? [hospital.code]).map((code, i) => {
-                                const h = hospitals.find(hh => hh.code === code)
-                                return (
-                                  <span key={code} className="text-sm font-medium">
-                                    {h?.name ?? code}{i < (hospital.mainHospitalCodes ?? []).length - 1 ? "、" : ""}
-                                  </span>
-                                )
-                              })}
-                            </div>
-                            {(hospital.partnerHospitalCodes ?? []).length > 0 && (
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-sm bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">合作</span>
-                                {(hospital.partnerHospitalCodes ?? []).map((code, i) => {
-                                  const h = hospitals.find(hh => hh.code === code)
-                                  return (
-                                    <span key={code} className="text-sm text-muted-foreground">
-                                      {h?.name ?? code}{i < (hospital.partnerHospitalCodes ?? []).length - 1 ? "、" : ""}
-                                    </span>
-                                  )
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        ) : hospital.isSubRow ? (
-                          <span className="text-sm text-muted-foreground pl-2">{hospital.name}</span>
-                        ) : (
-                          hospital.name
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {hospital.status && (
-                          <Badge className={hospital.statusColor}>{hospital.status}</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{hospital.expiry}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{hospital.extension}</TableCell>
-                      <TableCell className="text-center font-medium">
-                        {hospital.limit !== null ? hospital.limit : "-"}
-                      </TableCell>
-                      <TableCell className="text-center text-muted-foreground">
-                        {hospital.prevQuota !== null ? hospital.prevQuota : "-"}
-                      </TableCell>
-                      <TableCell className="text-center font-medium text-primary">
-                        {hospital.currentQuota !== null ? hospital.currentQuota : "-"}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* 不合格醫院名單 */}
-        {disqualifiedHospitals.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">不合格醫院名單</CardTitle>
-            </CardHeader>
+        {/* 訓練醫院認定合格名單及訓練容額 */}
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-foreground mb-4">訓練醫院認定合格名單及訓練容額</h3>
+          {(() => {
+            const societyLimit = societyQuotaLimits.find((s) => s.societyId === society.id)
+            const hasLimit = societyLimit?.totalLimit != null
+            const mainRows = hospitals.filter((h) => !h.isSubRow)
+            const totalLimit = mainRows.reduce((sum, h) => sum + (h.limit ?? 0), 0)
+            const totalPrevQuota = mainRows.reduce((sum, h) => sum + (h.prevQuota ?? 0), 0)
+            const totalCurrentQuota = mainRows.reduce((sum, h) => sum + (h.currentQuota ?? 0), 0)
+            const isExceeded = hasLimit && totalCurrentQuota > societyLimit!.totalLimit!
+            return (
+          <Card>
+            {/* 容額資訊列 */}
+            {(hasLimit || totalCurrentQuota > 0) && (
+              <div className="flex items-center gap-6 px-6 py-3 border-b bg-muted/30">
+                {hasLimit && (
+                  <span className="text-sm text-muted-foreground">
+                    設定容額上限：<span className="font-semibold text-foreground">{societyLimit!.totalLimit}</span>
+                  </span>
+                )}
+                {!hasLimit && (
+                  <span className="text-sm text-muted-foreground">設定容額上限：<span className="font-medium text-foreground">未設定</span></span>
+                )}
+                <span className="text-muted-foreground">|</span>
+                <span className="text-sm text-muted-foreground">
+                  本年度已核定容額：
+                  <span className={`font-semibold ${isExceeded ? "text-red-600" : "text-foreground"}`}>
+                    {totalCurrentQuota}
+                  </span>
+                  {isExceeded && (
+                    <span className="ml-2 text-xs text-red-600 font-medium">（已超額 {totalCurrentQuota - societyLimit!.totalLimit!} 個）</span>
+                  )}
+                </span>
+              </div>
+            )}
             <CardContent className="p-0">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-16">序號</TableHead>
                     <TableHead>醫事機構代碼</TableHead>
-                    <TableHead>主訓醫院</TableHead>
-                    <TableHead>不合格原因</TableHead>
+                    <TableHead>訓練醫院全銜</TableHead>
+                    <TableHead>醫院所在地</TableHead>
+                    <TableHead>效期</TableHead>
+                    <TableHead>延長效期</TableHead>
+                    <TableHead className="text-center">容額上限</TableHead>
+                    <TableHead className="text-center">前年度核定容額</TableHead>
+                    <TableHead className="text-center">本年度容額</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {disqualifiedHospitals.map((hospital) => (
-                    <TableRow key={hospital.id}>
-                      <TableCell className="text-muted-foreground">{hospital.id}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{hospital.code}</TableCell>
-                      <TableCell className="font-medium">{hospital.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{hospital.reason}</TableCell>
-                    </TableRow>
-                  ))}
+                  {hospitals.map((hospital) => {
+                    const groupStyle = hospital.groupId ? groupColors[hospital.groupId] : ""
+                    const hasNote = quotaNotesStore.hospitalNotes[String(hospital.id)]
+                    return (
+                      <TableRow
+                        key={hospital.id}
+                        className={`${groupStyle ? `border-l-4 ${groupStyle}` : ""} ${hospital.isSubRow ? "bg-muted/20" : ""}`}
+                      >
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {!hospital.isSubRow ? hospital.id : ""}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {hospital.code}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {hospital.groupId && !hospital.isSubRow ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">主訓</span>
+                                {hasNote && <span className="text-destructive" title="此醫院有備註">*</span>}
+                                {(hospital.mainHospitalCodes ?? [hospital.code]).map((code, i) => {
+                                  const h = hospitals.find(hh => hh.code === code)
+                                  return (
+                                    <span key={code} className="font-medium">
+                                      {h?.name ?? code}{i < (hospital.mainHospitalCodes ?? []).length - 1 ? "、" : ""}
+                                    </span>
+                                  )
+                                })}
+                              </div>
+                              {(hospital.partnerHospitalCodes ?? []).length > 0 && (
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">合作</span>
+                                  {(hospital.partnerHospitalCodes ?? []).map((code, i) => {
+                                    const h = hospitals.find(hh => hh.code === code)
+                                    return (
+                                      <span key={code} className="text-muted-foreground">
+                                        {h?.name ?? code}{i < (hospital.partnerHospitalCodes ?? []).length - 1 ? "、" : ""}
+                                      </span>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          ) : hospital.isSubRow ? (
+                            <span className="text-muted-foreground pl-2">{hospital.name}</span>
+                          ) : (
+                            <>
+                              {hasNote && <span className="text-destructive mr-0.5" title="此醫院有備註">*</span>}
+                              {hospital.name}
+                            </>
+                          )}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {hospital.county ? (
+                            <span className="text-foreground">{hospital.county}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">{hospital.expiry}</TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">{hospital.extension}</TableCell>
+                        <TableCell className="text-center font-medium">
+                          {hospital.limit !== null ? hospital.limit : "-"}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">
+                          {hospital.prevQuota !== null ? hospital.prevQuota : "-"}
+                        </TableCell>
+                        <TableCell className="text-center font-medium text-primary">
+                          {hospital.currentQuota !== null ? hospital.currentQuota : "-"}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
+                <tfoot>
+                  <tr className="bg-muted/60 border-t-2 border-border">
+                    <td colSpan={6} className="px-4 py-3 text-base font-semibold text-foreground">
+                      合計
+                    </td>
+                    <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalLimit}</td>
+                    <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalPrevQuota}</td>
+                    <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalCurrentQuota}</td>
+                  </tr>
+                </tfoot>
               </Table>
+              </div>
             </CardContent>
           </Card>
+            )
+          })()}
+        </div>
+
+        {/* 不合格醫院名單 */}
+        {disqualifiedHospitals.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-foreground mb-4">不合格醫院名單</h3>
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-16">序號</TableHead>
+                      <TableHead>醫事機構代碼</TableHead>
+                      <TableHead>訓練醫院全銜</TableHead>
+                      <TableHead>不合格原因</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {disqualifiedHospitals.map((hospital) => (
+                      <TableRow key={hospital.id}>
+                        <TableCell className="text-muted-foreground">{hospital.id}</TableCell>
+                        <TableCell className="text-muted-foreground">{hospital.code}</TableCell>
+                        <TableCell className="font-medium">{hospital.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{hospital.reason}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         )}
+
+        {/* 備註區塊（唯讀顯示） */}
+        {(() => {
+          const autoNotes = hospitals
+            .filter((h) => !h.isSubRow && quotaNotesStore.hospitalNotes[String(h.id)])
+            .map((h) => ({
+              hospitalId: String(h.id),
+              content: quotaNotesStore.hospitalNotes[String(h.id)],
+            }))
+          
+          if (autoNotes.length === 0) return null
+          
+          return (
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-foreground mb-4">備註</h3>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="divide-y">
+                    {autoNotes.map((item, idx) => (
+                      <div key={item.hospitalId} className="flex items-start gap-4 px-6 py-4">
+                        <span className="text-base font-medium text-muted-foreground w-6 shrink-0 pt-0.5">
+                          {idx + 1}.
+                        </span>
+                        <p className="flex-1 text-base text-foreground whitespace-pre-wrap">{item.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )
+        })()}
 
         {/* 審查操作區 */}
         <Card>
@@ -271,10 +401,10 @@ export default function HospitalQuotaDetailPage({
               <Label>上傳會議記錄</Label>
               <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   點擊或拖曳檔案至此處上傳
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-base text-muted-foreground mt-1">
                   支援 PDF、DOC、DOCX 格式
                 </p>
               </div>

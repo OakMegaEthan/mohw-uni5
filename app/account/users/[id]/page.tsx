@@ -376,7 +376,7 @@ export default function UserPermissionPage({ params }: { params: { id: string } 
               <div key={index} className="space-y-1 pb-4 border-b last:border-0 last:pb-0">
                 <p className="text-sm font-medium">{record.action}</p>
                 <p className="text-sm text-muted-foreground">
-                  {record.date} ���� {record.operator}
+                  {record.date} 由 {record.operator}
                 </p>
               </div>
             ))}

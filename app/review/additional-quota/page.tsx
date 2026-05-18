@@ -119,27 +119,27 @@ export default function AdditionalQuotaReviewPage() {
                     <SelectItem value="已公告">已公告</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="text-sm text-gray-500 ml-auto">共 {filteredApplications.length} 個申請</div>
+                <div className="text-base text-gray-500 ml-auto">共 {filteredApplications.length} 個申請</div>
               </div>
             </CardContent>
           </Card>
         )}
 
         <Tabs defaultValue="pending-review" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="pending-review" className="flex items-center gap-2">
+          <TabsList className="mb-6 h-11">
+            <TabsTrigger value="pending-review" className="text-base px-5 flex items-center gap-2">
               待審查
               <Badge variant="secondary" className="ml-1">
                 {pendingReviewApplications.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="pending-announcement" className="flex items-center gap-2">
+            <TabsTrigger value="pending-announcement" className="text-base px-5 flex items-center gap-2">
               待公告
               <Badge variant="secondary" className="ml-1">
                 {pendingAnnouncementApplications.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="announced" className="flex items-center gap-2">
+            <TabsTrigger value="announced" className="text-base px-5 flex items-center gap-2">
               已公告
               <Badge variant="secondary" className="ml-1">
                 {announcedApplications.length}
@@ -147,37 +147,37 @@ export default function AdditionalQuotaReviewPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending-review" className="space-y-3">
+          <TabsContent value="pending-review" className="space-y-4">
             {pendingReviewApplications.length > 0 ? (
               pendingReviewApplications.map(renderApplicationCard)
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">
-                  <p className="text-gray-500">目前沒有待審查的申請</p>
+                  <p className="text-base text-gray-500">目前沒有待審查的申請</p>
                 </CardContent>
               </Card>
             )}
           </TabsContent>
 
-          <TabsContent value="pending-announcement" className="space-y-3">
+          <TabsContent value="pending-announcement" className="space-y-4">
             {pendingAnnouncementApplications.length > 0 ? (
               pendingAnnouncementApplications.map(renderApplicationCard)
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">
-                  <p className="text-gray-500">目前沒有待公告的申請</p>
+                  <p className="text-base text-gray-500">目前沒有待公告的申請</p>
                 </CardContent>
               </Card>
             )}
           </TabsContent>
 
-          <TabsContent value="announced" className="space-y-3">
+          <TabsContent value="announced" className="space-y-4">
             {announcedApplications.length > 0 ? (
               announcedApplications.map(renderApplicationCard)
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">
-                  <p className="text-gray-500">目前沒有已公告的申請</p>
+                  <p className="text-base text-gray-500">目前沒有已公告的申請</p>
                 </CardContent>
               </Card>
             )}

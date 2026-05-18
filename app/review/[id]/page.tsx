@@ -277,14 +277,14 @@ export default function ReviewDetailPage({
                     {stageInfo?.label || stage}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-base text-muted-foreground mt-1">
                   {documentInfo.year} 年度 | 提交日期：{documentInfo.submittedDate}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div>
-                <p className="text-sm text-gray-500 mb-1">審查結果</p>
+                <p className="text-base text-gray-500 mb-1">審查結果</p>
                 <Badge
                   className={`${
                     reviewResult === "approved"
@@ -331,13 +331,13 @@ export default function ReviewDetailPage({
             <TabsList className="h-12 bg-transparent border-0 p-0">
               <TabsTrigger 
                 value="current" 
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-4"
+                className="text-base data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-5"
               >
                 114 年度 (本次送審)
               </TabsTrigger>
               <TabsTrigger 
                 value="previous" 
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-4"
+                className="text-base data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-5"
               >
                 113 年度 (參考)
               </TabsTrigger>
@@ -356,7 +356,7 @@ export default function ReviewDetailPage({
               </div>
               <div>
                 <h3 className="font-medium text-purple-900">分組會議審查階段</h3>
-                <p className="text-sm text-purple-700">請審閱醫學會提交的文件內容，並於右側記錄審查結果與評語。</p>
+                <p className="text-base text-purple-700">請審閱醫學會提交的文件內容，並於右側記錄審查結果與評語。</p>
               </div>
             </div>
           </div>
@@ -369,7 +369,7 @@ export default function ReviewDetailPage({
               </div>
               <div>
                 <h3 className="font-medium text-pink-900">RRC 大會審核階段</h3>
-                <p className="text-sm text-pink-700">此案件已通過分組會議審查，請參考分組會議審查資料��行最終審核。</p>
+                <p className="text-base text-pink-700">此案件已通過分組會議審查，請參考分組會議審查資料進行最終審核。</p>
               </div>
             </div>
           </div>
@@ -382,7 +382,7 @@ export default function ReviewDetailPage({
               </div>
               <div>
                 <h3 className="font-medium text-amber-900">待公告階段</h3>
-                <p className="text-sm text-amber-700">此案件已通過所有審查，等待正式公告。</p>
+                <p className="text-base text-amber-700">此案件已通過所有審查，等待正式公告。</p>
               </div>
             </div>
           </div>
@@ -428,7 +428,7 @@ export default function ReviewDetailPage({
                           <div className="px-4 pb-4 space-y-4">
                             {/* Content Display */}
                             <div className="p-4 bg-gray-50 rounded-lg border">
-                              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                              <p className="whitespace-pre-wrap text-base leading-relaxed">
                                 {section.content}
                               </p>
                             </div>
@@ -436,7 +436,7 @@ export default function ReviewDetailPage({
                             {/* Diff Display */}
                             {hasChanges && (
                               <div className="p-4 bg-muted/30 rounded-lg border">
-                                <div className="text-sm text-muted-foreground mb-2 flex items-center gap-4">
+                                <div className="text-base text-muted-foreground mb-2 flex items-center gap-4">
                                   <span>變更比對：</span>
                                   <span className="flex items-center gap-1">
                                     <span className="inline-block w-3 h-3 bg-red-100 border border-red-200 rounded-sm" />
@@ -457,10 +457,10 @@ export default function ReviewDetailPage({
                             {/* Revision Note (from filing) */}
                             {section.revisionNote && (
                               <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                <p className="text-sm font-medium text-blue-700 mb-1">
+                                <p className="text-base font-medium text-blue-700 mb-1">
                                   醫學會修訂說明
                                 </p>
-                                <p className="text-sm text-blue-900 whitespace-pre-wrap">
+                                <p className="text-base text-blue-900 whitespace-pre-wrap">
                                   {section.revisionNote}
                                 </p>
                               </div>
