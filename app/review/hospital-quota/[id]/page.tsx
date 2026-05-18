@@ -97,42 +97,29 @@ export default function HospitalQuotaDetailPage({
 
         {/* 訓練醫院申請家數統計 */}
         <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-medium text-gray-700">訓練醫院申請家數</CardTitle>
+          <CardHeader>
+            <CardTitle className="text-lg">訓練醫院申請家數</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="grid grid-cols-2 divide-x border-t">
-              {/* 左欄：申請家數 */}
-              <div className="divide-y">
-                <div className="px-6 py-4 bg-muted/30">
-                  <p className="text-base font-medium text-foreground">
-                    申請家數 {totalApplied} 家
-                    {(mainTrainingCount > 0 || cooperationCount > 0) && (
-                      <span className="text-sm font-normal text-muted-foreground ml-2">
-                        （{mainTrainingCount} 家主訓、{cooperationCount} 家合作）
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 divide-x">
-                  <div className="px-6 py-4">
-                    <p className="text-sm text-muted-foreground mb-1">合格家數</p>
-                    <p className="text-2xl font-bold text-green-700">{qualifiedCount}</p>
-                  </div>
-                  <div className="px-6 py-4">
-                    <p className="text-sm text-muted-foreground mb-1">不合格家數</p>
-                    <p className={`text-2xl font-bold ${disqualifiedCount > 0 ? "text-red-600" : "text-gray-400"}`}>
-                      {disqualifiedCount}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              {/* 右欄：未申請家數 */}
-              <div className="px-6 py-4 flex flex-col justify-center bg-muted/10">
-                <p className="text-sm text-muted-foreground mb-1">未申請家數</p>
-                <p className={`text-2xl font-bold ${notAppliedCount > 0 ? "text-amber-600" : "text-gray-400"}`}>
-                  {notAppliedCount}
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
+                <p className="text-sm text-blue-600 mb-1">申請家數</p>
+                <p className="text-2xl font-bold text-blue-700">{totalApplied}</p>
+                <p className="text-sm text-blue-600/70 mt-1">
+                  {mainTrainingCount} 家主訓、{cooperationCount} 家合作
                 </p>
+              </div>
+              <div className="p-4 rounded-lg bg-green-50 border border-green-100">
+                <p className="text-sm text-green-600 mb-1">合格家數</p>
+                <p className="text-2xl font-bold text-green-700">{qualifiedCount}</p>
+              </div>
+              <div className={`p-4 rounded-lg border ${disqualifiedCount > 0 ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"}`}>
+                <p className={`text-sm mb-1 ${disqualifiedCount > 0 ? "text-red-600" : "text-gray-500"}`}>不合格家數</p>
+                <p className={`text-2xl font-bold ${disqualifiedCount > 0 ? "text-red-700" : "text-gray-400"}`}>{disqualifiedCount}</p>
+              </div>
+              <div className={`p-4 rounded-lg border ${notAppliedCount > 0 ? "bg-amber-50 border-amber-100" : "bg-gray-50 border-gray-100"}`}>
+                <p className={`text-sm mb-1 ${notAppliedCount > 0 ? "text-amber-600" : "text-gray-500"}`}>未申請家數</p>
+                <p className={`text-2xl font-bold ${notAppliedCount > 0 ? "text-amber-700" : "text-gray-400"}`}>{notAppliedCount}</p>
               </div>
             </div>
           </CardContent>
