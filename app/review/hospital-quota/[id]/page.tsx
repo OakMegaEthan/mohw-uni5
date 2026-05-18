@@ -461,7 +461,7 @@ export default function HospitalQuotaDetailPage({
               <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-base text-muted-foreground">
-                  點擊或拖曳檔案至此處���傳
+                  點擊或拖曳檔案至此處上傳
                 </p>
                 <p className="text-base text-muted-foreground mt-1">
                   支援 PDF、DOC、DOCX 格式
@@ -471,7 +471,7 @@ export default function HospitalQuotaDetailPage({
 
             {/* 審查結果 */}
             <div className="space-y-2">
-              <Label>審��結果 <span className="text-destructive">*</span></Label>
+              <Label>審查結果 <span className="text-destructive">*</span></Label>
               <Select value={reviewResult} onValueChange={(v) => setReviewResult(v as typeof reviewResult)}>
                 <SelectTrigger className="w-64">
                   <SelectValue />

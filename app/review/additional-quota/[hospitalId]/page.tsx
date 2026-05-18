@@ -371,7 +371,7 @@ export default function AdditionalQuotaReviewDetailPage({ params }: { params: { 
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="reviewComment">審���紀錄 *</Label>
+                <Label htmlFor="reviewComment">審查紀錄 *</Label>
                 <Textarea
                   id="reviewComment"
                   placeholder="請輸入審查紀錄..."
