@@ -39,7 +39,7 @@ const availableHospitals: Hospital[] = [
 
 export default function NewQuotaPage() {
   const router = useRouter()
-  const [applicationMode, setApplicationMode] = useState<"single" | "joint">("single")
+  const [applicationMode, setApplicationMode] = useState<"single" | "joint" | "merged">("single")
   const [selectedMainHospitals, setSelectedMainHospitals] = useState<string[]>([])
   const [selectedPartnerHospitals, setSelectedPartnerHospitals] = useState<string[]>([])
   const [extensionYears, setExtensionYears] = useState("0")
@@ -60,19 +60,12 @@ export default function NewQuotaPage() {
   }
 
   const handleSave = () => {
-    console.log("申請方式:", applicationMode === "single" ? "單一機構申請" : "聯合申請")
-    console.log("主訓醫院:", selectedMainHospitals)
-    if (applicationMode === "joint") {
-      console.log("合作醫院:", selectedPartnerHospitals)
-    }
-    console.log("延長效期:", extensionYears)
-    console.log("本年度擬核定容額:", currentQuota)
     router.push("/filing?tab=quota")
   }
 
   const canSave =
     selectedMainHospitals.length > 0 &&
-    (applicationMode === "single" || selectedPartnerHospitals.length > 0) &&
+    (applicationMode !== "joint" || selectedPartnerHospitals.length > 0) &&
     quotaLimit &&
     Number(quotaLimit) >= 1 && Number(quotaLimit) <= 50 &&
     currentQuota &&
@@ -104,11 +97,12 @@ export default function NewQuotaPage() {
         <div className="max-w-6xl space-y-6">
           <div className="bg-card rounded-lg p-6 shadow-sm">
             <h2 className="font-semibold text-foreground mb-4">申請方式</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <button
                 type="button"
                 onClick={() => {
                   setApplicationMode("single")
+                  setSelectedMainHospitals([])
                   setSelectedPartnerHospitals([])
                 }}
                 className={`p-5 rounded-lg border-2 text-left transition-colors ${
@@ -122,7 +116,11 @@ export default function NewQuotaPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setApplicationMode("joint")}
+                onClick={() => {
+                  setApplicationMode("joint")
+                  setSelectedMainHospitals([])
+                  setSelectedPartnerHospitals([])
+                }}
                 className={`p-5 rounded-lg border-2 text-left transition-colors ${
                   applicationMode === "joint"
                     ? "border-primary bg-primary/5"
@@ -134,13 +132,32 @@ export default function NewQuotaPage() {
                   主訓醫院與合作醫院聯合申請
                 </div>
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setApplicationMode("merged")
+                  setSelectedMainHospitals([])
+                  setSelectedPartnerHospitals([])
+                }}
+                className={`p-5 rounded-lg border-2 text-left transition-colors ${
+                  applicationMode === "merged"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className="font-medium text-foreground text-lg">合併申請</div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  合併評鑑的醫院合併進行容額申請
+                </div>
+              </button>
             </div>
           </div>
 
           <div className="bg-card rounded-lg p-6 shadow-sm">
             <h2 className="font-semibold text-foreground mb-4">
-              主訓醫院 <span className="text-destructive">*</span>
-              {applicationMode === "joint" && (
+              {applicationMode === "merged" ? "合併申請機構" : "主訓醫院"}
+              {" "}<span className="text-destructive">*</span>
+              {(applicationMode === "joint" || applicationMode === "merged") && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">（可多選）</span>
               )}
             </h2>
@@ -149,8 +166,8 @@ export default function NewQuotaPage() {
               hospitals={availableHospitals}
               selected={selectedMainHospitals}
               onSelect={setSelectedMainHospitals}
-              mode={applicationMode === "joint" ? "multiple" : "single"}
-              triggerLabel="請選擇主訓醫院"
+              mode={applicationMode === "single" ? "single" : "multiple"}
+              triggerLabel={applicationMode === "merged" ? "請選擇合併申請機構" : "請選擇主訓醫院"}
             />
 
             {selectedMainHospitals.length > 0 && (
