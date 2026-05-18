@@ -222,10 +222,6 @@ export default function FilingPage() {
 
         {activeTab === "documents" && (
           <div className="flex justify-end gap-3 mt-8 pt-6 border-t">
-            <Button variant="outline" size="lg" className="gap-2">
-              <Download className="h-4 w-4" />
-              儲存草稿
-            </Button>
             <Button
               size="lg"
               className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white"
@@ -761,7 +757,7 @@ function QuotaFilingSection({
         </div>
       </div>
 
-      {/* 備註區塊 */}
+      {/* ���註區塊 */}
       {(() => {
         // 自動備註：從 store 中有備註的非子列醫院
         const autoNotes = hospitals
