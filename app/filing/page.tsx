@@ -46,12 +46,12 @@ const filingStatusMap = Object.fromEntries(
 )
 
 const documents = [
-  { id: "training-plan", title: "訓練計畫認定基準", status: "需補件", deadline: "2025/03/31" },
-  { id: "training-curriculum", title: "訓練課程基準", status: "尚未送出", deadline: "2025/04/30" },
-  { id: "evaluation-standards", title: "評核標準與評核表", status: "審查中", deadline: "2025/04/15" },
-  { id: "quota-allocation", title: "容額分配原則", status: "通過", deadline: "2025/03/15" },
-  { id: "improvement-guide", title: "精進指南", status: "待送件", deadline: "2025/04/30" },
-  { id: "screening-principle", title: "甄審原則", status: "通過", deadline: "2025/03/15" },
+  { id: "training-plan", title: "訓練計畫認定基準", status: "需補件", deadline: "2025/03/31", latestAnnouncementDate: "2025/09/03", latestAnnouncementNumber: "衛部醫字第1141660001號" },
+  { id: "training-curriculum", title: "訓練課程基準", status: "尚未送出", deadline: "2025/04/30", latestAnnouncementDate: "2025/09/03", latestAnnouncementNumber: "衛部醫字第1141660002號" },
+  { id: "evaluation-standards", title: "評核標準與評核表", status: "審查中", deadline: "2025/04/15", latestAnnouncementDate: "2024/10/01", latestAnnouncementNumber: "衛部醫字第1131660015號" },
+  { id: "quota-allocation", title: "容額分配原則", status: "通過", deadline: "2025/03/15", latestAnnouncementDate: "2025/09/03", latestAnnouncementNumber: "衛部醫字第1141660003號" },
+  { id: "improvement-guide", title: "精進指南", status: "待送件", deadline: "2025/04/30", latestAnnouncementDate: "2023/09/25", latestAnnouncementNumber: "衛部醫字第1121660008號" },
+  { id: "screening-principle", title: "甄審原則", status: "通過", deadline: "2025/03/15", latestAnnouncementDate: "2025/09/03", latestAnnouncementNumber: "衛部醫字第1141660004號" },
 ]
 
 // 可送件的狀態（已有內容但尚未送出）
@@ -148,10 +148,12 @@ export default function FilingPage() {
           <TabsContent value="documents">
             <div className="bg-card rounded-lg shadow-sm">
               <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-muted/50 border-b text-base font-medium text-muted-foreground">
-                <div className="col-span-5">文件名稱</div>
-                <div className="col-span-2 text-center">審查狀態</div>
-                <div className="col-span-2 text-center">送件期限</div>
-                <div className="col-span-3 text-right">操作</div>
+                <div className="col-span-3">文件名稱</div>
+                <div className="col-span-2">最近公告日期</div>
+                <div className="col-span-3">最近公告文號</div>
+                <div className="col-span-1 text-center">審查狀態</div>
+                <div className="col-span-1 text-center">送件期限</div>
+                <div className="col-span-2 text-right">操作</div>
               </div>
 
               <div className="divide-y">
@@ -162,21 +164,29 @@ export default function FilingPage() {
                       key={doc.id}
                       className={`grid grid-cols-12 gap-4 px-6 py-5 items-center ${!filingOpen ? "bg-muted/20" : ""}`}
                     >
-                      <div className="col-span-5">
+                      <div className="col-span-3">
                         <span className={`font-medium ${!filingOpen ? "text-muted-foreground" : "text-foreground"}`}>
                           {doc.title}
                         </span>
                       </div>
 
-                      <div className={`col-span-2 text-center font-medium ${!filingOpen ? "text-muted-foreground/60" : getStatusStyle(doc.status)}`}>
+                      <div className="col-span-2 text-sm text-muted-foreground">
+                        {doc.latestAnnouncementDate || "—"}
+                      </div>
+
+                      <div className="col-span-3 text-sm text-muted-foreground truncate">
+                        {doc.latestAnnouncementNumber || "—"}
+                      </div>
+
+                      <div className={`col-span-1 text-center font-medium ${!filingOpen ? "text-muted-foreground/60" : getStatusStyle(doc.status)}`}>
                         {filingOpen ? doc.status : "尚未開放"}
                       </div>
 
-                      <div className="col-span-2 text-center text-base text-muted-foreground">
+                      <div className="col-span-1 text-center text-sm text-muted-foreground">
                         {filingOpen ? doc.deadline : "—"}
                       </div>
 
-                      <div className="col-span-3 flex justify-end">
+                      <div className="col-span-2 flex justify-end">
                         {filingOpen ? (
                           <Link href={`/filing/${doc.id}?status=${doc.status}`}>
                             {doc.status === "通過" || doc.status === "審查中" ? (
