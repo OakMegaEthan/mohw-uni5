@@ -12,8 +12,8 @@ import {
   Check,
   X,
   History,
-  Download,
-  Library,
+  Eye,
+  RotateCcw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,8 +68,10 @@ export default function OutlineEditorPage({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [editDescription, setEditDescription] = useState("")
-  const [showVersions, setShowVersions] = useState(false)
-  const [showTemplates, setShowTemplates] = useState(false)
+  const [showVersionPanel, setShowVersionPanel] = useState(false)
+  const [selectedVersion, setSelectedVersion] = useState<string | null>(null)
+  const [previewOutline, setPreviewOutline] = useState<OutlineItem[] | null>(null)
+  const [activeTab, setActiveTab] = useState<"versions" | "templates">("versions")
 
   // ---- edit ----
   function startEdit(item: OutlineItem) {
@@ -121,6 +123,29 @@ export default function OutlineEditorPage({
     setOutline((prev) => renumber([...prev, newItem]))
   }
 
+  // ---- version/template selection ----
+  function handleSelectVersion(version: string, outlineData?: OutlineItem[]) {
+    setSelectedVersion(version)
+    setPreviewOutline(outlineData || null)
+  }
+
+  function handleApplyVersion() {
+    if (previewOutline) {
+      // Deep copy and renumber
+      const copiedOutline = JSON.parse(JSON.stringify(previewOutline))
+      setOutline(renumber(copiedOutline))
+      setShowVersionPanel(false)
+      setSelectedVersion(null)
+      setPreviewOutline(null)
+    }
+  }
+
+  function handleCloseVersionPanel() {
+    setShowVersionPanel(false)
+    setSelectedVersion(null)
+    setPreviewOutline(null)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -140,20 +165,9 @@ export default function OutlineEditorPage({
           </h1>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowVersions(true)}
-              className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
-            >
-              <History className="w-4 h-4" />
-              版本/紀錄
-            </button>
-            <Button size="sm" variant="outline" onClick={() => setShowTemplates(true)}>
-              <Library className="w-4 h-4 mr-1.5" />
-              範本庫
-            </Button>
-            <Button size="sm" onClick={addOutlineItem}>
-              <Plus className="w-4 h-4 mr-1.5" />
-              新增大綱
+            <Button size="sm" variant="outline" onClick={() => setShowVersionPanel(true)}>
+              <History className="w-4 h-4 mr-1.5" />
+              版本紀錄
             </Button>
           </div>
         </div>
@@ -193,75 +207,130 @@ export default function OutlineEditorPage({
         </div>
       </div>
 
-      {/* ---- Version History Modal ---- */}
-      <Dialog open={showVersions} onOpenChange={setShowVersions}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+      {/* ---- Version History Panel (Google Sheets style) ---- */}
+      <Dialog open={showVersionPanel} onOpenChange={handleCloseVersionPanel}>
+        <DialogContent className="sm:max-w-4xl max-h-[85vh] p-0 gap-0">
+          <DialogHeader className="px-6 py-4 border-b">
             <DialogTitle>版本紀錄</DialogTitle>
-            <DialogDescription>查看歷史版本的大綱結構</DialogDescription>
+            <DialogDescription>查看歷史版本或範本，點擊預覽大綱結構後可選擇套用</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 max-h-[400px] overflow-y-auto py-2">
-            {mockVersions.map((v) => (
-              <div
-                key={v.version}
-                className={`border rounded-lg p-4 ${v.isCurrent ? "border-amber-300 bg-amber-50" : "border-gray-200"}`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
+          <div className="flex h-[60vh]">
+            {/* Left: Version/Template List */}
+            <div className="w-72 border-r bg-gray-50 flex flex-col">
+              {/* Tab switcher */}
+              <div className="flex border-b bg-white">
+                <button
+                  onClick={() => { setActiveTab("versions"); setSelectedVersion(null); setPreviewOutline(null); }}
+                  className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    activeTab === "versions" 
+                      ? "text-primary border-b-2 border-primary bg-primary/5" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  版本紀錄
+                </button>
+                <button
+                  onClick={() => { setActiveTab("templates"); setSelectedVersion(null); setPreviewOutline(null); }}
+                  className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    activeTab === "templates" 
+                      ? "text-primary border-b-2 border-primary bg-primary/5" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  歷年範本
+                </button>
+              </div>
+
+              {/* List */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {activeTab === "versions" ? (
+                  mockVersions.map((v) => (
+                    <button
+                      key={v.version}
+                      onClick={() => !v.isCurrent && handleSelectVersion(v.version, v.outline)}
+                      disabled={v.isCurrent}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        v.isCurrent 
+                          ? "border-amber-300 bg-amber-50 cursor-default"
+                          : selectedVersion === v.version
+                            ? "border-primary bg-primary/5"
+                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-gray-900">{v.version}</span>
+                        {v.isCurrent && (
+                          <Badge className="bg-amber-500 text-white border-0 text-xs">目前</Badge>
+                        )}
+                      </div>
+                      {v.date && <p className="text-sm text-gray-500 mt-0.5">{v.date}</p>}
+                      <p className="text-sm text-gray-500">{v.operator}</p>
+                    </button>
+                  ))
+                ) : (
+                  mockTemplates.map((t) => (
+                    <button
+                      key={t.year}
+                      onClick={() => handleSelectVersion(`template-${t.year}`, t.outline)}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        selectedVersion === `template-${t.year}`
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="font-medium text-gray-900">{t.year} 年度</span>
+                      <p className="text-sm text-gray-500">{t.label}</p>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Right: Preview Area */}
+            <div className="flex-1 flex flex-col bg-white">
+              {previewOutline ? (
+                <>
+                  <div className="px-6 py-3 border-b bg-gray-50 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-900">{v.version}</span>
-                      {v.isCurrent && (
-                        <Badge className="bg-amber-500 text-white border-0 text-sm">
-                          編輯中
-                        </Badge>
-                      )}
+                      <Eye className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">大綱預覽</span>
+                      <span className="text-sm text-gray-500">（共 {previewOutline.length} 項）</span>
                     </div>
-                    {v.date && <p className="text-sm text-gray-500 mt-0.5">{v.date}</p>}
-                    <p className="text-sm text-gray-500">操作者：{v.operator}</p>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-6">
+                    <div className="space-y-3">
+                      {previewOutline.map((item) => (
+                        <div key={item.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium shrink-0">
+                            {item.number}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900">{item.title}</h4>
+                            <p className="text-sm text-gray-500 mt-0.5">{item.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="px-6 py-4 border-t bg-gray-50">
+                    <Button className="w-full gap-2" onClick={handleApplyVersion}>
+                      <RotateCcw className="w-4 h-4" />
+                      套用此版本
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>請從左側選擇一個版本或範本</p>
+                    <p className="text-sm mt-1">以預覽大綱結構</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
           </div>
-
-          <DialogFooter>
-            <Button className="w-full" onClick={() => setShowVersions(false)}>
-              關閉
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ---- Template Library Modal ---- */}
-      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>範本庫</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-3 max-h-[400px] overflow-y-auto py-2">
-            {mockTemplates.map((t) => (
-              <div key={t.year} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">{t.year}年度</p>
-                    <p className="text-sm text-gray-500">{t.label}</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="w-4 h-4 mr-1.5" />
-                    下載
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <DialogFooter>
-            <Button className="w-full" onClick={() => setShowTemplates(false)}>
-              關閉
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
