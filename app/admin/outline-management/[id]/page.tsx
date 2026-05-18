@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, use } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft,
@@ -10,10 +11,10 @@ import {
   Plus,
   Trash2,
   Check,
-  X,
   History,
   Eye,
   RotateCcw,
+  Lock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,7 +32,6 @@ import {
   OutlineItem,
   outlineMeta,
   getInitialOutline,
-  mockTemplates,
   mockVersions,
 } from "@/lib/mock/review-outline"
 
@@ -63,6 +63,10 @@ export default function OutlineEditorPage({
 }) {
   const { id } = use(params)
   const meta = outlineMeta[id] || { name: id }
+  
+  // URL param for locked state: ?locked=true
+  const searchParams = useSearchParams()
+  const isLocked = searchParams.get("locked") === "true"
 
   const [outline, setOutline] = useState<OutlineItem[]>(() => renumber(getInitialOutline()))
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -71,7 +75,6 @@ export default function OutlineEditorPage({
   const [showVersionPanel, setShowVersionPanel] = useState(false)
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null)
   const [previewOutline, setPreviewOutline] = useState<OutlineItem[] | null>(null)
-  const [activeTab, setActiveTab] = useState<"versions" | "templates">("versions")
 
   // ---- edit ----
   function startEdit(item: OutlineItem) {
@@ -172,6 +175,24 @@ export default function OutlineEditorPage({
           </div>
         </div>
 
+        {/* Locked Warning Banner */}
+        {isLocked && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-100 rounded-full">
+                <Lock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-800">大綱結構已鎖定</h3>
+                <p className="text-sm text-amber-700 mt-0.5">
+                  目前填報作業正在進行中，為確保資料一致性，大綱結構暫時無法編輯。
+                  如需修改，請先結束或暫停填報作業。
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* outline tree */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">大綱結構</h2>
@@ -183,6 +204,7 @@ export default function OutlineEditorPage({
                 item={section}
                 isFirst={sIdx === 0}
                 isLast={sIdx === outline.length - 1}
+                isLocked={isLocked}
                 editingId={editingId}
                 editTitle={editTitle}
                 editDescription={editDescription}
@@ -198,92 +220,57 @@ export default function OutlineEditorPage({
             ))}
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-100">
-            <Button variant="outline" className="w-full gap-2" onClick={addOutlineItem}>
-              <Plus className="w-4 h-4" />
-              新增大綱項目
-            </Button>
-          </div>
+          {!isLocked && (
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <Button variant="outline" className="w-full gap-2" onClick={addOutlineItem}>
+                <Plus className="w-4 h-4" />
+                新增大綱項目
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ---- Version History Panel (Google Sheets style) ---- */}
+      {/* ---- Version History Panel ---- */}
       <Dialog open={showVersionPanel} onOpenChange={handleCloseVersionPanel}>
         <DialogContent className="sm:max-w-4xl max-h-[85vh] p-0 gap-0">
           <DialogHeader className="px-6 py-4 border-b">
             <DialogTitle>版本紀錄</DialogTitle>
-            <DialogDescription>查看歷史版本或範本，點擊預覽大綱結構後可選擇套用</DialogDescription>
+            <DialogDescription>查看歷史版本，點擊預覽大綱結構後可選擇套用</DialogDescription>
           </DialogHeader>
 
           <div className="flex h-[60vh]">
-            {/* Left: Version/Template List */}
+            {/* Left: Version List */}
             <div className="w-72 border-r bg-gray-50 flex flex-col">
-              {/* Tab switcher */}
-              <div className="flex border-b bg-white">
-                <button
-                  onClick={() => { setActiveTab("versions"); setSelectedVersion(null); setPreviewOutline(null); }}
-                  className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
-                    activeTab === "versions" 
-                      ? "text-primary border-b-2 border-primary bg-primary/5" 
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  版本紀錄
-                </button>
-                <button
-                  onClick={() => { setActiveTab("templates"); setSelectedVersion(null); setPreviewOutline(null); }}
-                  className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
-                    activeTab === "templates" 
-                      ? "text-primary border-b-2 border-primary bg-primary/5" 
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  歷年範本
-                </button>
+              <div className="px-4 py-3 border-b bg-white">
+                <h3 className="font-medium text-gray-900">編輯歷程</h3>
               </div>
 
               {/* List */}
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {activeTab === "versions" ? (
-                  mockVersions.map((v) => (
-                    <button
-                      key={v.version}
-                      onClick={() => !v.isCurrent && handleSelectVersion(v.version, v.outline)}
-                      disabled={v.isCurrent}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                        v.isCurrent 
-                          ? "border-amber-300 bg-amber-50 cursor-default"
-                          : selectedVersion === v.version
-                            ? "border-primary bg-primary/5"
-                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-gray-900">{v.version}</span>
-                        {v.isCurrent && (
-                          <Badge className="bg-amber-500 text-white border-0 text-xs">目前</Badge>
-                        )}
-                      </div>
-                      {v.date && <p className="text-sm text-gray-500 mt-0.5">{v.date}</p>}
-                      <p className="text-sm text-gray-500">{v.operator}</p>
-                    </button>
-                  ))
-                ) : (
-                  mockTemplates.map((t) => (
-                    <button
-                      key={t.year}
-                      onClick={() => handleSelectVersion(`template-${t.year}`, t.outline)}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                        selectedVersion === `template-${t.year}`
+                {mockVersions.map((v) => (
+                  <button
+                    key={v.version}
+                    onClick={() => !v.isCurrent && handleSelectVersion(v.version, v.outline)}
+                    disabled={v.isCurrent}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      v.isCurrent 
+                        ? "border-amber-300 bg-amber-50 cursor-default"
+                        : selectedVersion === v.version
                           ? "border-primary bg-primary/5"
                           : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      <span className="font-medium text-gray-900">{t.year} 年度</span>
-                      <p className="text-sm text-gray-500">{t.label}</p>
-                    </button>
-                  ))
-                )}
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-900">{v.version}</span>
+                      {v.isCurrent && (
+                        <Badge className="bg-amber-500 text-white border-0 text-xs">目前</Badge>
+                      )}
+                    </div>
+                    {v.date && <p className="text-sm text-gray-500 mt-0.5">{v.date}</p>}
+                    <p className="text-sm text-gray-500">{v.operator}</p>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -313,18 +300,27 @@ export default function OutlineEditorPage({
                       ))}
                     </div>
                   </div>
-                  <div className="px-6 py-4 border-t bg-gray-50">
-                    <Button className="w-full gap-2" onClick={handleApplyVersion}>
-                      <RotateCcw className="w-4 h-4" />
-                      套用此版本
-                    </Button>
-                  </div>
+                  {!isLocked && (
+                    <div className="px-6 py-4 border-t bg-gray-50">
+                      <Button className="w-full gap-2" onClick={handleApplyVersion}>
+                        <RotateCcw className="w-4 h-4" />
+                        套用此版本
+                      </Button>
+                    </div>
+                  )}
+                  {isLocked && (
+                    <div className="px-6 py-4 border-t bg-amber-50">
+                      <p className="text-sm text-amber-700 text-center">
+                        大綱已鎖定，無法套用其他版本
+                      </p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-400">
                   <div className="text-center">
                     <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>請從左側選擇一個版本或範本</p>
+                    <p>請從左側選擇一個版本</p>
                     <p className="text-sm mt-1">以預覽大綱結構</p>
                   </div>
                 </div>
@@ -343,6 +339,7 @@ function SectionBlock({
   item,
   isFirst,
   isLast,
+  isLocked,
   editingId,
   editTitle,
   editDescription,
@@ -358,6 +355,7 @@ function SectionBlock({
   item: OutlineItem
   isFirst: boolean
   isLast: boolean
+  isLocked: boolean
   editingId: string | null
   editTitle: string
   editDescription: string
@@ -402,21 +400,23 @@ function SectionBlock({
             <div>
               <h3 className="text-base font-semibold text-gray-900">
                 {item.number}、{item.title}
-                <button
-                  onClick={() => onStartEdit(item)}
-                  className="ml-2 text-gray-400 hover:text-gray-700 inline-flex"
-                  aria-label="編輯章節"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
+                {!isLocked && (
+                  <button
+                    onClick={() => onStartEdit(item)}
+                    className="ml-2 text-gray-400 hover:text-gray-700 inline-flex"
+                    aria-label="編輯章節"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
               </h3>
               <p className="text-sm text-gray-500">{item.description}</p>
             </div>
           )}
         </div>
 
-        {/* action buttons (when not editing) */}
-        {!isEditing && (
+        {/* action buttons (when not editing and not locked) */}
+        {!isEditing && !isLocked && (
           <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="ghost"
