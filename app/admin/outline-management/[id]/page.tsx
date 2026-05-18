@@ -110,6 +110,17 @@ export default function OutlineEditorPage({
     setOutline((prev) => renumber(removeDeep(prev, itemId)))
   }
 
+  // ---- add ----
+  function addOutlineItem() {
+    const newItem: OutlineItem = {
+      id: nextId(),
+      number: "",
+      title: "新大綱項目",
+      description: "請填寫說明",
+    }
+    setOutline((prev) => renumber([...prev, newItem]))
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -136,9 +147,13 @@ export default function OutlineEditorPage({
               <History className="w-4 h-4" />
               版本/紀錄
             </button>
-            <Button size="sm" onClick={() => setShowTemplates(true)}>
+            <Button size="sm" variant="outline" onClick={() => setShowTemplates(true)}>
               <Library className="w-4 h-4 mr-1.5" />
               範本庫
+            </Button>
+            <Button size="sm" onClick={addOutlineItem}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              新增大綱
             </Button>
           </div>
         </div>
@@ -167,6 +182,13 @@ export default function OutlineEditorPage({
                 onDelete={() => deleteItem(section.id)}
               />
             ))}
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <Button variant="outline" className="w-full gap-2" onClick={addOutlineItem}>
+              <Plus className="w-4 h-4" />
+              新增大綱項目
+            </Button>
           </div>
         </div>
       </div>
