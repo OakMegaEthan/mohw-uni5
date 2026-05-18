@@ -12,8 +12,6 @@ export interface HospitalQuotaRow {
   code: string
   name: string
   county?: string
-  status: string
-  statusColor: string
   expiry: string
   extension: string
   limit: number | null
@@ -64,8 +62,6 @@ export const filingQuotaHospitals: HospitalQuotaRow[] = [
     id: 1,
     code: "0401180014",
     name: "台大醫院",
-    status: "效期屆滿",
-    statusColor: "bg-yellow-100 text-yellow-700",
     expiry: "有效至 2026/7/31",
     extension: "4 年 (至 2030/7/31)",
     limit: 50,
@@ -76,8 +72,6 @@ export const filingQuotaHospitals: HospitalQuotaRow[] = [
     id: 2,
     code: "0401180015",
     name: "榮民總醫院",
-    status: "新申請",
-    statusColor: "bg-blue-100 text-blue-700",
     expiry: "有效至 2026/7/31",
     extension: "-",
     limit: 40,
@@ -88,8 +82,6 @@ export const filingQuotaHospitals: HospitalQuotaRow[] = [
     id: 3,
     code: "0401180016",
     name: "長庚醫院",
-    status: "效期屆滿",
-    statusColor: "bg-yellow-100 text-yellow-700",
     expiry: "有效至 2024/7/31",
     extension: "4 年 (至 2028/7/31)",
     limit: 40,
@@ -100,8 +92,6 @@ export const filingQuotaHospitals: HospitalQuotaRow[] = [
     id: 4,
     code: "0401180017",
     name: "中國醫藥大學附醫",
-    status: "效期屆滿",
-    statusColor: "bg-yellow-100 text-yellow-700",
     expiry: "有效至 2026/7/31",
     extension: "4 年 (至 2030/7/31)",
     limit: 45,
@@ -112,8 +102,6 @@ export const filingQuotaHospitals: HospitalQuotaRow[] = [
     id: "5.1",
     code: "0401180018",
     name: "聯合申請 (仁愛院區)",
-    status: "效期屆滿",
-    statusColor: "bg-yellow-100 text-yellow-700",
     expiry: "有效至 2026/7/31",
     extension: "4 年 (至 2030/7/31)",
     limit: 60,
@@ -125,8 +113,6 @@ export const filingQuotaHospitals: HospitalQuotaRow[] = [
     id: "5.2",
     code: "0401180019",
     name: "聯合申請 (和平院區)",
-    status: "",
-    statusColor: "",
     expiry: "",
     extension: "",
     limit: null,

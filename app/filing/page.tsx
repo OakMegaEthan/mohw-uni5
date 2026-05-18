@@ -380,8 +380,6 @@ function QuotaFilingSection({
       name: "台大醫院",
       county: "台北市",
       district: "中山區",
-      status: "效期屆滿",
-      statusColor: "bg-yellow-100 text-yellow-700",
       expiry: "有效至 2026/7/31",
       extension: "4 年 (至 2030/7/31)",
       limit: 15,
@@ -396,8 +394,6 @@ function QuotaFilingSection({
       name: "榮民總醫院",
       county: "台北市",
       district: "北投區",
-      status: "新申請",
-      statusColor: "bg-blue-100 text-blue-700",
       expiry: "有效至 2026/7/31",
       extension: "-",
       limit: 12,
@@ -412,8 +408,6 @@ function QuotaFilingSection({
       name: "長庚醫院",
       county: "台北市",
       district: "內湖區",
-      status: "效期屆滿",
-      statusColor: "bg-yellow-100 text-yellow-700",
       expiry: "有效至 2024/7/31",
       extension: "4 年 (至 2028/7/31)",
       limit: 10,
@@ -428,8 +422,6 @@ function QuotaFilingSection({
       name: "中國醫藥大學附醫",
       county: "台中市",
       district: "北區",
-      status: "效期屆滿",
-      statusColor: "bg-yellow-100 text-yellow-700",
       expiry: "有效至 2026/7/31",
       extension: "4 年 (至 2030/7/31)",
       limit: 8,
@@ -444,8 +436,6 @@ function QuotaFilingSection({
       name: "聯合申請 (仁愛院區)",
       county: "台北市",
       district: "大安區",
-      status: "效期屆滿",
-      statusColor: "bg-yellow-100 text-yellow-700",
       expiry: "有效至 2026/7/31",
       extension: "4 年 (至 2030/7/31)",
       limit: 15,
@@ -460,8 +450,6 @@ function QuotaFilingSection({
       name: "聯合申請 (和平院區)",
       county: "台北市",
       district: "中正區",
-      status: "",
-      statusColor: "",
       expiry: "",
       extension: "",
       limit: null,
@@ -581,7 +569,6 @@ function QuotaFilingSection({
                 <th className="px-4 py-3 text-left whitespace-nowrap w-36">醫事機構代碼</th>
                 <th className="px-4 py-3 text-left whitespace-nowrap">訓練醫院全銜</th>
                 <th className="px-4 py-3 text-left whitespace-nowrap w-24">醫院所在地</th>
-                <th className="px-4 py-3 text-center whitespace-nowrap w-24">狀態</th>
                 <th className="px-4 py-3 text-center whitespace-nowrap w-36">效期</th>
                 <th className="px-4 py-3 text-center whitespace-nowrap w-40">延長效期</th>
                 <th className="px-4 py-3 text-center whitespace-nowrap w-20">容額上限</th>
@@ -616,15 +603,6 @@ function QuotaFilingSection({
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-4 text-center whitespace-nowrap">
-                    {hospital.status && (
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-base font-medium ${hospital.statusColor}`}
-                      >
-                        {hospital.status}
-                      </span>
-                    )}
-                  </td>
                   <td className="px-4 py-4 text-center text-muted-foreground whitespace-nowrap">
                     {hospital.expiry}
                   </td>
@@ -649,7 +627,7 @@ function QuotaFilingSection({
             </tbody>
             <tfoot>
               <tr className="bg-muted/60 border-t-2 border-border">
-                <td colSpan={7} className="px-4 py-3 text-base font-semibold text-foreground">
+                <td colSpan={6} className="px-4 py-3 text-base font-semibold text-foreground">
                   合計
                 </td>
                 <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalLimit}</td>

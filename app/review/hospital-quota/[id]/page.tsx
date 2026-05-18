@@ -216,7 +216,6 @@ export default function HospitalQuotaDetailPage({
                     <TableHead>醫事機構代碼</TableHead>
                     <TableHead>訓練醫院全銜</TableHead>
                     <TableHead>醫院所在地</TableHead>
-                    <TableHead>狀態</TableHead>
                     <TableHead>效期</TableHead>
                     <TableHead>延長效期</TableHead>
                     <TableHead className="text-center">容額上限</TableHead>
@@ -284,11 +283,6 @@ export default function HospitalQuotaDetailPage({
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {hospital.status && (
-                            <Badge className={hospital.statusColor}>{hospital.status}</Badge>
-                          )}
-                        </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">{hospital.expiry}</TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">{hospital.extension}</TableCell>
                         <TableCell className="text-center font-medium">
@@ -306,7 +300,7 @@ export default function HospitalQuotaDetailPage({
                 </TableBody>
                 <tfoot>
                   <tr className="bg-muted/60 border-t-2 border-border">
-                    <td colSpan={7} className="px-4 py-3 text-base font-semibold text-foreground">
+                    <td colSpan={6} className="px-4 py-3 text-base font-semibold text-foreground">
                       合計
                     </td>
                     <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalLimit}</td>
@@ -416,7 +410,7 @@ export default function HospitalQuotaDetailPage({
               </div>
             </div>
 
-            {/* 審��結果 */}
+            {/* 審查結果 */}
             <div className="space-y-2">
               <Label>審查結果 <span className="text-destructive">*</span></Label>
               <Select value={reviewResult} onValueChange={(v) => setReviewResult(v as typeof reviewResult)}>

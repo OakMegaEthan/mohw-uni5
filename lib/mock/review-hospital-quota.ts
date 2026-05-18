@@ -29,8 +29,6 @@ export const mockHospitalQuotaDetails: Record<string, {
     id: number | string;
     code: string;
     name: string;
-    status: string;
-    statusColor: string;
     expiry: string;
     extension: string;
     limit: number | null;
@@ -57,13 +55,13 @@ export const mockHospitalQuotaDetails: Record<string, {
   "1": {
     society: mockHospitalQuotaSocieties[0],
     hospitals: [
-      { id: 1, code: "0401180014", name: "台大醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 15, prevQuota: 5, currentQuota: 5, groupId: null, isSubRow: false },
-      { id: 2, code: "0401180015", name: "榮民總醫院", status: "新申請", statusColor: "bg-blue-100 text-blue-700", expiry: "有效至 2026/7/31", extension: "-", limit: 12, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
-      { id: 3, code: "0401180016", name: "長庚醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2024/7/31", extension: "4 年 (至 2028/7/31)", limit: 10, prevQuota: 2, currentQuota: 3, groupId: null, isSubRow: false },
-      { id: 4, code: "0401180017", name: "中國醫藥大學附醫", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 8, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
-      { id: "5.1", code: "0401180018", name: "仁愛醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 15, prevQuota: 4, currentQuota: 5, groupId: "group-a", isSubRow: false, mainHospitalCodes: ["0401180018", "0401180019"], partnerHospitalCodes: ["0401180020"] },
-      { id: "5.2", code: "0401180019", name: "和平醫院", status: "", statusColor: "", expiry: "", extension: "", limit: null, prevQuota: null, currentQuota: null, groupId: "group-a", isSubRow: true },
-      { id: "5.3", code: "0401180020", name: "新光醫院（合作）", status: "", statusColor: "", expiry: "", extension: "", limit: null, prevQuota: null, currentQuota: null, groupId: "group-a", isSubRow: true },
+      { id: 1, code: "0401180014", name: "台大醫院", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 15, prevQuota: 5, currentQuota: 5, groupId: null, isSubRow: false },
+      { id: 2, code: "0401180015", name: "榮民總醫院", expiry: "有效至 2026/7/31", extension: "-", limit: 12, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
+      { id: 3, code: "0401180016", name: "長庚醫院", expiry: "有效至 2024/7/31", extension: "4 年 (至 2028/7/31)", limit: 10, prevQuota: 2, currentQuota: 3, groupId: null, isSubRow: false },
+      { id: 4, code: "0401180017", name: "中國醫藥大學附醫", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 8, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
+      { id: "5.1", code: "0401180018", name: "仁愛醫院", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 15, prevQuota: 4, currentQuota: 5, groupId: "group-a", isSubRow: false, mainHospitalCodes: ["0401180018", "0401180019"], partnerHospitalCodes: ["0401180020"] },
+      { id: "5.2", code: "0401180019", name: "和平醫院", expiry: "", extension: "", limit: null, prevQuota: null, currentQuota: null, groupId: "group-a", isSubRow: true },
+      { id: "5.3", code: "0401180020", name: "新光醫院（合作）", expiry: "", extension: "", limit: null, prevQuota: null, currentQuota: null, groupId: "group-a", isSubRow: true },
     ],
     disqualifiedHospitals: [
       { id: 1, code: "0401180020", name: "新光醫院", reason: "未符合訓練醫院認證基準第3條：專任主治醫師人數不足" },
@@ -73,8 +71,8 @@ export const mockHospitalQuotaDetails: Record<string, {
   "2": {
     society: mockHospitalQuotaSocieties[1],
     hospitals: [
-      { id: 1, code: "0501180014", name: "台大醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 12, prevQuota: 4, currentQuota: 5, groupId: null, isSubRow: false },
-      { id: 2, code: "0501180015", name: "三軍總醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2025/7/31", extension: "4 年 (至 2029/7/31)", limit: 10, prevQuota: 3, currentQuota: 3, groupId: null, isSubRow: false },
+      { id: 1, code: "0501180014", name: "台大醫院", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 12, prevQuota: 4, currentQuota: 5, groupId: null, isSubRow: false },
+      { id: 2, code: "0501180015", name: "三軍總醫院", expiry: "有效至 2025/7/31", extension: "4 年 (至 2029/7/31)", limit: 10, prevQuota: 3, currentQuota: 3, groupId: null, isSubRow: false },
     ],
     disqualifiedHospitals: [],
     reviewComment: "",
@@ -82,8 +80,8 @@ export const mockHospitalQuotaDetails: Record<string, {
   "3": {
     society: mockHospitalQuotaSocieties[2],
     hospitals: [
-      { id: 1, code: "0601180014", name: "台大兒童醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 8, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
-      { id: 2, code: "0601180015", name: "馬偕兒童醫院", status: "新申請", statusColor: "bg-blue-100 text-blue-700", expiry: "有效至 2026/7/31", extension: "-", limit: 6, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
+      { id: 1, code: "0601180014", name: "台大兒童醫院", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 8, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
+      { id: 2, code: "0601180015", name: "馬偕兒童醫院", expiry: "有效至 2026/7/31", extension: "-", limit: 6, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
     ],
     disqualifiedHospitals: [],
     reviewComment: "",
@@ -91,7 +89,7 @@ export const mockHospitalQuotaDetails: Record<string, {
   "4": {
     society: mockHospitalQuotaSocieties[3],
     hospitals: [
-      { id: 1, code: "0701180014", name: "台大醫院", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 10, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
+      { id: 1, code: "0701180014", name: "台大醫院", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 10, prevQuota: 3, currentQuota: 4, groupId: null, isSubRow: false },
     ],
     disqualifiedHospitals: [],
     reviewComment: "",
@@ -104,7 +102,7 @@ export const mockHospitalQuotaDetails: Record<string, {
   "5": {
     society: mockHospitalQuotaSocieties[4],
     hospitals: [
-      { id: 1, code: "0801180014", name: "台大醫院骨科", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 6, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
+      { id: 1, code: "0801180014", name: "台大醫院骨科", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 6, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
     ],
     disqualifiedHospitals: [],
     reviewComment: "",
@@ -117,7 +115,7 @@ export const mockHospitalQuotaDetails: Record<string, {
   "6": {
     society: mockHospitalQuotaSocieties[5],
     hospitals: [
-      { id: 1, code: "0901180014", name: "台大神經內科", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 5, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
+      { id: 1, code: "0901180014", name: "台大神經內科", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 5, prevQuota: 2, currentQuota: 2, groupId: null, isSubRow: false },
     ],
     disqualifiedHospitals: [],
     reviewComment: "分組會議建議通過，請提交 RRC 大會審核。",
@@ -130,7 +128,7 @@ export const mockHospitalQuotaDetails: Record<string, {
   "7": {
     society: mockHospitalQuotaSocieties[6],
     hospitals: [
-      { id: 1, code: "1001180014", name: "台大精神科", status: "效期屆滿", statusColor: "bg-yellow-100 text-yellow-700", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 8, prevQuota: 3, currentQuota: 3, groupId: null, isSubRow: false },
+      { id: 1, code: "1001180014", name: "台大精神科", expiry: "有效至 2026/7/31", extension: "4 年 (至 2030/7/31)", limit: 8, prevQuota: 3, currentQuota: 3, groupId: null, isSubRow: false },
     ],
     disqualifiedHospitals: [],
     reviewComment: "RRC 大會審核通過，待公告。",
