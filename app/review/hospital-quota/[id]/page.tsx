@@ -188,77 +188,61 @@ export default function HospitalQuotaDetailPage({
               <Card>
                 <CardContent className="p-6">
                   {!hasLimit ? (
-                    <div className="flex items-center gap-3 py-2">
-                      <div className="flex-1">
-                        <p className="text-base font-medium text-foreground mb-1">尚未設定容額上限</p>
-                        <p className="text-sm text-muted-foreground">
-                          請至管理專區 &gt; 填報項目管理設定此醫學會的容額上限後，此處將顯示使用進度。
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-base font-medium text-foreground">尚未設定容額上限</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          請至管理專區 &gt; 填報項目管理設定此醫學會的容額上限。
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-sm text-muted-foreground mb-0.5">本年度已核定容額</p>
+                        <p className="text-sm text-muted-foreground">本年度已核定容額</p>
                         <p className="text-2xl font-bold text-foreground">{totalCurrentQuota}</p>
                       </div>
                     </div>
                   ) : (
-                    <>
-                      <div className="grid grid-cols-3 gap-6">
-                        {/* 設定容額上限 */}
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">設定容額上限</p>
-                          <p className="text-3xl font-bold text-foreground">{societyLimit!.totalLimit}</p>
-                          <p className="text-xs text-muted-foreground mt-1">由管理專區設定</p>
-                        </div>
-
-                        {/* 已核定容額 */}
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">本年度已核定容額</p>
-                          <p className={`text-3xl font-bold ${isExceeded ? "text-red-600" : "text-foreground"}`}>
-                            {totalCurrentQuota}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">訓練醫院容額總和</p>
-                        </div>
-
-                        {/* 使用進度 */}
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">使用進度</p>
-                          <div className="flex items-end gap-2">
-                            <p className={`text-3xl font-bold ${isExceeded ? "text-red-600" : isNearLimit ? "text-amber-600" : "text-foreground"}`}>
-                              {Math.round(usagePercentage)}%
-                            </p>
-                            {isExceeded && (
-                              <span className="text-xs text-red-600 font-medium mb-1">已超額</span>
-                            )}
-                            {isNearLimit && (
-                              <span className="text-xs text-amber-600 font-medium mb-1">接近上限</span>
-                            )}
-                          </div>
-                        </div>
+                    <div className="flex items-center gap-8">
+                      {/* 設定容額上限 */}
+                      <div>
+                        <p className="text-sm text-muted-foreground">設定容額上限</p>
+                        <p className="text-2xl font-bold text-foreground">{societyLimit!.totalLimit}</p>
+                        <p className="text-sm text-muted-foreground">由管理專區設定</p>
                       </div>
 
-                      {/* 進度條 */}
-                      <div className="mt-6">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-foreground">容額使用率</span>
-                          <span className="text-sm text-muted-foreground">
-                            {totalCurrentQuota} / {societyLimit!.totalLimit}
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${
-                              isExceeded ? "bg-red-500" : isNearLimit ? "bg-amber-500" : "bg-green-500"
-                            }`}
-                            style={{ width: `${Math.min(usagePercentage, 100)}%` }}
-                          />
+                      <div className="text-muted-foreground text-xl font-light">/</div>
+
+                      {/* 已核定容額 */}
+                      <div>
+                        <p className="text-sm text-muted-foreground">本年度已核定容額</p>
+                        <p className={`text-2xl font-bold ${isExceeded ? "text-red-600" : "text-foreground"}`}>
+                          {totalCurrentQuota}
+                        </p>
+                        <p className="text-sm text-muted-foreground">訓練醫院容額總和</p>
+                      </div>
+
+                      <div className="text-muted-foreground text-xl font-light">=</div>
+
+                      {/* 使用進度 */}
+                      <div>
+                        <p className="text-sm text-muted-foreground">使用進度</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className={`text-2xl font-bold ${isExceeded ? "text-red-600" : isNearLimit ? "text-amber-600" : "text-foreground"}`}>
+                            {Math.round(usagePercentage)}%
+                          </p>
+                          {isExceeded && (
+                            <span className="text-sm text-red-600 font-medium">已超額</span>
+                          )}
+                          {isNearLimit && (
+                            <span className="text-sm text-amber-600 font-medium">接近上限</span>
+                          )}
                         </div>
                         {isExceeded && (
-                          <p className="text-xs text-red-600 mt-2">
-                            已超過容額上限 {totalCurrentQuota - societyLimit!.totalLimit!} 個，請調整訓練醫院容額後再送件。
+                          <p className="text-sm text-red-600">
+                            超出 {totalCurrentQuota - societyLimit!.totalLimit!} 個
                           </p>
                         )}
                       </div>
-                    </>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -277,6 +261,7 @@ export default function HospitalQuotaDetailPage({
             return (
           <Card>
             <CardContent className="p-0">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
@@ -311,12 +296,12 @@ export default function HospitalQuotaDetailPage({
                           {hospital.groupId && !hospital.isSubRow ? (
                             <div className="space-y-1">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-sm bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">主訓</span>
+                                <span className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">主訓</span>
                                 {hasNote && <span className="text-destructive" title="此醫院有備註">*</span>}
                                 {(hospital.mainHospitalCodes ?? [hospital.code]).map((code, i) => {
                                   const h = hospitals.find(hh => hh.code === code)
                                   return (
-                                    <span key={code} className="text-sm font-medium">
+                                    <span key={code} className="font-medium">
                                       {h?.name ?? code}{i < (hospital.mainHospitalCodes ?? []).length - 1 ? "、" : ""}
                                     </span>
                                   )
@@ -324,11 +309,11 @@ export default function HospitalQuotaDetailPage({
                               </div>
                               {(hospital.partnerHospitalCodes ?? []).length > 0 && (
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-sm bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">合作</span>
+                                  <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">合作</span>
                                   {(hospital.partnerHospitalCodes ?? []).map((code, i) => {
                                     const h = hospitals.find(hh => hh.code === code)
                                     return (
-                                      <span key={code} className="text-sm text-muted-foreground">
+                                      <span key={code} className="text-muted-foreground">
                                         {h?.name ?? code}{i < (hospital.partnerHospitalCodes ?? []).length - 1 ? "、" : ""}
                                       </span>
                                     )
@@ -337,7 +322,7 @@ export default function HospitalQuotaDetailPage({
                               )}
                             </div>
                           ) : hospital.isSubRow ? (
-                            <span className="text-sm text-muted-foreground pl-2">{hospital.name}</span>
+                            <span className="text-muted-foreground pl-2">{hospital.name}</span>
                           ) : (
                             <>
                               {hasNote && <span className="text-destructive mr-0.5" title="此醫院有備註">*</span>}
@@ -383,6 +368,7 @@ export default function HospitalQuotaDetailPage({
                   </tr>
                 </tfoot>
               </Table>
+              </div>
             </CardContent>
           </Card>
             )

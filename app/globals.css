@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  font-size: 18px;
   --background: #ffffff;
   --foreground: #333333;
   --card: #ffffff;
@@ -15,7 +16,7 @@
   --secondary: #f3f4f6;
   --secondary-foreground: #4b5563;
   --muted: #f9fafb;
-  --muted-foreground: #6b7280;
+  --muted-foreground: oklch(0.45 0 0);
   --accent: #e0f2fe;
   --accent-foreground: #1e3a8a;
   --destructive: #ef4444;
