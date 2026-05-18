@@ -553,7 +553,7 @@ function QuotaFilingSection({
       </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground">訓練醫院名單與容額分配</h2>
+        <h2 className="text-xl font-bold text-foreground">訓練醫院認定合格名單及訓練容額</h2>
         <div className="flex items-center gap-3">
           <Link href="/filing/quota/new">
             <Button className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white">

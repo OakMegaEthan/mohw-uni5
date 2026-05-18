@@ -253,9 +253,9 @@ export default function HospitalQuotaDetailPage({
           )
         })()}
 
-        {/* 訓練醫院名單與容額分配 */}
+        {/* 訓練醫院認定合格名單及訓練容額 */}
         <div className="mb-6">
-          <h3 className="text-lg font-bold text-foreground mb-4">訓練醫院名單與容額分配</h3>
+          <h3 className="text-lg font-bold text-foreground mb-4">訓練醫院認定合格名單及訓練容額</h3>
           {(() => {
             const mainRows = hospitals.filter((h) => !h.isSubRow)
             const totalLimit = mainRows.reduce((sum, h) => sum + (h.limit ?? 0), 0)
