@@ -238,7 +238,7 @@ export default function NewQuotaPage() {
               </div>
 
               <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">延長效期</Label>
+                <Label className="text-sm text-muted-foreground mb-2 block">容額效期</Label>
                 <div className="flex items-center gap-3">
                   <Select value={extensionYears} onValueChange={setExtensionYears}>
                     <SelectTrigger className="w-24">
