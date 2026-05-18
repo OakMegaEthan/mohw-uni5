@@ -120,19 +120,19 @@ export default function FilingPage() {
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="container mx-auto px-6 py-4">
         <h1 className="text-2xl font-bold text-foreground">填報專區</h1>
-        <p className="text-muted-foreground mt-1">內科醫學會 - 2025年度</p>
+        <p className="text-base text-muted-foreground mt-1">內科醫學會 - 2025年度</p>
       </div>
 
       <div className="container mx-auto px-6 pb-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="documents">文件填報</TabsTrigger>
-            <TabsTrigger value="quota">容額填報</TabsTrigger>
+          <TabsList className="mb-6 h-11">
+            <TabsTrigger value="documents" className="text-base px-6">文件填報</TabsTrigger>
+            <TabsTrigger value="quota" className="text-base px-6">容額填報</TabsTrigger>
           </TabsList>
 
           <TabsContent value="documents">
             <div className="bg-card rounded-lg shadow-sm">
-              <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-muted/50 border-b text-sm font-medium text-muted-foreground">
+              <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-muted/50 border-b text-base font-medium text-muted-foreground">
                 <div className="col-span-5">文件名稱</div>
                 <div className="col-span-2 text-center">審查狀態</div>
                 <div className="col-span-2 text-center">送件期限</div>
@@ -153,11 +153,11 @@ export default function FilingPage() {
                         </span>
                       </div>
 
-                      <div className={`col-span-2 text-center font-medium ${!filingOpen ? "text-muted-foreground/60 text-sm" : getStatusStyle(doc.status)}`}>
+                      <div className={`col-span-2 text-center font-medium ${!filingOpen ? "text-muted-foreground/60" : getStatusStyle(doc.status)}`}>
                         {filingOpen ? doc.status : "尚未開放"}
                       </div>
 
-                      <div className="col-span-2 text-center text-sm text-muted-foreground">
+                      <div className="col-span-2 text-center text-base text-muted-foreground">
                         {filingOpen ? doc.deadline : "—"}
                       </div>
 
@@ -236,11 +236,11 @@ export default function FilingPage() {
             <DialogTitle>選擇要送件的文件</DialogTitle>
           </DialogHeader>
           <div className="py-2">
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-base text-muted-foreground mb-4">
               請勾選本次要送出審查的文件。送出後將無法再編輯，直到審查結果出爐。
             </p>
             {submittableDocs.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">目前沒有可送件的文件</p>
+              <p className="text-base text-muted-foreground text-center py-6">目前沒有可送件的文件</p>
             ) : (
               <div className="space-y-2">
                 {submittableDocs.map((doc) => (
@@ -259,8 +259,8 @@ export default function FilingPage() {
                       onClick={(e) => e.stopPropagation()}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{doc.title}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">
+                      <p className="font-medium text-base">{doc.title}</p>
+                      <p className="text-base text-muted-foreground mt-0.5">
                         送件期限：{doc.deadline}　狀態：
                         <span className={getStatusStyle(doc.status)}>{doc.status}</span>
                       </p>
@@ -293,7 +293,7 @@ export default function FilingPage() {
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground mb-3">
+              <p className="text-base text-muted-foreground mb-3">
                 請先下載範例文件，依照格式填寫後再上傳
               </p>
               <Button variant="outline" size="sm" className="gap-2">
@@ -303,13 +303,13 @@ export default function FilingPage() {
             </div>
 
             <div>
-              <Label className="text-sm font-medium mb-2 block">選擇檔案</Label>
+              <Label className="text-base font-medium mb-2 block">選擇檔案</Label>
               <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   點擊或拖曳檔案至此處上傳
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-base text-muted-foreground mt-1">
                   支援 .xlsx, .xls 格式
                 </p>
                 <Input
@@ -493,7 +493,7 @@ function QuotaFilingSection({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1000px]">
             <thead>
-              <tr className="bg-muted/50 border-b text-sm font-medium text-muted-foreground">
+              <tr className="bg-muted/50 border-b text-base font-medium text-muted-foreground">
                 <th className="px-4 py-3 text-left whitespace-nowrap w-12">序號</th>
                 <th className="px-4 py-3 text-left whitespace-nowrap w-36">醫事機構代碼</th>
                 <th className="px-4 py-3 text-left whitespace-nowrap">主訓醫院</th>
@@ -516,19 +516,19 @@ function QuotaFilingSection({
                   className={`hover:bg-muted/30 ${groupStyle ? `border-l-4 ${groupStyle}` : ""}`}
                 >
                   <td className="px-4 py-4 text-muted-foreground whitespace-nowrap">{hospital.id}</td>
-                  <td className="px-4 py-4 text-sm text-muted-foreground whitespace-nowrap">{hospital.code}</td>
+                  <td className="px-4 py-4 text-muted-foreground whitespace-nowrap">{hospital.code}</td>
                   <td className="px-4 py-4 font-medium whitespace-nowrap">
                     {hospital.groupId && (
-                      <span className="text-sm text-muted-foreground mr-1">[聯合]</span>
+                      <span className="text-muted-foreground mr-1">[聯合]</span>
                     )}
                     {hospital.name}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     {hospital.county ? (
                       <div>
-                        <span className="text-sm text-foreground">{hospital.county}</span>
+                        <span className="text-foreground">{hospital.county}</span>
                         {hospital.district && (
-                          <span className="text-sm text-muted-foreground ml-1">{hospital.district}</span>
+                          <span className="text-muted-foreground ml-1">{hospital.district}</span>
                         )}
                       </div>
                     ) : (
@@ -538,16 +538,16 @@ function QuotaFilingSection({
                   <td className="px-4 py-4 text-center whitespace-nowrap">
                     {hospital.status && (
                       <span
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${hospital.statusColor}`}
+                        className={`inline-block px-3 py-1 rounded-full text-base font-medium ${hospital.statusColor}`}
                       >
                         {hospital.status}
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-4 text-center text-sm text-muted-foreground whitespace-nowrap">
+                  <td className="px-4 py-4 text-center text-muted-foreground whitespace-nowrap">
                     {hospital.expiry}
                   </td>
-                  <td className="px-4 py-4 text-center text-sm text-muted-foreground whitespace-nowrap">
+                  <td className="px-4 py-4 text-center text-muted-foreground whitespace-nowrap">
                     {hospital.extension}
                   </td>
                   <td className="px-4 py-4 text-center whitespace-nowrap">{hospital.limit}</td>
@@ -591,7 +591,7 @@ function QuotaFilingSection({
         <div className="bg-card rounded-lg shadow-sm overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="bg-muted/50 border-b text-sm font-medium text-muted-foreground">
+              <tr className="bg-muted/50 border-b text-base font-medium text-muted-foreground">
                 <th className="px-4 py-3 text-left">序號</th>
                 <th className="px-4 py-3 text-left">醫事機構代碼</th>
                 <th className="px-4 py-3 text-left">主訓醫院</th>
@@ -603,7 +603,7 @@ function QuotaFilingSection({
               {disqualifiedHospitals.map((hospital) => (
                 <tr key={hospital.id}>
                   <td className="px-4 py-4 text-muted-foreground">{hospital.id}</td>
-                  <td className="px-4 py-4 text-sm text-muted-foreground">{hospital.code}</td>
+                  <td className="px-4 py-4 text-muted-foreground">{hospital.code}</td>
                   <td className="px-4 py-4 font-medium">{hospital.name}</td>
                   <td className="px-4 py-4 text-muted-foreground">{hospital.reason}</td>
                   <td className="px-4 py-4 text-center">
