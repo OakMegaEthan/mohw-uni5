@@ -509,25 +509,26 @@ function QuotaFilingSection({
   return (
     <div className="space-y-8">
       {/* 訓練醫院申請家數統計 */}
-      <div className="bg-card rounded-lg shadow-sm p-6">
+      <div>
         <h3 className="text-lg font-bold text-foreground mb-4">訓練醫院申請家數</h3>
         <div className="grid grid-cols-3 gap-4">
-          {/* 申請家數 */}
-          <div className="rounded-lg border border-blue-200 overflow-hidden bg-blue-50">
-            <div className="px-5 py-4">
+          {/* 申請家數（含子分類：合格/不合格） */}
+          <div className="rounded-lg border border-blue-200 overflow-hidden bg-blue-50 flex">
+            {/* 左：申請總數 */}
+            <div className="flex-1 px-5 py-4 flex flex-col justify-center">
               <p className="text-sm text-blue-600 mb-1">申請家數</p>
               <p className="text-3xl font-bold text-blue-700">{totalApplied}</p>
               <p className="text-sm text-blue-600/70 mt-1.5">
                 {mainTrainingCount} 家主訓、{cooperationCount} 家合作
               </p>
             </div>
-            {/* 合格 / 不合格 子分類 */}
-            <div className="grid grid-cols-2 divide-x divide-blue-200 border-t border-blue-200">
-              <div className="px-4 py-3 bg-green-50/80">
+            {/* 右：合格/不合格 上下堆疊 */}
+            <div className="flex flex-col divide-y divide-blue-200 border-l border-blue-200 w-28">
+              <div className="px-4 py-3 bg-green-50/80 flex-1 flex flex-col justify-center">
                 <p className="text-sm text-green-600 mb-0.5">合格</p>
                 <p className="text-xl font-bold text-green-700">{qualifiedCount}</p>
               </div>
-              <div className={`px-4 py-3 ${disqualifiedCount > 0 ? "bg-red-50/80" : "bg-gray-50/60"}`}>
+              <div className={`px-4 py-3 flex-1 flex flex-col justify-center ${disqualifiedCount > 0 ? "bg-red-50/80" : "bg-gray-50/60"}`}>
                 <p className={`text-sm mb-0.5 ${disqualifiedCount > 0 ? "text-red-600" : "text-gray-500"}`}>不合格</p>
                 <p className={`text-xl font-bold ${disqualifiedCount > 0 ? "text-red-700" : "text-gray-400"}`}>{disqualifiedCount}</p>
               </div>
