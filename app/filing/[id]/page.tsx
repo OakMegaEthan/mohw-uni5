@@ -602,14 +602,42 @@ export default function FilingDetailPage({
           <div className="flex items-center justify-end gap-3 pt-4">
             <Button variant="outline">返回</Button>
             {!isPreviousYearOnly && (
-              <Button variant="outline" className="gap-1.5">
-                <FileText className="h-4 w-4" />
-                匯出 PDF
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-1.5">
+                    <Download className="h-4 w-4" />
+                    下載 PDF
+                    <ChevronDown className="h-3.5 w-3.5 ml-0.5 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem className="gap-2 cursor-pointer">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex flex-col">
+                      <span>{getDocumentTitle()}全文</span>
+                      <span className="text-xs text-muted-foreground">完整文件內容</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 cursor-pointer">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex flex-col">
+                      <span>{getDocumentTitle()}修正對照表</span>
+                      <span className="text-xs text-muted-foreground">本次修訂前後對照</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 cursor-pointer border-t mt-1 pt-2">
+                    <Download className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex flex-col">
+                      <span>兩份全部下載</span>
+                      <span className="text-xs text-muted-foreground">同時下載全文與對照表</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             {!isReadOnly && !isPreviousYearOnly && (
               <Button className="bg-[#2d3a8c] hover:bg-[#252f73] text-white">
-                儲存草稿
+                儲存
               </Button>
             )}
           </div>
