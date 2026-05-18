@@ -506,6 +506,12 @@ function QuotaFilingSection({
   const qualifiedCount = totalApplied - disqualifiedCount
   const notAppliedCount = 0 // 未申請家數（mock 資料暫無此欄位）
 
+  // 合計（只計主列，不計子列）
+  const mainHospitals = hospitals.filter((h) => !h.isSubRow)
+  const totalLimit = mainHospitals.reduce((sum, h) => sum + (h.limit ?? 0), 0)
+  const totalPrevQuota = mainHospitals.reduce((sum, h) => sum + (h.prevQuota ?? 0), 0)
+  const totalCurrentQuota = mainHospitals.reduce((sum, h) => sum + (h.currentQuota ?? 0), 0)
+
   return (
     <div className="space-y-8">
       {/* 訓練醫院申請家數統計 */}
@@ -641,6 +647,17 @@ function QuotaFilingSection({
                 )
               })}
             </tbody>
+            <tfoot>
+              <tr className="bg-muted/60 border-t-2 border-border">
+                <td colSpan={7} className="px-4 py-3 text-base font-semibold text-foreground">
+                  合計
+                </td>
+                <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalLimit}</td>
+                <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalPrevQuota}</td>
+                <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalCurrentQuota}</td>
+                <td />
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>

@@ -173,6 +173,12 @@ export default function HospitalQuotaDetailPage({
         {/* 訓練醫院名單與容額分配 */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-foreground mb-4">訓練醫院名單與容額分配</h3>
+          {(() => {
+            const mainRows = hospitals.filter((h) => !h.isSubRow)
+            const totalLimit = mainRows.reduce((sum, h) => sum + (h.limit ?? 0), 0)
+            const totalPrevQuota = mainRows.reduce((sum, h) => sum + (h.prevQuota ?? 0), 0)
+            const totalCurrentQuota = mainRows.reduce((sum, h) => sum + (h.currentQuota ?? 0), 0)
+            return (
           <Card>
             <CardContent className="p-0">
               <Table>
@@ -270,9 +276,21 @@ export default function HospitalQuotaDetailPage({
                     )
                   })}
                 </TableBody>
+                <tfoot>
+                  <tr className="bg-muted/60 border-t-2 border-border">
+                    <td colSpan={7} className="px-4 py-3 text-base font-semibold text-foreground">
+                      合計
+                    </td>
+                    <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalLimit}</td>
+                    <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalPrevQuota}</td>
+                    <td className="px-4 py-3 text-center text-base font-bold text-foreground">{totalCurrentQuota}</td>
+                  </tr>
+                </tfoot>
               </Table>
             </CardContent>
           </Card>
+            )
+          })()}
         </div>
 
         {/* 不合格醫院名單 */}
