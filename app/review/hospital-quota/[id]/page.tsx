@@ -2,7 +2,6 @@
 
 import { use, useState } from "react"
 import Link from "next/link"
-import { ReviewSimpleNav } from "@/components/review/simple-nav"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,7 +29,6 @@ export default function HospitalQuotaDetailPage({
   if (!detail) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <ReviewSimpleNav />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-20">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">找不到該醫學會</h2>
@@ -63,11 +61,18 @@ export default function HospitalQuotaDetailPage({
     }
   }
 
+  // 統計數字計算
+  const mainRows = hospitals.filter((h) => !h.isSubRow)
+  const mainTrainingCount = mainRows.filter((h) => !h.groupId).length
+  const cooperationCount = mainRows.reduce((acc, h) => acc + (h.partnerHospitalCodes?.length ?? 0), 0)
+  const totalApplied = mainRows.length
+  const disqualifiedCount = disqualifiedHospitals.length
+  const qualifiedCount = totalApplied - disqualifiedCount
+  const notAppliedCount = 0 // 未申請家數（mock 資料暫無此欄位）
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <ReviewSimpleNav />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <Link
           href="/review/hospital-quota"
@@ -89,6 +94,49 @@ export default function HospitalQuotaDetailPage({
             </div>
           </div>
         </div>
+
+        {/* 訓練醫院申請家數統計 */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium text-gray-700">訓練醫院申請家數</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="grid grid-cols-2 divide-x border-t">
+              {/* 左欄：申請家數 */}
+              <div className="divide-y">
+                <div className="px-6 py-4 bg-muted/30">
+                  <p className="text-base font-medium text-foreground">
+                    申請家數 {totalApplied} 家
+                    {(mainTrainingCount > 0 || cooperationCount > 0) && (
+                      <span className="text-sm font-normal text-muted-foreground ml-2">
+                        （{mainTrainingCount} 家主訓、{cooperationCount} 家合作）
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 divide-x">
+                  <div className="px-6 py-4">
+                    <p className="text-sm text-muted-foreground mb-1">合格家數</p>
+                    <p className="text-2xl font-bold text-green-700">{qualifiedCount}</p>
+                  </div>
+                  <div className="px-6 py-4">
+                    <p className="text-sm text-muted-foreground mb-1">不合格家數</p>
+                    <p className={`text-2xl font-bold ${disqualifiedCount > 0 ? "text-red-600" : "text-gray-400"}`}>
+                      {disqualifiedCount}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {/* 右欄：未申請家數 */}
+              <div className="px-6 py-4 flex flex-col justify-center bg-muted/10">
+                <p className="text-sm text-muted-foreground mb-1">未申請家數</p>
+                <p className={`text-2xl font-bold ${notAppliedCount > 0 ? "text-amber-600" : "text-gray-400"}`}>
+                  {notAppliedCount}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* RRC 大會審核階段：顯示分組會議資料 */}
         {(isMainReview || isUploadPending) && groupReviewData && (
