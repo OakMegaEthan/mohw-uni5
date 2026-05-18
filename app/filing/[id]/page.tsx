@@ -525,27 +525,6 @@ export default function FilingDetailPage({
                                         </p>
                                       )}
                                     </div>
-                                    {applyUnifiedNote ? (
-                                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-sm text-blue-800">
-                                        <p className="text-sm text-blue-600 mb-1">使用統一說明：</p>
-                                        {unifiedNote || <span className="text-blue-400">（尚未填寫）</span>}
-                                      </div>
-                                    ) : (
-                                      <Textarea
-                                        value={revisionNotes[section.id] || ""}
-                                        onChange={(e) =>
-                                          updateRevisionNote(section.id, e.target.value)
-                                        }
-                                        placeholder="請說明此處修訂原因..."
-                                        className="min-h-28 text-sm resize-none"
-                                      />
-                                    )}
-                                    {!applyUnifiedNote && !noteIsFilled && (
-                                      <p className="text-sm text-amber-600 flex items-center gap-1">
-                                        <AlertCircle className="h-3 w-3" />
-                                        此處修訂尚未填寫說明
-                                      </p>
-                                    )}
                                   </div>
                                 )}
                               </div>
