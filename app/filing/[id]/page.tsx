@@ -376,8 +376,6 @@ export default function FilingDetailPage({
 
           
 
-          {/* Unified Note Option - Only show when editing */}
-          {!isReadOnly && !isPreviousYearOnly && documentMethod === "change" && stats.totalChanges > 1 && (
           {/* Stats Bar - Only show when editing */}
           {!isReadOnly && !isPreviousYearOnly && documentMethod === "change" && stats.totalChanges > 0 && (
             <div className="flex items-center gap-4 text-sm">
