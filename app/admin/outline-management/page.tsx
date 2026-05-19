@@ -6,12 +6,14 @@ import { ArrowLeft, Pencil, Settings2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FilingScheduleDialog } from "@/components/admin/filing-schedule-dialog"
+import { TrainingPlanFilingDialog } from "@/components/admin/training-plan-filing-dialog"
 import { filingItemsConfig, quotaFilingConfig } from "@/lib/mock/review-outline"
 import type { FilingItemConfig } from "@/lib/mock/review-outline"
 
 export default function FilingItemManagementPage() {
   const [selectedItem, setSelectedItem] = useState<FilingItemConfig | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [trainingPlanDialogOpen, setTrainingPlanDialogOpen] = useState(false)
 
   const getStatusBadge = (item: FilingItemConfig) => {
     switch (item.status) {
@@ -32,8 +34,12 @@ export default function FilingItemManagementPage() {
   }
 
   const handleSettingsClick = (item: FilingItemConfig) => {
-    setSelectedItem(item)
-    setDialogOpen(true)
+    if (item.id === "training-plan") {
+      setTrainingPlanDialogOpen(true)
+    } else {
+      setSelectedItem(item)
+      setDialogOpen(true)
+    }
   }
 
   return (
@@ -152,6 +158,11 @@ export default function FilingItemManagementPage() {
           item={selectedItem}
         />
       )}
+
+      <TrainingPlanFilingDialog
+        open={trainingPlanDialogOpen}
+        onOpenChange={setTrainingPlanDialogOpen}
+      />
     </div>
   )
 }
