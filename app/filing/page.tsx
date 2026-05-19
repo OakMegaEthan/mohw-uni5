@@ -101,11 +101,12 @@ function FilingPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tabParam = searchParams.get("tab")
+  const variant = searchParams.get("variant") || ""
   const [activeTab, setActiveTab] = useState<string>(
     tabParam === "quota" ? "quota" : "documents"
   )
 
-  // 切換 tab 時同步更新 URL query string
+  // 切換 tab 時同步更新 URL query string（保留 variant）
   const handleTabChange = (value: string) => {
     setActiveTab(value)
     const params = new URLSearchParams(Array.from(searchParams.entries()))
@@ -234,6 +235,7 @@ function FilingPageContent() {
             <QuotaFilingSection
               availableHospitals={availableHospitals}
               onOpenImport={() => setShowImportDialog(true)}
+              variant={variant}
             />
           </TabsContent>
         </Tabs>
@@ -366,10 +368,15 @@ function FilingPageContent() {
 function QuotaFilingSection({
   availableHospitals,
   onOpenImport,
+  variant = "",
 }: {
   availableHospitals: { code: string; name: string }[]
   onOpenImport: () => void
+  variant?: string
 }) {
+  // variant 判斷
+  const isInternalMedicine = variant === "internal-medicine"
+  
   // 備註相關 state
   const [manualNotes, setManualNotes] = useState<string[]>([])
   const [isAddingNote, setIsAddingNote] = useState(false)
@@ -419,6 +426,21 @@ function QuotaFilingSection({
       reason: "機構評鑑期間，暫緩申請",
     },
   ])
+
+  // 結核病計畫容額 state（僅 internal-medicine 版型使用）
+  const [tbProgramHospitals, setTbProgramHospitals] = useState([
+    {
+      id: 1,
+      code: "0401180014",
+      name: "台大醫院",
+      quotaLimit: 3,
+      currentQuota: 2,
+    },
+  ])
+  const [showAddTbProgramDialog, setShowAddTbProgramDialog] = useState(false)
+  const [selectedTbProgramHospital, setSelectedTbProgramHospital] = useState<string[]>([])
+  const [tbProgramQuotaLimit, setTbProgramQuotaLimit] = useState("")
+  const [tbProgramCurrentQuota, setTbProgramCurrentQuota] = useState("")
 
   // 送件確認 Dialog state
   const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false)
@@ -586,7 +608,7 @@ function QuotaFilingSection({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">訓練醫院認定合格名單及訓練容額</h2>
         <div className="flex items-center gap-3">
-          <Link href="/filing/quota/new">
+          <Link href={variant ? `/filing/quota/new?variant=${variant}` : "/filing/quota/new"}>
             <Button className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white">
               <Plus className="h-4 w-4" />
               新增醫院
@@ -701,6 +723,218 @@ function QuotaFilingSection({
           </table>
         </div>
       </div>
+
+      {/* 結核病計畫容額（僅 internal-medicine 版型顯示） */}
+      {isInternalMedicine && (
+        <div id="tb-program-section">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-foreground">結核病計畫容額</h3>
+            <div className="flex items-center gap-3">
+              <Button
+                className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white"
+                onClick={() => setShowAddTbProgramDialog(true)}
+              >
+                <Plus className="h-4 w-4" />
+                新增醫院
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={onOpenImport}
+              >
+                <Upload className="h-4 w-4" />
+                匯入名單
+              </Button>
+            </div>
+          </div>
+
+          {/* 新增結核病計畫容額 Dialog */}
+          <Dialog open={showAddTbProgramDialog} onOpenChange={setShowAddTbProgramDialog}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>新增結核病計畫容額</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-2 block">
+                    選擇醫院 <span className="text-destructive">*</span>
+                  </Label>
+                  <HospitalMultiSelect
+                    hospitals={availableHospitals as Hospital[]}
+                    selected={selectedTbProgramHospital}
+                    onSelect={setSelectedTbProgramHospital}
+                    mode="single"
+                    triggerLabel="請選擇訓練醫院"
+                  />
+                  {selectedTbProgramHospital.length > 0 && (
+                    <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        已選擇：<span className="font-medium text-foreground">
+                          {availableHospitals.find((h) => h.code === selectedTbProgramHospital[0])?.name}
+                        </span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        醫事機構代碼：{selectedTbProgramHospital[0]}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">
+                      容額上限 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={tbProgramQuotaLimit}
+                      onChange={(e) => setTbProgramQuotaLimit(e.target.value)}
+                      min={1}
+                      max={50}
+                      placeholder="1~50"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">
+                      本年度擬核定容額 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={tbProgramCurrentQuota}
+                      onChange={(e) => setTbProgramCurrentQuota(e.target.value)}
+                      min={1}
+                      max={50}
+                      placeholder="1~50"
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddTbProgramDialog(false)
+                    setSelectedTbProgramHospital([])
+                    setTbProgramQuotaLimit("")
+                    setTbProgramCurrentQuota("")
+                  }}
+                >
+                  取消
+                </Button>
+                <Button
+                  className="bg-[#2d3a8c] hover:bg-[#252f73] text-white"
+                  disabled={
+                    selectedTbProgramHospital.length === 0 ||
+                    !tbProgramQuotaLimit ||
+                    Number(tbProgramQuotaLimit) < 1 ||
+                    Number(tbProgramQuotaLimit) > 50 ||
+                    !tbProgramCurrentQuota ||
+                    Number(tbProgramCurrentQuota) < 1 ||
+                    Number(tbProgramCurrentQuota) > 50
+                  }
+                  onClick={() => {
+                    const hospital = availableHospitals.find(
+                      (h) => h.code === selectedTbProgramHospital[0]
+                    )
+                    if (!hospital) return
+                    setTbProgramHospitals((prev) => [
+                      ...prev,
+                      {
+                        id: prev.length + 1,
+                        code: hospital.code,
+                        name: hospital.name,
+                        quotaLimit: Number(tbProgramQuotaLimit),
+                        currentQuota: Number(tbProgramCurrentQuota),
+                      },
+                    ])
+                    setShowAddTbProgramDialog(false)
+                    setSelectedTbProgramHospital([])
+                    setTbProgramQuotaLimit("")
+                    setTbProgramCurrentQuota("")
+                  }}
+                >
+                  確認新增
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <div className="bg-card rounded-lg shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50 border-b text-base font-medium text-muted-foreground">
+                  <th className="px-4 py-3 text-left">序號</th>
+                  <th className="px-4 py-3 text-left">醫事機構代碼</th>
+                  <th className="px-4 py-3 text-left">訓練醫院全銜</th>
+                  <th className="px-4 py-3 text-center">容額上限</th>
+                  <th className="px-4 py-3 text-center">本年度擬核定容額</th>
+                  <th className="px-4 py-3 text-center">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {tbProgramHospitals.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                      尚無結核病計畫容額資料，請點選「新增醫院」或「匯入名單」
+                    </td>
+                  </tr>
+                ) : (
+                  tbProgramHospitals.map((hospital) => (
+                    <tr key={hospital.id}>
+                      <td className="px-4 py-4 text-muted-foreground">{hospital.id}</td>
+                      <td className="px-4 py-4 text-muted-foreground">{hospital.code}</td>
+                      <td className="px-4 py-4 font-medium">{hospital.name}</td>
+                      <td className="px-4 py-4 text-center">{hospital.quotaLimit}</td>
+                      <td className="px-4 py-4 text-center">{hospital.currentQuota}</td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex items-center justify-center gap-3">
+                          <Button
+                            variant="link"
+                            className="text-primary p-0 h-auto"
+                            onClick={() => {
+                              // TODO: 編輯功能
+                            }}
+                          >
+                            編輯
+                          </Button>
+                          <Button
+                            variant="link"
+                            className="text-destructive p-0 h-auto hover:text-destructive/80"
+                            onClick={() =>
+                              setTbProgramHospitals((prev) =>
+                                prev
+                                  .filter((h) => h.id !== hospital.id)
+                                  .map((h, i) => ({ ...h, id: i + 1 }))
+                              )
+                            }
+                          >
+                            刪除
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+              {tbProgramHospitals.length > 0 && (
+                <tfoot>
+                  <tr className="bg-muted/30 border-t">
+                    <td colSpan={3} className="px-4 py-3 text-right text-base font-bold text-foreground">
+                      合計
+                    </td>
+                    <td className="px-4 py-3 text-center text-base font-bold text-foreground">
+                      {tbProgramHospitals.reduce((sum, h) => sum + h.quotaLimit, 0)}
+                    </td>
+                    <td className="px-4 py-3 text-center text-base font-bold text-foreground">
+                      {tbProgramHospitals.reduce((sum, h) => sum + h.currentQuota, 0)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
+      )}
 
       <div id="disqualified-section">
         <div className="flex items-center justify-between mb-4">
@@ -1208,7 +1442,7 @@ function QuotaFilingSection({
 
       {/* 備註區塊 */}
       {(() => {
-        // 自動備註 1：從 store 中有備註的非子列醫院
+        // 自動備註 1：從 store 中有備註的非子列���院
         const hospitalAutoNotes = hospitals
           .filter((h) => !h.isSubRow && quotaNotesStore.hospitalNotes[String(h.id)])
           .map((h) => ({

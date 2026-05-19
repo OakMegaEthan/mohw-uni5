@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import { ChevronLeft, X, Save } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Textarea } from "@/components/ui/textarea"
 import { HospitalMultiSelect, type Hospital } from "@/components/filing/hospital-multi-select"
 import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
@@ -34,8 +34,22 @@ const availableHospitals: Hospital[] = [
 ]
 
 export default function NewQuotaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f5f7fa] p-8 text-center text-muted-foreground">載入中...</div>}>
+      <NewQuotaPageContent />
+    </Suspense>
+  )
+}
+
+function NewQuotaPageContent() {
   const router = useRouter()
-  const [applicationMode, setApplicationMode] = useState<"single" | "joint">("single")
+  const searchParams = useSearchParams()
+  const variant = searchParams.get("variant") || ""
+  
+  // internal-medicine 版型只允許單一機構申請
+  const isInternalMedicine = variant === "internal-medicine"
+  
+  const [applicationMode, setApplicationMode] = useState<"single" | "joint" | "merged">("single")
   const [selectedMainHospitals, setSelectedMainHospitals] = useState<string[]>([])
   const [selectedPartnerHospitals, setSelectedPartnerHospitals] = useState<string[]>([])
   const [extensionYears, setExtensionYears] = useState("0")
@@ -73,15 +87,19 @@ export default function NewQuotaPage() {
     if (note.trim()) {
       quotaNotesStore.hospitalNotes[newId] = note.trim()
     }
-    router.push("/filing?tab=quota")
+    const backUrl = variant ? `/filing?tab=quota&variant=${variant}` : "/filing?tab=quota"
+    router.push(backUrl)
   }
+
+  // 返回列表的 URL（保留 variant）
+  const backUrl = variant ? `/filing?tab=quota&variant=${variant}` : "/filing?tab=quota"
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="container mx-auto px-6 pt-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <Link
-            href="/filing?tab=quota"
+            href={backUrl}
             className="inline-flex items-center text-primary hover:underline"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -93,45 +111,76 @@ export default function NewQuotaPage() {
 
         <h1 className="text-2xl font-bold text-foreground mb-6">
           新增訓練醫院容額
+          {isInternalMedicine && (
+            <span className="ml-3 text-base font-normal text-muted-foreground">
+              （內科醫學會 - 結核病計畫）
+            </span>
+          )}
         </h1>
       </div>
 
       <div className="container mx-auto px-6 pb-8">
         <div className="bg-card rounded-lg p-8 max-w-4xl">
-          {/* 申請方式 */}
+          {/* 申請方式 - internal-medicine 版型只顯示單一機構 */}
           <div className="mb-8">
             <Label className="text-sm font-medium mb-3 block">
               申請方式 <span className="text-destructive">*</span>
             </Label>
-            <div className="grid grid-cols-2 gap-3 max-w-md">
-              <button
-                type="button"
-                onClick={() => {
-                  setApplicationMode("single")
-                  setSelectedPartnerHospitals([])
-                }}
-                className={`p-4 rounded-lg border-2 text-center transition-colors ${
-                  applicationMode === "single"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                <div className="font-medium text-foreground">單一機構申請</div>
-                <div className="text-sm text-muted-foreground mt-1">僅由一間醫院申請</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setApplicationMode("joint")}
-                className={`p-4 rounded-lg border-2 text-center transition-colors ${
-                  applicationMode === "joint"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                <div className="font-medium text-foreground">聯合申請</div>
-                <div className="text-sm text-muted-foreground mt-1">主訓與合作醫院聯合</div>
-              </button>
-            </div>
+            {isInternalMedicine ? (
+              // 內科醫學會版型：只能單一機構
+              <div className="max-w-xs">
+                <div className="p-4 rounded-lg border-2 border-primary bg-primary/5 text-center">
+                  <div className="font-medium text-foreground">單一機構申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">僅由一間醫院申請</div>
+                </div>
+              </div>
+            ) : (
+              // 預設版型：三種申請方式
+              <div className="grid grid-cols-3 gap-3 max-w-2xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApplicationMode("single")
+                    setSelectedPartnerHospitals([])
+                  }}
+                  className={`p-4 rounded-lg border-2 text-center transition-colors ${
+                    applicationMode === "single"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="font-medium text-foreground">單一機構申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">僅由一間醫院申請</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setApplicationMode("joint")}
+                  className={`p-4 rounded-lg border-2 text-center transition-colors ${
+                    applicationMode === "joint"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="font-medium text-foreground">聯合申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">主訓與合作醫院聯合</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApplicationMode("merged")
+                    setSelectedPartnerHospitals([])
+                  }}
+                  className={`p-4 rounded-lg border-2 text-center transition-colors ${
+                    applicationMode === "merged"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="font-medium text-foreground">合併申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">合併評鑑的醫院合併申請</div>
+                </button>
+              </div>
+            )}
           </div>
 
           <h2 className="text-lg font-bold text-foreground mb-6">基本資訊與容額設定</h2>
@@ -140,8 +189,9 @@ export default function NewQuotaPage() {
             {/* 主訓醫院 — 橫跨兩欄 */}
             <div className="col-span-2">
               <Label className="text-sm text-muted-foreground mb-2 block">
-                主訓醫院 <span className="text-destructive">*</span>
-                {applicationMode === "joint" && (
+                {applicationMode === "merged" ? "合併申請機構" : "主訓醫院"}{" "}
+                <span className="text-destructive">*</span>
+                {(applicationMode === "joint" || applicationMode === "merged") && (
                   <span className="text-sm font-normal text-muted-foreground ml-2">（可多選）</span>
                 )}
               </Label>
@@ -149,8 +199,8 @@ export default function NewQuotaPage() {
                 hospitals={availableHospitals}
                 selected={selectedMainHospitals}
                 onSelect={setSelectedMainHospitals}
-                mode={applicationMode === "joint" ? "multiple" : "single"}
-                triggerLabel="請選擇主訓醫院"
+                mode={isInternalMedicine || applicationMode === "single" ? "single" : "multiple"}
+                triggerLabel={applicationMode === "merged" ? "請選擇合併申請機構" : "請選擇主訓醫院"}
               />
               {selectedMainHospitals.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
@@ -214,7 +264,7 @@ export default function NewQuotaPage() {
           </div>
 
           {/* 合作醫院（聯合申請時顯示） */}
-          {applicationMode === "joint" && (
+          {applicationMode === "joint" && !isInternalMedicine && (
             <div className="mt-8">
               <Label className="text-sm font-medium mb-3 block">
                 合作醫院 <span className="text-destructive">*</span>
@@ -300,7 +350,7 @@ export default function NewQuotaPage() {
           </div>
 
           <div className="flex items-center justify-end gap-3 mt-10 pt-6 border-t">
-            <Link href="/filing?tab=quota">
+            <Link href={backUrl}>
               <Button variant="outline">取消</Button>
             </Link>
             <Button
