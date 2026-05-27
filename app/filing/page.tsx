@@ -44,6 +44,7 @@ import {
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
 import { HospitalMultiSelect, type Hospital } from "@/components/filing/hospital-multi-select"
+import { AVAILABLE_HOSPITALS } from "@/components/filing/quota-form"
 import { filingItemsConfig } from "@/lib/mock/review-outline"
 import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
 
@@ -90,21 +91,6 @@ const getStatusStyle = (status: string) => {
   }
 }
 
-const availableHospitals = [
-  { code: "0401180014", name: "台大醫院" },
-  { code: "0401180015", name: "台北榮民總醫院" },
-  { code: "0401180016", name: "三軍總醫院" },
-  { code: "0401180017", name: "馬偕紀念醫院" },
-  { code: "0401180018", name: "新光醫院" },
-  { code: "0401180019", name: "國泰醫院" },
-  { code: "0401180020", name: "亞東醫院" },
-  { code: "0401180021", name: "慈濟醫院" },
-  { code: "0401180022", name: "奇美醫院" },
-  { code: "0401180023", name: "成大醫院" },
-  { code: "0401180024", name: "高雄長庚醫院" },
-  { code: "0401180025", name: "高雄榮民總醫院" },
-]
-
 export default function FilingPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#f5f7fa] p-8 text-center text-muted-foreground">載入中...</div>}>
@@ -122,7 +108,6 @@ function FilingPageContent() {
     tabParam === "quota" ? "quota" : "documents"
   )
 
-  // 切換 tab 時同步更新 URL query string（保留 variant）
   const handleTabChange = (value: string) => {
     setActiveTab(value)
     const params = new URLSearchParams(Array.from(searchParams.entries()))
@@ -146,7 +131,6 @@ function FilingPageContent() {
   }
 
   const handleOpenSubmitDialog = () => {
-    // 預設全選可送件文件
     setSelectedSubmitIds(submittableDocs.map((d) => d.id))
     setShowSubmitDialog(true)
   }
@@ -180,7 +164,6 @@ function FilingPageContent() {
                 <div className="col-span-1 text-center">送件期限</div>
                 <div className="col-span-2 text-right">操作</div>
               </div>
-
               <div className="divide-y">
                 {documents.map((doc) => {
                   const filingOpen = filingStatusMap[doc.id] === "open"
@@ -194,23 +177,18 @@ function FilingPageContent() {
                           {doc.title}
                         </span>
                       </div>
-
                       <div className="col-span-2 text-sm text-muted-foreground">
                         {doc.latestAnnouncementDate || "—"}
                       </div>
-
                       <div className="col-span-3 text-sm text-muted-foreground truncate">
                         {doc.latestAnnouncementNumber || "—"}
                       </div>
-
                       <div className={`col-span-1 text-center font-medium ${!filingOpen ? "text-muted-foreground/60" : getStatusStyle(doc.status)}`}>
                         {filingOpen ? doc.status : "尚未開放"}
                       </div>
-
                       <div className="col-span-1 text-center text-sm text-muted-foreground">
                         {filingOpen ? doc.deadline : "—"}
                       </div>
-
                       <div className="col-span-2 flex justify-end">
                         {filingOpen ? (
                           <Link href={`/filing/${doc.id}?status=${doc.status}`}>
@@ -248,11 +226,7 @@ function FilingPageContent() {
           </TabsContent>
 
           <TabsContent value="quota">
-            <QuotaFilingSection
-              availableHospitals={availableHospitals}
-              onOpenImport={() => setShowImportDialog(true)}
-              variant={variant}
-            />
+            <FilingPageQuotaTab variant={variant} />
           </TabsContent>
         </Tabs>
 
@@ -276,7 +250,6 @@ function FilingPageContent() {
         )}
       </div>
 
-      {/* 送件確認 Dialog */}
       <Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -348,32 +321,19 @@ function FilingPageContent() {
                 下載範例文件 (.xlsx)
               </Button>
             </div>
-
             <div>
               <Label className="text-base font-medium mb-2 block">選擇檔案</Label>
               <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-base text-muted-foreground">
-                  點擊或拖曳檔案至此處上傳
-                </p>
-                <p className="text-base text-muted-foreground mt-1">
-                  支援 .xlsx, .xls 格式
-                </p>
-                <Input
-                  type="file"
-                  className="hidden"
-                  accept=".xlsx,.xls"
-                />
+                <p className="text-base text-muted-foreground">點擊或拖曳檔案至此處上傳</p>
+                <p className="text-base text-muted-foreground mt-1">支援 .xlsx, .xls 格式</p>
+                <Input type="file" className="hidden" accept=".xlsx,.xls" />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-              取消
-            </Button>
-            <Button className="bg-[#2d3a8c] hover:bg-[#252f73] text-white">
-              上傳
-            </Button>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>取消</Button>
+            <Button className="bg-[#2d3a8c] hover:bg-[#252f73] text-white">上傳</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -381,34 +341,10 @@ function FilingPageContent() {
   )
 }
 
-function QuotaFilingSection({
-  availableHospitals,
-  onOpenImport,
-  variant = "",
-}: {
-  availableHospitals: { code: string; name: string }[]
-  onOpenImport: () => void
-  variant?: string
-}) {
-  // variant 判斷
-  const isInternalMedicine = variant === "internal-medicine"
-  
-  // 備註相關 state
-  const [manualNotes, setManualNotes] = useState<string[]>([])
-  const [isAddingNote, setIsAddingNote] = useState(false)
-  const [newNoteText, setNewNoteText] = useState("")
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [editingText, setEditingText] = useState("")
+function FilingPageQuotaTab({ variant }: { variant: string }) {
+  const router = useRouter()
+  const availableHospitals = AVAILABLE_HOSPITALS
 
-  // 不合格醫院清單 state
-  const [disqualifiedHospitals, setDisqualifiedHospitals] = useState([
-    {
-      id: 1,
-      code: "0401180020",
-      name: "新光醫院",
-      reason: "未符合訓練醫院認證基準第3條：專任主治醫師人數不足",
-    },
-  ])
   // 新增不合格醫院 Dialog state
   const [showAddDisqualifiedDialog, setShowAddDisqualifiedDialog] = useState(false)
   const [selectedDisqualifiedHospital, setSelectedDisqualifiedHospital] = useState<string[]>([])
@@ -461,92 +397,208 @@ function QuotaFilingSection({
   // 送件確認 Dialog state
   const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false)
 
-  // groupId: null = 單獨申請，string = 聯合申請組合識別碼
+  // groupId: null = 單獨申請，string = 聯合/合併申請組合識別碼
   // 未來新增聯合申請組合只需指定相同 groupId 即可
   const [hospitals, setHospitals] = useState([
+    // ── 單一機構申請 ──
     {
       id: 1,
       code: "0401180014",
       name: "台大醫院",
       county: "台北市",
-      district: "中山區",
-      expiry: "有效至 115/7/31",
+      district: "中正區",
+      expiry: "115/7/31",
       extension: "4 年 (至 119/7/31)",
       limit: 15,
       prevQuota: 5,
       currentQuota: 5,
-      groupId: null,
+      groupId: null as string | null,
       isSubRow: false,
+      partnerHospitalCodes: [] as string[],
     },
     {
       id: 2,
-      code: "0401180015",
-      name: "榮民總醫院",
+      code: "0401190015",
+      name: "台北榮民總醫院",
       county: "台北市",
       district: "北投區",
-      expiry: "有效至 115/7/31",
+      expiry: "115/7/31",
       extension: "-",
       limit: 12,
       prevQuota: 3,
       currentQuota: 4,
-      groupId: null,
+      groupId: null as string | null,
       isSubRow: false,
+      partnerHospitalCodes: [] as string[],
     },
     {
       id: 3,
-      code: "0401180016",
-      name: "長庚醫院",
+      code: "0401200016",
+      name: "三軍總醫院",
       county: "台北市",
       district: "內湖區",
-      expiry: "有效至 113/7/31",
+      expiry: "113/7/31",
       extension: "4 年 (至 117/7/31)",
       limit: 10,
       prevQuota: 2,
       currentQuota: 3,
-      groupId: null,
+      groupId: null as string | null,
       isSubRow: false,
+      partnerHospitalCodes: [] as string[],
     },
     {
       id: 4,
-      code: "0401180017",
+      code: "0401280024",
       name: "中國醫藥大學附醫",
       county: "台中市",
       district: "北區",
-      expiry: "有效至 115/7/31",
+      expiry: "115/7/31",
       extension: "4 年 (至 119/7/31)",
       limit: 8,
       prevQuota: 2,
       currentQuota: 2,
-      groupId: null,
+      groupId: null as string | null,
       isSubRow: false,
+      partnerHospitalCodes: [] as string[],
     },
+    // ── 聯合申請 A 組：林口長庚（主）+ 中山醫大附醫 + 萬芳醫院（合作）──
     {
       id: "5.1",
-      code: "0401180018",
-      name: "聯合申請 (仁愛院區)",
-      county: "台北市",
-      district: "大安區",
-      expiry: "有效至 115/7/31",
+      code: "0401260022",
+      name: "林口長庚醫院",
+      county: "桃園市",
+      district: "龜山區",
+      expiry: "115/7/31",
       extension: "4 年 (至 119/7/31)",
       limit: 15,
       prevQuota: 4,
       currentQuota: 5,
       groupId: "group-a",
       isSubRow: false,
+      partnerHospitalCodes: ["0401270023", "0401240020"],
     },
     {
       id: "5.2",
-      code: "0401180019",
-      name: "聯合申請 (和平院區)",
-      county: "台北市",
-      district: "中正區",
+      code: "0401270023",
+      name: "中山醫學大學附醫",
+      county: "台中市",
+      district: "南區",
       expiry: "",
       extension: "",
-      limit: null,
-      prevQuota: null,
-      currentQuota: null,
+      limit: null as number | null,
+      prevQuota: null as number | null,
+      currentQuota: null as number | null,
       groupId: "group-a",
       isSubRow: true,
+      partnerHospitalCodes: [] as string[],
+    },
+    {
+      id: "5.3",
+      code: "0401240020",
+      name: "萬芳醫院",
+      county: "台北市",
+      district: "文山區",
+      expiry: "",
+      extension: "",
+      limit: null as number | null,
+      prevQuota: null as number | null,
+      currentQuota: null as number | null,
+      groupId: "group-a",
+      isSubRow: true,
+      partnerHospitalCodes: [] as string[],
+    },
+    // ── 聯合申請 B 組：奇美醫院（主）+ 成大醫院（合作）──
+    {
+      id: "6.1",
+      code: "0401300026",
+      name: "奇美醫院",
+      county: "台南市",
+      district: "永康區",
+      expiry: "114/7/31",
+      extension: "2 年 (至 116/7/31)",
+      limit: 9,
+      prevQuota: 3,
+      currentQuota: 4,
+      groupId: "group-b",
+      isSubRow: false,
+      partnerHospitalCodes: ["0401310027"],
+    },
+    {
+      id: "6.2",
+      code: "0401310027",
+      name: "成大醫院",
+      county: "台南市",
+      district: "東區",
+      expiry: "",
+      extension: "",
+      limit: null as number | null,
+      prevQuota: null as number | null,
+      currentQuota: null as number | null,
+      groupId: "group-b",
+      isSubRow: true,
+      partnerHospitalCodes: [] as string[],
+    },
+    // ── 合併申請 C 組：高雄長庚 + 高雄榮總 ──
+    {
+      id: "7.1",
+      code: "0401320028",
+      name: "高雄長庚醫院",
+      county: "高雄市",
+      district: "左營區",
+      expiry: "115/7/31",
+      extension: "4 年 (至 119/7/31)",
+      limit: 18,
+      prevQuota: 6,
+      currentQuota: 7,
+      groupId: "group-c",
+      isSubRow: false,
+      partnerHospitalCodes: [] as string[],
+    },
+    {
+      id: "7.2",
+      code: "0401330029",
+      name: "高雄榮民總醫院",
+      county: "高雄市",
+      district: "左營區",
+      expiry: "",
+      extension: "",
+      limit: null as number | null,
+      prevQuota: null as number | null,
+      currentQuota: null as number | null,
+      groupId: "group-c",
+      isSubRow: true,
+      partnerHospitalCodes: [] as string[],
+    },
+    // ── 單一機構申請（繼續）──
+    {
+      id: 8,
+      code: "0401290025",
+      name: "台中榮民總醫院",
+      county: "台中市",
+      district: "西屯區",
+      expiry: "115/7/31",
+      extension: "-",
+      limit: 11,
+      prevQuota: 4,
+      currentQuota: 4,
+      groupId: null as string | null,
+      isSubRow: false,
+      partnerHospitalCodes: [] as string[],
+    },
+    {
+      id: 9,
+      code: "0401340030",
+      name: "高雄醫學大學附醫",
+      county: "高雄市",
+      district: "三民區",
+      expiry: "114/7/31",
+      extension: "4 年 (至 118/7/31)",
+      limit: 7,
+      prevQuota: 2,
+      currentQuota: 3,
+      groupId: null as string | null,
+      isSubRow: false,
+      partnerHospitalCodes: [] as string[],
     },
   ])
 
@@ -1364,7 +1416,7 @@ function QuotaFilingSection({
               })()}
               <div>
                 <Label className="text-sm text-muted-foreground mb-2 block">
-                  前一年度訓練資格 <span className="text-destructive">*</span>
+                  ��一年度訓練資格 <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={editNotAppliedPrevQualification}
