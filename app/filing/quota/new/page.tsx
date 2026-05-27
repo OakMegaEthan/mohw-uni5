@@ -11,7 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ChevronLeft, X, Save } from "lucide-react"
+import { ChevronLeft, X, Save, HelpCircle } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Textarea } from "@/components/ui/textarea"
@@ -59,8 +65,8 @@ function NewQuotaPageContent() {
 
   const calculateExtensionDate = (years: string) => {
     if (years === "0") return ""
-    const baseYear = 2026
-    const extendedYear = baseYear + parseInt(years)
+    const baseRocYear = 115 // 民國 115 年 = 西元 2026 年
+    const extendedYear = baseRocYear + parseInt(years)
     return `${extendedYear}/7/31`
   }
 
@@ -222,9 +228,9 @@ function NewQuotaPageContent() {
               )}
             </div>
 
-            {/* 效期（新增時為空，顯示提示） */}
+            {/* 資格效期（新增時為空，顯示提示） */}
             <div>
-              <Label className="text-sm text-muted-foreground mb-2 block">效期</Label>
+              <Label className="text-sm text-muted-foreground mb-2 block">資格效期</Label>
               <div className="bg-muted/50 px-4 py-3 rounded-lg text-muted-foreground italic">
                 新申請（待審核後核定）
               </div>
@@ -303,8 +309,18 @@ function NewQuotaPageContent() {
 
           <div className="grid grid-cols-2 gap-x-12 gap-y-6">
             <div>
-              <Label className="text-sm text-muted-foreground mb-2 block">
-                容額上限 <span className="text-destructive">*</span>
+              <Label className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                可收訓容額 <span className="text-destructive">*</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/70 cursor-default" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-sm" side="top">
+                      係指醫院實際訓練量能，最大訓練容量之容額數
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </Label>
               <Input
                 type="number"
@@ -319,7 +335,7 @@ function NewQuotaPageContent() {
 
             <div>
               <Label className="text-sm text-muted-foreground mb-2 block">
-                本年度擬核定容額 <span className="text-destructive">*</span>
+                建議分配容額 <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="number"

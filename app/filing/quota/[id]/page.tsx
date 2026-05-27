@@ -11,7 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ChevronLeft, Save, X } from "lucide-react"
+import { ChevronLeft, Save, X, HelpCircle } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
@@ -47,9 +53,9 @@ const hospitalData: Record<
 > = {
   "1": {
     mainHospitalCodes: ["0401180014"],
-    expiry: "有效至 2026/7/31",
+    expiry: "有效至 115/7/31",
     extensionYears: "4",
-    extensionDate: "2030/7/31",
+    extensionDate: "119/7/31",
     prevQuota: 5,
     quotaLimit: 15,
     currentQuota: 5,
@@ -58,7 +64,7 @@ const hospitalData: Record<
   },
   "2": {
     mainHospitalCodes: ["0401190015"],
-    expiry: "有效至 2026/7/31",
+    expiry: "有效至 115/7/31",
     extensionYears: "0",
     extensionDate: "",
     prevQuota: 3,
@@ -69,9 +75,9 @@ const hospitalData: Record<
   },
   "3": {
     mainHospitalCodes: ["0401200016"],
-    expiry: "有效至 2024/7/31",
+    expiry: "有效至 113/7/31",
     extensionYears: "4",
-    extensionDate: "2028/7/31",
+    extensionDate: "117/7/31",
     prevQuota: 2,
     quotaLimit: 10,
     currentQuota: 3,
@@ -80,9 +86,9 @@ const hospitalData: Record<
   },
   "5": {
     mainHospitalCodes: ["0401260022", "0401250021"],
-    expiry: "有效至 2026/7/31",
+    expiry: "有效至 115/7/31",
     extensionYears: "4",
-    extensionDate: "2030/7/31",
+    extensionDate: "119/7/31",
     prevQuota: 4,
     quotaLimit: 15,
     currentQuota: 5,
@@ -115,8 +121,8 @@ export default function QuotaEditPage({
 
   const calculateExtensionDate = (years: string) => {
     if (years === "0") return ""
-    const baseYear = 2026
-    const extendedYear = baseYear + parseInt(years)
+    const baseRocYear = 115 // 民國 115 年 = 西元 2026 年
+    const extendedYear = baseRocYear + parseInt(years)
     return `${extendedYear}/7/31`
   }
 
@@ -227,7 +233,7 @@ export default function QuotaEditPage({
             </div>
 
             <div>
-              <Label className="text-sm text-muted-foreground mb-2 block">效期</Label>
+              <Label className="text-sm text-muted-foreground mb-2 block">資格效期</Label>
               <div className="bg-muted/50 px-4 py-3 rounded-lg text-foreground">
                 {hospital.expiry}
               </div>
@@ -302,8 +308,18 @@ export default function QuotaEditPage({
 
           <div className="grid grid-cols-2 gap-x-12 gap-y-6">
             <div>
-              <Label className="text-sm text-muted-foreground mb-2 block">
-                容額上限 <span className="text-destructive">*</span>
+              <Label className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                可收訓容額 <span className="text-destructive">*</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/70 cursor-default" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-sm" side="top">
+                      係指醫院實際訓練量能，最大訓練容量之容額數
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </Label>
               <Input
                 type="number"
@@ -318,7 +334,7 @@ export default function QuotaEditPage({
 
             <div>
               <Label className="text-sm text-muted-foreground mb-2 block">
-                本年度擬核定容額 <span className="text-destructive">*</span>
+                建議分配容額 <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="number"

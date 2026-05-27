@@ -33,12 +33,28 @@ import {
   Trash2,
   Check,
   X as XIcon,
+  HelpCircle,
 } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
 import { HospitalMultiSelect, type Hospital } from "@/components/filing/hospital-multi-select"
 import { filingItemsConfig } from "@/lib/mock/review-outline"
 import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
+
+// 西元年轉民國年，格式 114/7/31
+function toRocDate(dateStr: string): string {
+  if (!dateStr) return dateStr
+  // 支援 "有效至 YYYY/M/D" 和 "N 年 (至 YYYY/M/D)" 和 "YYYY/M/D" 格式
+  return dateStr.replace(/(\d{4})(\/\d{1,2}\/\d{1,2})/g, (_, year, rest) => {
+    return `${Number(year) - 1911}${rest}`
+  })
+}
 
 // 從 filingItemsConfig 建立開放狀態查詢表
 const filingStatusMap = Object.fromEntries(
@@ -46,12 +62,12 @@ const filingStatusMap = Object.fromEntries(
 )
 
 const documents = [
-  { id: "training-plan", title: "訓練計畫認定基準", status: "需補件", deadline: "2025/03/31", latestAnnouncementDate: "2025/09/03", latestAnnouncementNumber: "衛部醫字第1141660001號" },
-  { id: "training-curriculum", title: "訓練課程基準", status: "尚未送出", deadline: "2025/04/30", latestAnnouncementDate: "2025/09/03", latestAnnouncementNumber: "衛部醫字第1141660002號" },
-  { id: "evaluation-standards", title: "評核標準與評核表", status: "審查中", deadline: "2025/04/15", latestAnnouncementDate: "2024/10/01", latestAnnouncementNumber: "衛部醫字第1131660015號" },
-  { id: "quota-allocation", title: "容額分配原則", status: "通過", deadline: "2025/03/15", latestAnnouncementDate: "2025/09/03", latestAnnouncementNumber: "衛部醫字第1141660003號" },
-  { id: "improvement-guide", title: "精進指南", status: "待送件", deadline: "2025/04/30", latestAnnouncementDate: "2023/09/25", latestAnnouncementNumber: "衛部醫字第1121660008號" },
-  { id: "screening-principle", title: "甄審原則", status: "通過", deadline: "2025/03/15", latestAnnouncementDate: "2025/09/03", latestAnnouncementNumber: "衛部醫字第1141660004號" },
+  { id: "training-plan", title: "訓練計畫認定基準", status: "需補件", deadline: "114/03/31", latestAnnouncementDate: "114/09/03", latestAnnouncementNumber: "衛部醫字第1141660001號" },
+  { id: "training-curriculum", title: "訓練課程基準", status: "尚未送出", deadline: "114/04/30", latestAnnouncementDate: "114/09/03", latestAnnouncementNumber: "衛部醫字第1141660002號" },
+  { id: "evaluation-standards", title: "評核標準與評核表", status: "審查中", deadline: "114/04/15", latestAnnouncementDate: "113/10/01", latestAnnouncementNumber: "衛部醫字第1131660015號" },
+  { id: "quota-allocation", title: "容額分配原則", status: "通過", deadline: "114/03/15", latestAnnouncementDate: "114/09/03", latestAnnouncementNumber: "衛部醫字第1141660003號" },
+  { id: "improvement-guide", title: "精進指南", status: "待送件", deadline: "114/04/30", latestAnnouncementDate: "112/09/25", latestAnnouncementNumber: "衛部醫字第1121660008號" },
+  { id: "screening-principle", title: "甄審原則", status: "通過", deadline: "114/03/15", latestAnnouncementDate: "114/09/03", latestAnnouncementNumber: "衛部醫字第1141660004號" },
 ]
 
 // 可送件的狀態（已有內容但尚未送出）
@@ -454,8 +470,8 @@ function QuotaFilingSection({
       name: "台大醫院",
       county: "台北市",
       district: "中山區",
-      expiry: "有效至 2026/7/31",
-      extension: "4 年 (至 2030/7/31)",
+      expiry: "有效至 115/7/31",
+      extension: "4 年 (至 119/7/31)",
       limit: 15,
       prevQuota: 5,
       currentQuota: 5,
@@ -468,7 +484,7 @@ function QuotaFilingSection({
       name: "榮民總醫院",
       county: "台北市",
       district: "北投區",
-      expiry: "有效至 2026/7/31",
+      expiry: "有效至 115/7/31",
       extension: "-",
       limit: 12,
       prevQuota: 3,
@@ -482,8 +498,8 @@ function QuotaFilingSection({
       name: "長庚醫院",
       county: "台北市",
       district: "內湖區",
-      expiry: "有效至 2024/7/31",
-      extension: "4 年 (至 2028/7/31)",
+      expiry: "有效至 113/7/31",
+      extension: "4 年 (至 117/7/31)",
       limit: 10,
       prevQuota: 2,
       currentQuota: 3,
@@ -496,8 +512,8 @@ function QuotaFilingSection({
       name: "中國醫藥大學附醫",
       county: "台中市",
       district: "北區",
-      expiry: "有效至 2026/7/31",
-      extension: "4 年 (至 2030/7/31)",
+      expiry: "有效至 115/7/31",
+      extension: "4 年 (至 119/7/31)",
       limit: 8,
       prevQuota: 2,
       currentQuota: 2,
@@ -510,8 +526,8 @@ function QuotaFilingSection({
       name: "聯合申請 (仁愛院區)",
       county: "台北市",
       district: "大安區",
-      expiry: "有效至 2026/7/31",
-      extension: "4 年 (至 2030/7/31)",
+      expiry: "有效至 115/7/31",
+      extension: "4 年 (至 119/7/31)",
       limit: 15,
       prevQuota: 4,
       currentQuota: 5,
@@ -630,15 +646,29 @@ function QuotaFilingSection({
           <table className="w-full min-w-[1000px]">
             <thead>
               <tr className="bg-muted/50 border-b text-base font-medium text-muted-foreground">
-                <th className="px-4 py-3 text-left whitespace-nowrap w-12">序號</th>
+                <th className="px-4 py-3 text-left whitespace-nowrap w-12">編號</th>
                 <th className="px-4 py-3 text-left whitespace-nowrap w-36">醫事機構代碼</th>
-                <th className="px-4 py-3 text-left whitespace-nowrap">訓練醫院全銜</th>
+                <th className="px-4 py-3 text-left whitespace-nowrap">醫院名稱</th>
                 <th className="px-4 py-3 text-left whitespace-nowrap w-24">醫院所在地</th>
-                <th className="px-4 py-3 text-center whitespace-nowrap w-36">效期</th>
+                <th className="px-4 py-3 text-center whitespace-nowrap w-36">資格效期</th>
                 <th className="px-4 py-3 text-center whitespace-nowrap w-40">延長效期</th>
-                <th className="px-4 py-3 text-center whitespace-nowrap w-20">容額上限</th>
+                <th className="px-4 py-3 text-center whitespace-nowrap w-24">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-1 cursor-default">
+                          可收訓容額
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/70" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-sm" side="top">
+                        係指醫院實際訓練量能，最大訓練容量之容額數
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </th>
                 <th className="px-4 py-3 text-center whitespace-nowrap w-28">前年度核定容額</th>
-                <th className="px-4 py-3 text-center whitespace-nowrap w-24">本年度容額</th>
+                <th className="px-4 py-3 text-center whitespace-nowrap w-24">建議分配容額</th>
                 <th className="px-4 py-3 text-center whitespace-nowrap w-16">操作</th>
               </tr>
             </thead>
@@ -782,7 +812,7 @@ function QuotaFilingSection({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm text-muted-foreground mb-2 block">
-                      容額上限 <span className="text-destructive">*</span>
+                      可收訓容額 <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       type="number"
@@ -795,7 +825,7 @@ function QuotaFilingSection({
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground mb-2 block">
-                      本年度擬核定容額 <span className="text-destructive">*</span>
+                      建議分配容額 <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       type="number"
@@ -862,11 +892,25 @@ function QuotaFilingSection({
             <table className="w-full">
               <thead>
                 <tr className="bg-muted/50 border-b text-base font-medium text-muted-foreground">
-                  <th className="px-4 py-3 text-left">序號</th>
+                  <th className="px-4 py-3 text-left">編號</th>
                   <th className="px-4 py-3 text-left">醫事機構代碼</th>
-                  <th className="px-4 py-3 text-left">訓練醫院全銜</th>
-                  <th className="px-4 py-3 text-center">容額上限</th>
-                  <th className="px-4 py-3 text-center">本年度擬核定容額</th>
+                  <th className="px-4 py-3 text-left">醫院名稱</th>
+                  <th className="px-4 py-3 text-center">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center gap-1 cursor-default">
+                            可收訓容額
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/70" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs text-sm" side="top">
+                          係指醫院實際訓練量能，最大訓練容量之容額數
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </th>
+                  <th className="px-4 py-3 text-center">建議分配容額</th>
                   <th className="px-4 py-3 text-center">操作</th>
                 </tr>
               </thead>
@@ -1099,9 +1143,9 @@ function QuotaFilingSection({
           <table className="w-full">
             <thead>
               <tr className="bg-muted/50 border-b text-base font-medium text-muted-foreground">
-                <th className="px-4 py-3 text-left">序號</th>
+                <th className="px-4 py-3 text-left">編號</th>
                 <th className="px-4 py-3 text-left">醫事機構代碼</th>
-                <th className="px-4 py-3 text-left">訓練醫院全銜</th>
+                <th className="px-4 py-3 text-left">醫院名稱</th>
                 <th className="px-4 py-3 text-left">不合格原因</th>
                 <th className="px-4 py-3 text-center">操作</th>
               </tr>
@@ -1149,9 +1193,12 @@ function QuotaFilingSection({
 
       {/* 未申請醫院名單 */}
       <div id="not-applied-section">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-foreground">未申請醫院名單</h3>
-          <div className="flex items-center gap-3">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-bold text-foreground">未申請醫院名單</h3>
+          <p className="text-sm text-muted-foreground mt-1">指前一年度為合格訓練醫院，惟本年度未提出申請之醫院。</p>
+        </div>
+          <div className="flex items-center gap-3 mt-0.5">
             <Button
               className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white"
               onClick={() => setShowAddNotAppliedDialog(true)}
@@ -1371,9 +1418,9 @@ function QuotaFilingSection({
           <table className="w-full">
             <thead>
               <tr className="bg-muted/50 border-b text-base font-medium text-muted-foreground">
-                <th className="px-4 py-3 text-left">序號</th>
+                <th className="px-4 py-3 text-left">編號</th>
                 <th className="px-4 py-3 text-left">醫事機構代碼</th>
-                <th className="px-4 py-3 text-left">訓練醫院全銜</th>
+                <th className="px-4 py-3 text-left">醫院名稱</th>
                 <th className="px-4 py-3 text-left">前一年度訓練資格</th>
                 <th className="px-4 py-3 text-left">未申請原因</th>
                 <th className="px-4 py-3 text-center">操作</th>
