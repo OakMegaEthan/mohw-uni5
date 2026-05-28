@@ -314,7 +314,7 @@ function FilingPageContent() {
           <div className="space-y-6 py-4">
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-base text-muted-foreground mb-3">
-                請先下載����例文件，依照格式填寫後再上傳
+                請先下������例文件，依照格式填寫後再上傳
               </p>
               <Button variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
@@ -344,6 +344,7 @@ function FilingPageContent() {
 function FilingPageQuotaTab({ variant }: { variant: string }) {
   const router = useRouter()
   const availableHospitals = AVAILABLE_HOSPITALS
+  const isInternalMedicine = variant === "internal-medicine"
 
   // 匯入 Dialog state
   const [showImportDialog, setShowImportDialog] = useState(false)
