@@ -314,7 +314,7 @@ function FilingPageContent() {
           <div className="space-y-6 py-4">
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-base text-muted-foreground mb-3">
-                請先下載範例文件，依照格式填寫後再上傳
+                請先下載���例文件，依照格式填寫後再上傳
               </p>
               <Button variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
@@ -352,6 +352,21 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
   // 編輯不合格醫院 Dialog state
   const [editingDisqualifiedId, setEditingDisqualifiedId] = useState<number | null>(null)
   const [editDisqualifiedReason, setEditDisqualifiedReason] = useState("")
+  // 不合格醫院名單
+  const [disqualifiedHospitals, setDisqualifiedHospitals] = useState([
+    {
+      id: 1,
+      code: "0401350031",
+      name: "彰化基督教醫院",
+      reason: "訓練師資不足，未達評鑑標準",
+    },
+    {
+      id: 2,
+      code: "0401360032",
+      name: "嘉義長庚醫院",
+      reason: "訓練設備待改善，暫不合格",
+    },
+  ])
 
   // 新增未申請醫院 Dialog state
   const [showAddNotAppliedDialog, setShowAddNotAppliedDialog] = useState(false)
