@@ -417,6 +417,13 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
   // 送件確認 Dialog state
   const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false)
 
+  // 備註區塊 state
+  const [manualNotes, setManualNotes] = useState<string[]>([])
+  const [newNoteText, setNewNoteText] = useState("")
+  const [isAddingNote, setIsAddingNote] = useState(false)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editingText, setEditingText] = useState("")
+
   // groupId: null = 單獨申請，string = 聯合/合併申請組合識別碼
   // 未來新增聯合申請組合只需指定相同 groupId 即可
   const [hospitals, setHospitals] = useState([
@@ -1443,7 +1450,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                   onValueChange={setEditNotAppliedPrevQualification}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="請選擇前一年度訓練資格" />
+                    <SelectValue placeholder="請選擇前一年度訓練資��" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="具訓練資格">具訓練資格</SelectItem>
@@ -1579,7 +1586,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
 
       {/* 備註區塊 */}
       {(() => {
-        // 自動備註 1：從 store 中有備註的非子列���院
+        // 自動備註 1：從 store 中有備註的非子列醫院
         const hospitalAutoNotes = hospitals
           .filter((h) => !h.isSubRow && quotaNotesStore.hospitalNotes[String(h.id)])
           .map((h) => ({
