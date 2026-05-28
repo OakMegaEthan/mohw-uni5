@@ -314,7 +314,7 @@ function FilingPageContent() {
           <div className="space-y-6 py-4">
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-base text-muted-foreground mb-3">
-                請先下載���例文件，依照格式填寫後再上傳
+                請先下載����例文件，依照格式填寫後再上傳
               </p>
               <Button variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
@@ -344,6 +344,10 @@ function FilingPageContent() {
 function FilingPageQuotaTab({ variant }: { variant: string }) {
   const router = useRouter()
   const availableHospitals = AVAILABLE_HOSPITALS
+
+  // 匯入 Dialog state
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const onOpenImport = () => setShowImportDialog(true)
 
   // 新增不合格醫院 Dialog state
   const [showAddDisqualifiedDialog, setShowAddDisqualifiedDialog] = useState(false)
@@ -1507,7 +1511,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                   <th className="px-2 py-2.5 text-left whitespace-nowrap">醫事機構代碼</th>
                   <th className="px-2 py-2.5 text-left whitespace-nowrap">前一年度訓練資格</th>
                   <th className="px-2 py-2.5 text-left">未申請原因</th>
-                  <th className="px-2 py-2.5 text-center whitespace-nowrap">操作</th>
+                  <th className="px-2 py-2.5 text-center whitespace-nowrap">操���</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -1871,6 +1875,39 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
               <Send className="h-4 w-4" />
               確認送件
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 匯入檔案 Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>匯入檔案</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                請先下載範例文件，依照格式填寫後再上傳
+              </p>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                下載範例文件 (.xlsx)
+              </Button>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">選擇檔案</Label>
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">點擊或拖曳檔案至此處上傳</p>
+                <p className="text-sm text-muted-foreground mt-1">支援 .xlsx, .xls 格式</p>
+                <Input type="file" className="hidden" accept=".xlsx,.xls" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>取消</Button>
+            <Button className="bg-[#2d3a8c] hover:bg-[#252f73] text-white">上傳</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
