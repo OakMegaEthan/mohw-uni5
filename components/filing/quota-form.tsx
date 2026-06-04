@@ -56,6 +56,7 @@ export interface QuotaFormValues {
   applicationMode: ApplicationMode
   mainHospitalCodes: string[]
   partnerHospitalCodes: string[]
+  mergedDisplayName: string // 合併申請時的顯示名稱
   extensionYears: string
   quotaLimit: string
   currentQuota: string
@@ -95,6 +96,9 @@ export function QuotaForm({
   const [selectedPartnerHospitals, setSelectedPartnerHospitals] = useState<string[]>(
     initialValues?.partnerHospitalCodes ?? []
   )
+  const [mergedDisplayName, setMergedDisplayName] = useState(
+    initialValues?.mergedDisplayName ?? ""
+  )
   const [extensionYears, setExtensionYears] = useState(initialValues?.extensionYears ?? "0")
   const [quotaLimit, setQuotaLimit] = useState(initialValues?.quotaLimit ?? "")
   const [currentQuota, setCurrentQuota] = useState(initialValues?.currentQuota ?? "")
@@ -106,6 +110,7 @@ export function QuotaForm({
   const canSave =
     selectedMainHospitals.length > 0 &&
     (applicationMode !== "joint" || selectedPartnerHospitals.length > 0) &&
+    (applicationMode !== "merged" || mergedDisplayName.trim().length > 0) &&
     !!quotaLimit &&
     Number(quotaLimit) >= 1 &&
     Number(quotaLimit) <= 50 &&
@@ -118,6 +123,7 @@ export function QuotaForm({
       applicationMode,
       mainHospitalCodes: selectedMainHospitals,
       partnerHospitalCodes: selectedPartnerHospitals,
+      mergedDisplayName: mergedDisplayName.trim(),
       extensionYears,
       quotaLimit,
       currentQuota,
@@ -261,6 +267,28 @@ export function QuotaForm({
                 </div>
               )}
             </div>
+
+            {/* 合併名稱（合併申請時顯示） */}
+            {applicationMode === "merged" && selectedMainHospitals.length > 0 && (
+              <div className="col-span-2">
+                <Label className="text-sm text-muted-foreground mb-2 block">
+                  合併名稱 <span className="text-destructive">*</span>
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    （此名稱將顯示於列表中）
+                  </span>
+                </Label>
+                <Input
+                  value={mergedDisplayName}
+                  onChange={(e) => setMergedDisplayName(e.target.value)}
+                  placeholder="例如：高雄聯合訓練中心"
+                  className="max-w-md"
+                />
+                <p className="text-sm text-muted-foreground mt-2">
+                  已選擇 {selectedMainHospitals.length} 間醫院：
+                  {selectedMainHospitals.map((code) => getHospitalName(code)).join("、")}
+                </p>
+              </div>
+            )}
 
             {/* 資格效期 */}
             <div>

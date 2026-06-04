@@ -314,7 +314,7 @@ function FilingPageContent() {
           <div className="space-y-6 py-4">
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-base text-muted-foreground mb-3">
-                請先下������例文件，依照格式填寫後再上傳
+                請先下載範例文件，依照格式填寫後再上傳
               </p>
               <Button variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
@@ -442,6 +442,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: 2,
@@ -457,6 +459,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: 3,
@@ -472,6 +476,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: 4,
@@ -487,6 +493,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     // ── 聯合申請 A 組：林口長庚（主）+ 中山醫大附醫 + 萬芳醫院（合作）──
     {
@@ -503,6 +511,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: "group-a",
       isSubRow: false,
       partnerHospitalCodes: ["0401270023", "0401240020"],
+      applicationType: "joint" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: "5.2",
@@ -518,6 +528,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: "group-a",
       isSubRow: true,
       partnerHospitalCodes: [] as string[],
+      applicationType: "joint" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: "5.3",
@@ -533,6 +545,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: "group-a",
       isSubRow: true,
       partnerHospitalCodes: [] as string[],
+      applicationType: "joint" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     // ── 聯合申請 B 組：奇美醫院（主）+ 成大醫院（合作）──
     {
@@ -549,6 +563,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: "group-b",
       isSubRow: false,
       partnerHospitalCodes: ["0401310027"],
+      applicationType: "joint" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: "6.2",
@@ -564,12 +580,14 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: "group-b",
       isSubRow: true,
       partnerHospitalCodes: [] as string[],
+      applicationType: "joint" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
-    // ── 合併申請 C 組：高雄長庚 + 高雄榮總 ──
+    // ── 合併申請：高雄長庚 + 高雄榮總 → 顯示為「高雄聯合訓練中心」──
     {
-      id: "7.1",
-      code: "0401320028",
-      name: "高雄長庚醫院",
+      id: 7,
+      code: "merged-001",
+      name: "高雄聯合訓練中心",
       county: "高雄市",
       district: "左營區",
       expiry: "115/7/31",
@@ -577,24 +595,11 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       limit: 18,
       prevQuota: 6,
       currentQuota: 7,
-      groupId: "group-c",
+      groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
-    },
-    {
-      id: "7.2",
-      code: "0401330029",
-      name: "高雄榮民總醫院",
-      county: "高雄市",
-      district: "左營區",
-      expiry: "",
-      extension: "",
-      limit: null as number | null,
-      prevQuota: null as number | null,
-      currentQuota: null as number | null,
-      groupId: "group-c",
-      isSubRow: true,
-      partnerHospitalCodes: [] as string[],
+      applicationType: "merged" as "single" | "joint" | "merged",
+      mergedHospitalCodes: ["0401320028", "0401330029"],
     },
     // ── 單一機構申請（繼續）──
     {
@@ -611,6 +616,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: 9,
@@ -626,6 +633,8 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint" | "merged",
+      mergedHospitalCodes: [] as string[],
     },
   ])
 
@@ -767,8 +776,11 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                   {/* 固定首兩欄 */}
                   <td className="px-2 py-3 text-sm text-muted-foreground whitespace-nowrap sticky left-0 bg-card z-10">{hospital.id}</td>
                   <td className="px-2 py-3 text-sm font-medium whitespace-nowrap sticky left-10 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
-                    {hospital.groupId && (
+                    {hospital.applicationType === "joint" && (
                       <span className="text-muted-foreground mr-1">[聯]</span>
+                    )}
+                    {hospital.applicationType === "merged" && (
+                      <span className="text-muted-foreground mr-1">[併]</span>
                     )}
                     {quotaNotesStore.hospitalNotes[String(hospital.id)] && (
                       <span className="text-destructive mr-0.5" title="此醫院有備註">*</span>
@@ -1443,14 +1455,14 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
               })()}
               <div>
                 <Label className="text-sm text-muted-foreground mb-2 block">
-                  ��一年度訓練資格 <span className="text-destructive">*</span>
+                  前一年度訓練資格 <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={editNotAppliedPrevQualification}
                   onValueChange={setEditNotAppliedPrevQualification}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="請選擇前一年度訓練資��" />
+                    <SelectValue placeholder="請選擇前一年度訓練資格" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="具訓練資格">具訓練資格</SelectItem>
@@ -1519,7 +1531,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                   <th className="px-2 py-2.5 text-left whitespace-nowrap">醫事機構代碼</th>
                   <th className="px-2 py-2.5 text-left whitespace-nowrap">前一年度訓練資格</th>
                   <th className="px-2 py-2.5 text-left">未申請原因</th>
-                  <th className="px-2 py-2.5 text-center whitespace-nowrap">操���</th>
+                  <th className="px-2 py-2.5 text-center whitespace-nowrap">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
