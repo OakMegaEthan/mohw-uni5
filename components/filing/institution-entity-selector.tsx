@@ -66,6 +66,7 @@ export function InstitutionEntitySelector({
   const [mergedName, setMergedName] = useState("")
   const [qualificationExpiry, setQualificationExpiry] = useState("")
   const [extensionYears, setExtensionYears] = useState("0")
+  const [editingEntityId, setEditingEntityId] = useState<string | null>(null)
 
   // 提取所有縣市
   const counties = useMemo(() => {
@@ -126,6 +127,7 @@ export function InstitutionEntitySelector({
     setMergedName("")
     setQualificationExpiry("")
     setExtensionYears("0")
+    setEditingEntityId(null)
   }
 
   const handleCancel = () => {
@@ -149,7 +151,7 @@ export function InstitutionEntitySelector({
 
   const handleConfirm = () => {
     const newEntity: InstitutionEntity = {
-      id: `entity-${Date.now()}`,
+      id: editingEntityId || `entity-${Date.now()}`,
       type: entityType,
       qualificationExpiry,
       extensionYears,
@@ -162,9 +164,17 @@ export function InstitutionEntitySelector({
       newEntity.mergedHospitalCodes = tempSelected
     }
 
-    if (singleMode) {
+    if (editingEntityId) {
+      // 編輯模式：更新現有機構的組成
+      const updated = entities.map((ent) =>
+        ent.id === editingEntityId ? newEntity : ent
+      )
+      onEntitiesChange(updated)
+    } else if (singleMode) {
+      // 新增模式（單一模式）
       onEntitiesChange([newEntity])
     } else {
+      // 新增模式（多個）
       onEntitiesChange([...entities, newEntity])
     }
 
@@ -194,41 +204,111 @@ export function InstitutionEntitySelector({
         {label} <span className="text-destructive">*</span>
       </Label>
 
-      {/* 已選擇的主體列表 */}
+      {/* 已選擇的機構列表 */}
       {entities.length > 0 && (
         <div className="space-y-3 mb-4">
           {entities.map((entity) => (
             <div
               key={entity.id}
-              className="flex items-start gap-3 p-4 border rounded-lg bg-muted/30"
+              className="border rounded-lg bg-card p-4 space-y-3"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  {entity.type === "merged" && (
-                    <Badge variant="secondary" className="text-xs">
-                      合併
-                    </Badge>
+              {/* 機構資訊 */}
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{getEntityDisplayName(entity)}</span>
+                    {entity.type === "merged" && (
+                      <Badge variant="secondary" className="text-xs">
+                        {entity.mergedHospitalCodes?.length || 0} 機構
+                      </Badge>
+                    )}
+                  </div>
+                  {entity.type === "merged" && entity.mergedHospitalCodes && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {entity.mergedHospitalCodes.map((c) => getHospitalName(c)).join("、")}
+                    </p>
                   )}
-                  <span className="font-medium">{getEntityDisplayName(entity)}</span>
                 </div>
-                {entity.type === "merged" && entity.mergedHospitalCodes && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    組成：{entity.mergedHospitalCodes.map((c) => getHospitalName(c)).join("、")}
-                  </p>
-                )}
-                <div className="text-sm text-muted-foreground mt-1">
-                  資格效期：{entity.qualificationExpiry || "待核定"}
-                  {entity.extensionYears !== "0" && ` / 延長 ${entity.extensionYears} 年`}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveEntity(entity.id)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* 效期設定區塊 */}
+              <div className="pt-3 border-t grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground block mb-1">
+                    資格效期
+                  </Label>
+                  <Input
+                    size="sm"
+                    value={entity.qualificationExpiry}
+                    onChange={(e) => {
+                      const updated = entities.map((ent) =>
+                        ent.id === entity.id
+                          ? { ...ent, qualificationExpiry: e.target.value }
+                          : ent
+                      )
+                      onEntitiesChange(updated)
+                    }}
+                    placeholder="115/7/31"
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground block mb-1">
+                    延長效期
+                  </Label>
+                  <Select
+                    value={entity.extensionYears}
+                    onValueChange={(value) => {
+                      const updated = entities.map((ent) =>
+                        ent.id === entity.id
+                          ? { ...ent, extensionYears: value }
+                          : ent
+                      )
+                      onEntitiesChange(updated)
+                    }}
+                  >
+                    <SelectTrigger className="text-sm h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">不延長</SelectItem>
+                      <SelectItem value="1">1 年</SelectItem>
+                      <SelectItem value="2">2 年</SelectItem>
+                      <SelectItem value="3">3 年</SelectItem>
+                      <SelectItem value="4">4 年</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleRemoveEntity(entity.id)}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+
+              {/* 編輯機構按鈕 */}
+              {entity.type === "merged" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingEntityId(entity.id)
+                    setEntityType(entity.type)
+                    setMergedName(entity.mergedName || "")
+                    setTempSelected(entity.mergedHospitalCodes || [])
+                    setQualificationExpiry(entity.qualificationExpiry)
+                    setExtensionYears(entity.extensionYears)
+                    setStep("select-hospitals")
+                    setIsOpen(true)
+                  }}
+                  className="w-full"
+                >
+                  編輯機構
+                </Button>
+              )}
             </div>
           ))}
         </div>
@@ -248,196 +328,202 @@ export function InstitutionEntitySelector({
 
       {/* 選擇 Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
             <DialogTitle>
               {step === "select-type" && "選擇機構類型"}
               {step === "select-hospitals" && entityType === "single" && "選擇機構"}
-              {step === "select-hospitals" && entityType === "merged" && "建立合併主體"}
+              {step === "select-hospitals" && entityType === "merged" && editingEntityId ? "編輯機構組合" : "建立機構組合"}
             </DialogTitle>
           </DialogHeader>
 
-          {/* Step 1: 選擇類型 */}
-          {step === "select-type" && (
-            <div className="py-4">
-              <p className="text-sm text-muted-foreground mb-6">
-                請選擇要新增的機構類型
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => handleSelectType("single")}
-                  className="flex flex-col items-center gap-3 p-6 border-2 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors"
-                >
-                  <Building2 className="h-10 w-10 text-muted-foreground" />
-                  <div className="text-center">
-                    <div className="font-medium">單一機構</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      選擇一間醫療機構
-                    </div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSelectType("merged")}
-                  className="flex flex-col items-center gap-3 p-6 border-2 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors"
-                >
-                  <Combine className="h-10 w-10 text-muted-foreground" />
-                  <div className="text-center">
-                    <div className="font-medium">合併主體</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      將多間機構合併為一個主體
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: 選擇醫院 */}
-          {step === "select-hospitals" && (
-            <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-              {/* 合併名稱輸入（合併主體時） */}
-              {entityType === "merged" && (
-                <div>
-                  <Label className="text-sm text-muted-foreground mb-2 block">
-                    合併名稱 <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    value={mergedName}
-                    onChange={(e) => setMergedName(e.target.value)}
-                    placeholder="例如：高雄聯合訓練中心"
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    此名稱將顯示於列表的「醫院名稱」欄位
-                  </p>
-                </div>
-              )}
-
-              {/* 搜尋列 */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="搜尋醫院名稱或機構代碼"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* 縣市篩選 */}
-              {counties.length > 0 && (
-                <Select value={selectedCounty} onValueChange={setSelectedCounty}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="選擇縣市" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部縣市</SelectItem>
-                    {counties.map((county) => (
-                      <SelectItem key={county} value={county || ""}>
-                        {county}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-
-              {/* 醫院列表 */}
-              <div className="flex-1 overflow-y-auto border rounded-lg min-h-[200px]">
-                <div className="divide-y">
-                  {filteredHospitals.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">
-                      沒有找到符合條件的醫院
-                    </div>
-                  ) : (
-                    filteredHospitals.map((hospital) => (
-                      <div
-                        key={hospital.code}
-                        className="flex items-center gap-3 p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={() => handleToggle(hospital.code)}
-                      >
-                        <Checkbox
-                          checked={tempSelected.includes(hospital.code)}
-                          onCheckedChange={() => handleToggle(hospital.code)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{hospital.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {hospital.code}
-                            {hospital.county && ` • ${hospital.county}`}
-                            {hospital.district && ` ${hospital.district}`}
-                          </div>
-                        </div>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {/* Step 1: 選擇類型 */}
+            {step === "select-type" && (
+              <div className="py-4">
+                <p className="text-sm text-muted-foreground mb-6">
+                  請選擇要新增的機構類型
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectType("single")}
+                    className="flex flex-col items-center gap-3 p-6 border-2 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors"
+                  >
+                    <Building2 className="h-10 w-10 text-muted-foreground" />
+                    <div className="text-center">
+                      <div className="font-medium">單一機構</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        選擇一間醫療機構
                       </div>
-                    ))
-                  )}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectType("merged")}
+                    className="flex flex-col items-center gap-3 p-6 border-2 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors"
+                  >
+                    <Combine className="h-10 w-10 text-muted-foreground" />
+                    <div className="text-center">
+                      <div className="font-medium">機構組合</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        將多間機構組合成一個
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </div>
+            )}
 
-              {/* 已選區 */}
-              {tempSelected.length > 0 && (
-                <div className="border-t pt-3">
-                  <div className="text-sm font-medium mb-2 text-muted-foreground">
-                    已選擇 ({tempSelected.length})
-                    {entityType === "merged" && tempSelected.length < 2 && (
-                      <span className="text-destructive ml-2">合併主體至少需選擇 2 間機構</span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {tempSelected.map((code) => (
-                      <Badge key={code} variant="secondary" className="gap-1 pr-1">
-                        {getHospitalName(code)}
-                        <button
-                          onClick={() => handleRemoveChip(code)}
-                          className="ml-1 hover:bg-muted rounded"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 資格效期設定 */}
-              {tempSelected.length > 0 && (entityType === "single" || tempSelected.length >= 2) && (
-                <div className="border-t pt-4 grid grid-cols-2 gap-4">
+            {/* Step 2: 選擇醫院 */}
+            {step === "select-hospitals" && (
+              <div className="space-y-4">
+                {/* 合併名稱輸入（合併時） */}
+                {entityType === "merged" && (
                   <div>
                     <Label className="text-sm text-muted-foreground mb-2 block">
-                      資格效期
+                      機構組合名稱 <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      value={qualificationExpiry}
-                      onChange={(e) => setQualificationExpiry(e.target.value)}
-                      placeholder="例如：115/7/31"
+                      value={mergedName}
+                      onChange={(e) => setMergedName(e.target.value)}
+                      placeholder="例如：高雄聯合訓練中心"
                     />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      留空表示待核定
+                    <p className="text-xs text-muted-foreground mt-1">
+                      此名稱將顯示於容額列表的「醫院名稱」欄位
                     </p>
                   </div>
-                  <div>
-                    <Label className="text-sm text-muted-foreground mb-2 block">
-                      延長效期
-                    </Label>
-                    <Select value={extensionYears} onValueChange={setExtensionYears}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">不延長</SelectItem>
-                        <SelectItem value="1">1 年</SelectItem>
-                        <SelectItem value="2">2 年</SelectItem>
-                        <SelectItem value="3">3 年</SelectItem>
-                        <SelectItem value="4">4 年</SelectItem>
-                      </SelectContent>
-                    </Select>
+                )}
+
+                {/* 搜尋列 */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="搜尋醫院名稱或機構代碼"
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* 縣市篩選 */}
+                {counties.length > 0 && (
+                  <Select value={selectedCounty} onValueChange={setSelectedCounty}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="選擇縣市" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部縣市</SelectItem>
+                      {counties.map((county) => (
+                        <SelectItem key={county} value={county || ""}>
+                          {county}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* 醫院列表 - 限制高度便於滾動 */}
+                <div className="border rounded-lg max-h-[240px] overflow-y-auto bg-muted/20">
+                  <div className="divide-y">
+                    {filteredHospitals.length === 0 ? (
+                      <div className="p-8 text-center text-sm text-muted-foreground">
+                        沒有找到符合條件的醫院
+                      </div>
+                    ) : (
+                      filteredHospitals.map((hospital) => (
+                        <div
+                          key={hospital.code}
+                          className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => handleToggle(hospital.code)}
+                        >
+                          <Checkbox
+                            checked={tempSelected.includes(hospital.code)}
+                            onCheckedChange={() => handleToggle(hospital.code)}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{hospital.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {hospital.code}
+                              {hospital.county && ` • ${hospital.county}`}
+                              {hospital.district && ` ${hospital.district}`}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          <DialogFooter className="gap-2">
+                {/* 已選區 */}
+                {tempSelected.length > 0 && (
+                  <div className="bg-muted/20 rounded-lg p-3">
+                    <div className="text-xs font-medium mb-2 text-muted-foreground">
+                      已選擇 ({tempSelected.length})
+                      {entityType === "merged" && tempSelected.length < 2 && (
+                        <span className="text-destructive ml-2">需選擇 2 間以上</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {tempSelected.map((code) => (
+                        <Badge key={code} variant="secondary" className="gap-1 pr-1 text-xs">
+                          {getHospitalName(code)}
+                          <button
+                            onClick={() => handleRemoveChip(code)}
+                            className="ml-1 hover:bg-muted rounded"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 資格效期設定 - 保證可見 */}
+                {tempSelected.length > 0 && (entityType === "single" || tempSelected.length >= 2) && (
+                  <div className="bg-primary/5 rounded-lg p-4 space-y-3 border border-primary/20">
+                    <p className="text-sm font-medium">設定資格效期</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">
+                          資格效期
+                        </Label>
+                        <Input
+                          value={qualificationExpiry}
+                          onChange={(e) => setQualificationExpiry(e.target.value)}
+                          placeholder="115/7/31"
+                          className="text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          例如：115/7/31
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">
+                          延長效期
+                        </Label>
+                        <Select value={extensionYears} onValueChange={setExtensionYears}>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">不延長</SelectItem>
+                            <SelectItem value="1">1 年</SelectItem>
+                            <SelectItem value="2">2 年</SelectItem>
+                            <SelectItem value="3">3 年</SelectItem>
+                            <SelectItem value="4">4 年</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t gap-2">
             {step === "select-hospitals" && (
               <Button variant="ghost" onClick={() => setStep("select-type")}>
                 上一步
