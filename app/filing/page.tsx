@@ -34,6 +34,7 @@ import {
   Check,
   X as XIcon,
   HelpCircle,
+  ChevronDown,
 } from "lucide-react"
 import {
   Tooltip,
@@ -41,12 +42,56 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
 import { HospitalMultiSelect, type Hospital } from "@/components/filing/hospital-multi-select"
 import { AVAILABLE_HOSPITALS } from "@/components/filing/quota-form"
 import { filingItemsConfig } from "@/lib/mock/review-outline"
 import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
+import {
+  ReviewFeedbackBanner,
+  type ReviewFeedback,
+} from "@/components/filing/review-feedback-banner"
+
+// Mock 退回審查意見
+const MOCK_QUOTA_REVIEW_FEEDBACK: ReviewFeedback = {
+  reviewDate: "114/04/15",
+  meetingTitle: "114年度第一次訓練容額審查會議",
+  comments: [
+    "台大醫院申請容額 15 名，建議依前年度訓練成效調降至 12 名",
+    "高雄聯合訓練中心為合併機構，請補充各機構分配容額說明",
+    "三軍總醫院資格效期起始年度有誤，請重新確認並更正",
+  ],
+  fullContent: `一、會議時間：114年4月15日（星期二）上午10時
+
+二、會議地點：衛生福利部第三會議室
+
+三、主席：○○○司長
+    紀錄：○○○
+
+四、出席人員：（略）
+
+五、審查意見：
+
+（一）關於容額申請數量部分：
+    1. 台大醫院本次申請容額 15 名，惟依其前年度訓練成效評估，師資及設備量能評估建議調降為 12 名，請申請機構重新評估後再行送件。
+
+    2. 高雄聯合訓練中心係由高雄榮民總醫院及高雄醫學大學附設中和紀念醫院合併組成，本次申請總容額 18 名，請補充說明兩機構之間的容額分配方式及聯合訓練運作架構，以利審查。
+
+（二）關於資格效期部分：
+    1. 三軍總醫院所填資格效期起始年度為 113 年，惟依本部存檔資料，其資格認定係自 112 年起生效，請重新確認並更正後再行送件。
+
+（三）補件期限：
+    請於 114 年 5 月 15 日前完成修正並重新送件，逾期視同放棄本次申請資格。
+
+六、散會：上午12時`,
+}
 
 // 西元年轉民國年，格式 114/7/31
 function toRocDate(dateStr: string): string {
@@ -104,6 +149,9 @@ function FilingPageContent() {
   const router = useRouter()
   const tabParam = searchParams.get("tab")
   const variant = searchParams.get("variant") || ""
+  const status = searchParams.get("status") || ""
+  const isSubmitted = status === "submitted"
+  const isReturned = status === "returned"
   const [activeTab, setActiveTab] = useState<string>(
     tabParam === "quota" ? "quota" : "documents"
   )
@@ -226,7 +274,7 @@ function FilingPageContent() {
           </TabsContent>
 
           <TabsContent value="quota">
-            <FilingPageQuotaTab variant={variant} />
+            <FilingPageQuotaTab variant={variant} isSubmitted={isSubmitted} isReturned={isReturned} />
           </TabsContent>
         </Tabs>
 
@@ -314,7 +362,7 @@ function FilingPageContent() {
           <div className="space-y-6 py-4">
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-base text-muted-foreground mb-3">
-                請先下������例文件，依照格式填寫後再上傳
+                請先下載���例文件，依照格式填寫後再上傳
               </p>
               <Button variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
@@ -341,7 +389,7 @@ function FilingPageContent() {
   )
 }
 
-function FilingPageQuotaTab({ variant }: { variant: string }) {
+function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: string; isSubmitted: boolean; isReturned: boolean }) {
   const router = useRouter()
   const availableHospitals = AVAILABLE_HOSPITALS
   const isInternalMedicine = variant === "internal-medicine"
@@ -434,14 +482,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "台大醫院",
       county: "台北市",
       district: "中正區",
-      expiry: "115/7/31",
-      extension: "4 年 (至 119/7/31)",
+      expiryStartYear: "115",
+      expiryEndYear: "115",
       limit: 15,
       prevQuota: 5,
       currentQuota: 5,
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: 2,
@@ -449,14 +499,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "台北榮民總醫院",
       county: "台北市",
       district: "北投區",
-      expiry: "115/7/31",
-      extension: "-",
+      expiryStartYear: "115",
+      expiryEndYear: "115",
       limit: 12,
       prevQuota: 3,
       currentQuota: 4,
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: 3,
@@ -464,14 +516,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "三軍總醫院",
       county: "台北市",
       district: "內湖區",
-      expiry: "113/7/31",
-      extension: "4 年 (至 117/7/31)",
+      expiryStartYear: "113",
+      expiryEndYear: "115",
       limit: 10,
       prevQuota: 2,
       currentQuota: 3,
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: 4,
@@ -479,14 +533,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "中國醫藥大學附醫",
       county: "台中市",
       district: "北區",
-      expiry: "115/7/31",
-      extension: "4 年 (至 119/7/31)",
+      expiryStartYear: "115",
+      expiryEndYear: "115",
       limit: 8,
       prevQuota: 2,
       currentQuota: 2,
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     // ── 聯合申請 A 組：林口長庚（主）+ 中山醫大附醫 + 萬芳醫院（合作）──
     {
@@ -495,14 +551,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "林口長庚醫院",
       county: "桃園市",
       district: "龜山區",
-      expiry: "115/7/31",
-      extension: "4 年 (至 119/7/31)",
+      expiryStartYear: "115",
+      expiryEndYear: "115",
       limit: 15,
       prevQuota: 4,
       currentQuota: 5,
       groupId: "group-a",
       isSubRow: false,
       partnerHospitalCodes: ["0401270023", "0401240020"],
+      applicationType: "joint" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: "5.2",
@@ -510,14 +568,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "中山醫學大學附醫",
       county: "台中市",
       district: "南區",
-      expiry: "",
-      extension: "",
+      expiryStartYear: "115",
+      expiryEndYear: "115",
       limit: null as number | null,
       prevQuota: null as number | null,
       currentQuota: null as number | null,
       groupId: "group-a",
       isSubRow: true,
       partnerHospitalCodes: [] as string[],
+      applicationType: "joint" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: "5.3",
@@ -525,14 +585,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "萬芳醫院",
       county: "台北市",
       district: "文山區",
-      expiry: "",
-      extension: "",
+      expiryStartYear: "115",
+      expiryEndYear: "115",
       limit: null as number | null,
       prevQuota: null as number | null,
       currentQuota: null as number | null,
       groupId: "group-a",
       isSubRow: true,
       partnerHospitalCodes: [] as string[],
+      applicationType: "joint" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     // ── 聯合申請 B 組：奇美醫院（主）+ 成大醫院（合作）──
     {
@@ -541,14 +603,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "奇美醫院",
       county: "台南市",
       district: "永康區",
-      expiry: "114/7/31",
-      extension: "2 年 (至 116/7/31)",
+      expiryStartYear: "114",
+      expiryEndYear: "116",
       limit: 9,
       prevQuota: 3,
       currentQuota: 4,
       groupId: "group-b",
       isSubRow: false,
       partnerHospitalCodes: ["0401310027"],
+      applicationType: "joint" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: "6.2",
@@ -556,45 +620,34 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "成大醫院",
       county: "台南市",
       district: "東區",
-      expiry: "",
-      extension: "",
+      expiryStartYear: "114",
+      expiryEndYear: "116",
       limit: null as number | null,
       prevQuota: null as number | null,
       currentQuota: null as number | null,
       groupId: "group-b",
       isSubRow: true,
       partnerHospitalCodes: [] as string[],
+      applicationType: "joint" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
-    // ── 合併申請 C 組：高雄長庚 + 高雄榮總 ──
+    // ── 合併申請：高雄長庚 + 高雄榮總 → 顯示為「高雄聯合訓練中心」──
     {
-      id: "7.1",
-      code: "0401320028",
-      name: "高雄長庚醫院",
+      id: 7,
+      code: "merged-001",
+      name: "高雄聯合訓練中心",
       county: "高雄市",
       district: "左營區",
-      expiry: "115/7/31",
-      extension: "4 年 (至 119/7/31)",
+      expiryStartYear: "115",
+      expiryEndYear: "115",
       limit: 18,
       prevQuota: 6,
       currentQuota: 7,
-      groupId: "group-c",
+      groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
-    },
-    {
-      id: "7.2",
-      code: "0401330029",
-      name: "高雄榮民總醫院",
-      county: "高雄市",
-      district: "左營區",
-      expiry: "",
-      extension: "",
-      limit: null as number | null,
-      prevQuota: null as number | null,
-      currentQuota: null as number | null,
-      groupId: "group-c",
-      isSubRow: true,
-      partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint",
+      mergedHospitalCodes: ["0401320028", "0401330029"],
     },
     // ── 單一機構申請（繼續）──
     {
@@ -603,14 +656,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "台中榮民總醫院",
       county: "台中市",
       district: "西屯區",
-      expiry: "115/7/31",
-      extension: "-",
+      expiryStartYear: "115",
+      expiryEndYear: "115",
       limit: 11,
       prevQuota: 4,
       currentQuota: 4,
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
     {
       id: 9,
@@ -618,14 +673,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       name: "高雄醫學大學附醫",
       county: "高雄市",
       district: "三民區",
-      expiry: "114/7/31",
-      extension: "4 年 (至 118/7/31)",
+      expiryStartYear: "114",
+      expiryEndYear: "118",
       limit: 7,
       prevQuota: 2,
       currentQuota: 3,
       groupId: null as string | null,
       isSubRow: false,
       partnerHospitalCodes: [] as string[],
+      applicationType: "single" as "single" | "joint",
+      mergedHospitalCodes: [] as string[],
     },
   ])
 
@@ -662,6 +719,10 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
 
   return (
     <div className="space-y-8">
+      {/* 退回審查意見 Banner */}
+      {isReturned && (
+        <ReviewFeedbackBanner feedback={MOCK_QUOTA_REVIEW_FEEDBACK} />
+      )}
       {/* 訓練醫院申請家數統計 */}
       <div>
         <h3 className="text-lg font-bold text-foreground mb-4">訓練醫院申請家數</h3>
@@ -695,21 +756,58 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
             <p className={`text-3xl font-bold ${notAppliedCount > 0 ? "text-amber-700" : "text-gray-400"}`}>{notAppliedCount}</p>
           </div>
 
-          {/* 佔位 - 保持三欄對齊 */}
-          <div></div>
+          {/* 建議分配容額上限 */}
+          {(() => {
+            const QUOTA_LIMIT = 120
+            const usedQuota = totalCurrentQuota
+            const remaining = QUOTA_LIMIT - usedQuota
+            const usedPercent = Math.min(100, Math.round((usedQuota / QUOTA_LIMIT) * 100))
+            const isOver = remaining < 0
+            const isNearLimit = !isOver && remaining <= 10
+            return (
+              <div className={`rounded-lg border px-5 py-4 flex flex-col justify-between gap-3 ${isOver ? "bg-red-50 border-red-200" : isNearLimit ? "bg-amber-50 border-amber-200" : "bg-card border-border"}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-0.5">建議分配容額</p>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className={`text-2xl font-bold ${isOver ? "text-red-700" : isNearLimit ? "text-amber-700" : "text-foreground"}`}>
+                        {usedQuota}
+                      </span>
+                      <span className="text-sm text-muted-foreground">/ {QUOTA_LIMIT} 名</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground mb-0.5">剩餘可分配</p>
+                    <p className={`text-xl font-bold ${isOver ? "text-red-600" : isNearLimit ? "text-amber-600" : "text-foreground"}`}>
+                      {isOver ? `超出 ${Math.abs(remaining)}` : remaining}
+                      {!isOver && <span className="text-sm font-normal text-muted-foreground ml-0.5">名</span>}
+                    </p>
+                  </div>
+                </div>
+                {/* 進度條 */}
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${isOver ? "bg-red-500" : isNearLimit ? "bg-amber-400" : "bg-primary"}`}
+                    style={{ width: `${usedPercent}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </div>
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">專科醫師訓練醫院認定合格名冊及訓練容量</h2>
         <div className="flex items-center gap-3">
-          <Link href={variant ? `/filing/quota/new?variant=${variant}` : "/filing/quota/new"}>
-            <Button className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white">
+          <Link href={variant ? `/filing/quota/new?variant=${variant}` : "/filing/quota/new"} className={isSubmitted ? "pointer-events-none" : ""}>
+            <Button disabled={isSubmitted} className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white">
               <Plus className="h-4 w-4" />
               新增醫院
             </Button>
           </Link>
           <Button
+            disabled={isSubmitted}
             variant="outline"
             className="gap-2"
             onClick={onOpenImport}
@@ -750,15 +848,16 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                 </th>
                 <th className="px-2 py-2.5 text-center whitespace-nowrap">建議分配</th>
                 <th className="px-2 py-2.5 text-center whitespace-nowrap">資格效期</th>
-                <th className="px-2 py-2.5 text-center whitespace-nowrap">延長效期</th>
                 <th className="px-2 py-2.5 text-center whitespace-nowrap">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {hospitals.map((hospital) => {
                 const groupStyle = hospital.groupId ? groupColors[hospital.groupId] : ""
-                // 移除「有效至」前綴
-                const expiryDate = hospital.expiry?.replace("有效至 ", "") || "—"
+                // 組合資格效期：起始年度/08/01 - 結束年度/07/31
+                const expiryRange = hospital.expiryStartYear && hospital.expiryEndYear
+                  ? `${hospital.expiryStartYear}/08/01 - ${hospital.expiryEndYear}/07/31`
+                  : "—"
                 return (
                 <tr
                   key={hospital.id}
@@ -767,7 +866,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                   {/* 固定首兩欄 */}
                   <td className="px-2 py-3 text-sm text-muted-foreground whitespace-nowrap sticky left-0 bg-card z-10">{hospital.id}</td>
                   <td className="px-2 py-3 text-sm font-medium whitespace-nowrap sticky left-10 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
-                    {hospital.groupId && (
+                    {hospital.applicationType === "joint" && !hospital.isSubRow && (
                       <span className="text-muted-foreground mr-1">[聯]</span>
                     )}
                     {quotaNotesStore.hospitalNotes[String(hospital.id)] && (
@@ -787,21 +886,19 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                   <td className="px-2 py-3 text-sm text-center whitespace-nowrap">{hospital.limit}</td>
                   <td className="px-2 py-3 text-sm text-center whitespace-nowrap">{hospital.currentQuota}</td>
                   <td className="px-2 py-3 text-sm text-center text-muted-foreground whitespace-nowrap">
-                    {expiryDate}
-                  </td>
-                  <td className="px-2 py-3 text-sm text-center text-muted-foreground whitespace-nowrap">
-                    {hospital.extension}
+                    {expiryRange}
                   </td>
                   <td className="px-2 py-3 text-sm text-center whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
                       {!("isSubRow" in hospital && hospital.isSubRow) && (
-                        <Link href={`/filing/quota/${hospital.id}`}>
-                          <Button variant="link" className="text-primary p-0 h-auto text-sm">
+                        <Link href={`/filing/quota/${hospital.id}`} className={isSubmitted ? "pointer-events-none" : ""}>
+                          <Button disabled={isSubmitted} variant="link" className="text-primary p-0 h-auto text-sm">
                             編輯
                           </Button>
                         </Link>
                       )}
                       <Button
+                        disabled={isSubmitted}
                         variant="link"
                         className="text-destructive p-0 h-auto hover:text-destructive/80 text-sm"
                         onClick={() => {
@@ -853,7 +950,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                 onClick={() => setShowAddTbProgramDialog(true)}
               >
                 <Plus className="h-4 w-4" />
-                新增醫院
+                新���醫院
               </Button>
               <Button
                 variant="outline"
@@ -1076,6 +1173,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
           <h3 className="text-lg font-bold text-foreground">不合格醫院名單</h3>
           <div className="flex items-center gap-3">
             <Button
+              disabled={isSubmitted}
               className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white"
               onClick={() => setShowAddDisqualifiedDialog(true)}
             >
@@ -1083,6 +1181,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
               新增不合格醫院
             </Button>
             <Button
+              disabled={isSubmitted}
               variant="outline"
               className="gap-2"
               onClick={onOpenImport}
@@ -1253,6 +1352,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                     <td className="px-2 py-3 text-sm text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-2">
                         <Button
+                          disabled={isSubmitted}
                           variant="link"
                           className="text-primary p-0 h-auto text-sm"
                           onClick={() => {
@@ -1263,6 +1363,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                           編輯
                         </Button>
                         <Button
+                          disabled={isSubmitted}
                           variant="link"
                           className="text-destructive p-0 h-auto hover:text-destructive/80 text-sm"
                           onClick={() =>
@@ -1294,6 +1395,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
         </div>
           <div className="flex items-center gap-3 mt-0.5">
             <Button
+              disabled={isSubmitted}
               className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white"
               onClick={() => setShowAddNotAppliedDialog(true)}
             >
@@ -1301,6 +1403,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
               新增未申請醫院
             </Button>
             <Button
+              disabled={isSubmitted}
               variant="outline"
               className="gap-2"
               onClick={onOpenImport}
@@ -1443,14 +1546,14 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
               })()}
               <div>
                 <Label className="text-sm text-muted-foreground mb-2 block">
-                  ��一年度訓練資格 <span className="text-destructive">*</span>
+                  前一年度訓練資格 <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={editNotAppliedPrevQualification}
                   onValueChange={setEditNotAppliedPrevQualification}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="請選擇前一年度訓練資��" />
+                    <SelectValue placeholder="請選擇前一年度訓練資格" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="具訓練資格">具訓練資格</SelectItem>
@@ -1519,7 +1622,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                   <th className="px-2 py-2.5 text-left whitespace-nowrap">醫事機構代碼</th>
                   <th className="px-2 py-2.5 text-left whitespace-nowrap">前一年度訓練資格</th>
                   <th className="px-2 py-2.5 text-left">未申請原因</th>
-                  <th className="px-2 py-2.5 text-center whitespace-nowrap">操���</th>
+                  <th className="px-2 py-2.5 text-center whitespace-nowrap">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -1550,6 +1653,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                       <td className="px-2 py-3 text-sm text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2">
                           <Button
+                            disabled={isSubmitted}
                             variant="link"
                             className="text-primary p-0 h-auto text-sm"
                             onClick={() => {
@@ -1561,6 +1665,7 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                             編輯
                           </Button>
                           <Button
+                            disabled={isSubmitted}
                             variant="link"
                             className="text-destructive p-0 h-auto hover:text-destructive/80 text-sm"
                             onClick={() =>
@@ -1782,14 +1887,15 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
                           <span className="text-xs text-blue-400 mt-0.5 block">{sourceLabel}</span>
                         </div>
                         {item.type === "hospital" ? (
-                          <Link href={editHref} className="shrink-0">
-                            <Button variant="ghost" size="sm" className="gap-1.5 text-blue-400 hover:text-blue-700">
+                          <Link href={editHref} className={`shrink-0 ${isSubmitted ? "pointer-events-none" : ""}`}>
+                            <Button disabled={isSubmitted} variant="ghost" size="sm" className="gap-1.5 text-blue-400 hover:text-blue-700">
                               <Pencil className="h-3.5 w-3.5" />
                               前往編輯
                             </Button>
                           </Link>
                         ) : (
                           <Button
+                            disabled={isSubmitted}
                             variant="ghost"
                             size="sm"
                             className="gap-1.5 text-blue-400 hover:text-blue-700 shrink-0"
@@ -1828,20 +1934,63 @@ function FilingPageQuotaTab({ variant }: { variant: string }) {
       })()}
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline" className="gap-2">
-          <Download className="h-4 w-4" />
-          匯出 PDF
-        </Button>
-        <Button variant="outline" className="gap-2">
-          暫時儲存
-        </Button>
-        <Button
-          className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white"
-          onClick={() => setShowSubmitConfirmDialog(true)}
-        >
-          <Send className="h-4 w-4" />
-          儲存並送件
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-1.5">
+              <Download className="h-4 w-4" />
+              匯出 PDF
+              <ChevronDown className="h-3.5 w-3.5 ml-0.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuItem className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span>認定合格名冊及訓練容量</span>
+                <span className="text-xs text-muted-foreground">含備註</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span>不合格醫院名單</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span>未申請醫院名單</span>
+              </div>
+            </DropdownMenuItem>
+            {isInternalMedicine && (
+              <DropdownMenuItem className="gap-2 cursor-pointer">
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex flex-col">
+                  <span>結核病計畫醫院名單</span>
+                </div>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {!isSubmitted && (
+          <Button variant="outline" className="gap-2">
+            暫時儲存
+          </Button>
+        )}
+        {isSubmitted ? (
+          <Button disabled className="gap-2">
+            <Send className="h-4 w-4" />
+            審查中
+          </Button>
+        ) : (
+          <Button
+            className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white"
+            onClick={() => setShowSubmitConfirmDialog(true)}
+          >
+            <Send className="h-4 w-4" />
+            儲存並送件
+          </Button>
+        )}
       </div>
 
       {/* 送件確認 Dialog */}

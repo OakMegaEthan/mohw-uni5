@@ -11,16 +11,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ChevronLeft, X, Save, HelpCircle } from "lucide-react"
+import { ChevronLeft, Save, HelpCircle } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
-import { HospitalMultiSelect, type Hospital } from "@/components/filing/hospital-multi-select"
+import { 
+  InstitutionEntitySelector, 
+  type InstitutionEntity 
+} from "@/components/filing/institution-entity-selector"
+import type { Hospital } from "@/components/filing/hospital-multi-select"
 
 // 民國年延長效期計算（以民國 115 年 = 西元 2026 為基準）
 export function calculateExtensionDate(years: string): string {
@@ -50,13 +53,15 @@ export const AVAILABLE_HOSPITALS: Hospital[] = [
   { code: "0401340030", name: "高雄醫學大學附醫", county: "高雄市", district: "三民區" },
 ]
 
-export type ApplicationMode = "single" | "joint" | "merged"
+export type ApplicationMode = "single" | "joint"
 
 export interface QuotaFormValues {
   applicationMode: ApplicationMode
-  mainHospitalCodes: string[]
-  partnerHospitalCodes: string[]
-  extensionYears: string
+  // 主訓機構（單一機構申請時只有一個，聯合申請時也只有一個）
+  mainEntity: InstitutionEntity | null
+  // 合作機構（聯合申請時才有，可多個）
+  partnerEntities: InstitutionEntity[]
+  // 容額設定
   quotaLimit: string
   currentQuota: string
   note: string
@@ -68,7 +73,6 @@ export interface QuotaFormProps {
   // 初始值（edit 模式時帶入現有資料）
   initialValues?: Partial<QuotaFormValues>
   // 編輯模式才有的唯讀欄位
-  expiry?: string
   prevQuota?: number
   // 儲存 / 確認後的回呼
   onSave: (values: QuotaFormValues) => void
@@ -79,7 +83,6 @@ export function QuotaForm({
   mode,
   variant = "",
   initialValues,
-  expiry,
   prevQuota,
   onSave,
   onCancel,
@@ -89,23 +92,26 @@ export function QuotaForm({
   const [applicationMode, setApplicationMode] = useState<ApplicationMode>(
     initialValues?.applicationMode ?? "single"
   )
-  const [selectedMainHospitals, setSelectedMainHospitals] = useState<string[]>(
-    initialValues?.mainHospitalCodes ?? []
+  
+  // 主訓機構（使用陣列方便 InstitutionEntitySelector 操作，但實際只允許一個）
+  const [mainEntities, setMainEntities] = useState<InstitutionEntity[]>(
+    initialValues?.mainEntity ? [initialValues.mainEntity] : []
   )
-  const [selectedPartnerHospitals, setSelectedPartnerHospitals] = useState<string[]>(
-    initialValues?.partnerHospitalCodes ?? []
+  
+  // 合作機構（聯合申請時可多個）
+  const [partnerEntities, setPartnerEntities] = useState<InstitutionEntity[]>(
+    initialValues?.partnerEntities ?? []
   )
-  const [extensionYears, setExtensionYears] = useState(initialValues?.extensionYears ?? "0")
+
   const [quotaLimit, setQuotaLimit] = useState(initialValues?.quotaLimit ?? "")
   const [currentQuota, setCurrentQuota] = useState(initialValues?.currentQuota ?? "")
   const [note, setNote] = useState(initialValues?.note ?? "")
 
-  const getHospitalName = (code: string) =>
-    AVAILABLE_HOSPITALS.find((h) => h.code === code)?.name || code
+  const mainEntity = mainEntities[0] || null
 
   const canSave =
-    selectedMainHospitals.length > 0 &&
-    (applicationMode !== "joint" || selectedPartnerHospitals.length > 0) &&
+    mainEntity !== null &&
+    (applicationMode !== "joint" || partnerEntities.length > 0) &&
     !!quotaLimit &&
     Number(quotaLimit) >= 1 &&
     Number(quotaLimit) <= 50 &&
@@ -116,13 +122,19 @@ export function QuotaForm({
   const handleSave = () => {
     onSave({
       applicationMode,
-      mainHospitalCodes: selectedMainHospitals,
-      partnerHospitalCodes: selectedPartnerHospitals,
-      extensionYears,
+      mainEntity,
+      partnerEntities,
       quotaLimit,
       currentQuota,
       note,
     })
+  }
+
+  const handleApplicationModeChange = (newMode: ApplicationMode) => {
+    setApplicationMode(newMode)
+    if (newMode === "single") {
+      setPartnerEntities([])
+    }
   }
 
   const isCreate = mode === "create"
@@ -169,137 +181,75 @@ export function QuotaForm({
               <div className="max-w-xs">
                 <div className="p-4 rounded-lg border-2 border-primary bg-primary/5 text-center">
                   <div className="font-medium text-foreground">單一機構申請</div>
-                  <div className="text-sm text-muted-foreground mt-1">僅由一間醫院申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">由單一機構獨立申請</div>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-3 max-w-2xl">
-                {(
-                  [
-                    {
-                      value: "single" as ApplicationMode,
-                      label: "單一機構申請",
-                      desc: "僅由一間醫院申請",
-                      clear: true,
-                    },
-                    {
-                      value: "joint" as ApplicationMode,
-                      label: "聯合申請",
-                      desc: "主訓與合作醫院聯合",
-                      clear: false,
-                    },
-                    {
-                      value: "merged" as ApplicationMode,
-                      label: "合併申請",
-                      desc: "合併評鑑的醫院合併申請",
-                      clear: true,
-                    },
-                  ] as { value: ApplicationMode; label: string; desc: string; clear: boolean }[]
-                ).map(({ value, label, desc, clear }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      setApplicationMode(value)
-                      if (clear) setSelectedPartnerHospitals([])
-                    }}
-                    className={`p-4 rounded-lg border-2 text-center transition-colors ${
-                      applicationMode === value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <div className="font-medium text-foreground">{label}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{desc}</div>
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 gap-3 max-w-lg">
+                <button
+                  type="button"
+                  onClick={() => handleApplicationModeChange("single")}
+                  className={`p-4 rounded-lg border-2 text-center transition-colors ${
+                    applicationMode === "single"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="font-medium text-foreground">單一機構申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">由單一機構獨立申請</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplicationModeChange("joint")}
+                  className={`p-4 rounded-lg border-2 text-center transition-colors ${
+                    applicationMode === "joint"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="font-medium text-foreground">聯合申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">主訓機構與合作機構聯合申請</div>
+                </button>
               </div>
             )}
           </div>
 
-          {/* ── 基本資訊與容額設定 ── */}
-          <h2 className="text-lg font-bold text-foreground mb-6">基本資訊與容額設定</h2>
+          {/* ── 主訓機構 ── */}
+          <div className="mb-8">
+            <InstitutionEntitySelector
+              hospitals={AVAILABLE_HOSPITALS}
+              entities={mainEntities}
+              onEntitiesChange={setMainEntities}
+              singleMode={true}
+              label="主訓機構"
+              triggerLabel="選擇主訓機構"
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              主訓機構可以是單一醫療機構，或由多個機構合併進行申請
+            </p>
+          </div>
+
+          {/* ── 合作機構（聯合申請時顯示） ── */}
+          {applicationMode === "joint" && !isInternalMedicine && (
+            <div className="mb-8">
+              <InstitutionEntitySelector
+                hospitals={AVAILABLE_HOSPITALS}
+                entities={partnerEntities}
+                onEntitiesChange={setPartnerEntities}
+                singleMode={false}
+                label="合作機構"
+                triggerLabel="新增合作機構"
+              />
+            <p className="text-sm text-muted-foreground mt-2">
+                可新增多個合作機構，每個合作機構可以是單一醫療機構，或由多個機構合併申請
+            </p>
+            </div>
+          )}
+
+          {/* ── 本年度容額設定 ── */}
+          <h2 className="text-lg font-bold text-foreground mt-10 mb-6">本年度容額設定</h2>
 
           <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-            {/* 主訓醫院 / 合併申請機構 */}
-            <div className="col-span-2">
-              <Label className="text-sm text-muted-foreground mb-2 block">
-                {applicationMode === "merged" ? "合併申請機構" : "主訓醫院"}{" "}
-                <span className="text-destructive">*</span>
-                {(applicationMode === "joint" || applicationMode === "merged") && (
-                  <span className="text-sm font-normal text-muted-foreground ml-2">（可多選）</span>
-                )}
-              </Label>
-              <HospitalMultiSelect
-                hospitals={AVAILABLE_HOSPITALS}
-                selected={selectedMainHospitals}
-                onSelect={setSelectedMainHospitals}
-                mode={isInternalMedicine || applicationMode === "single" ? "single" : "multiple"}
-                triggerLabel={
-                  applicationMode === "merged" ? "請選擇合併申請機構" : "請選擇主訓醫院"
-                }
-              />
-              {selectedMainHospitals.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {selectedMainHospitals.map((code) => (
-                    <div
-                      key={code}
-                      className="inline-flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm"
-                    >
-                      {getHospitalName(code)}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedMainHospitals((prev) => prev.filter((c) => c !== code))
-                        }
-                        className="hover:bg-primary/20 rounded-full p-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 資格效期 */}
-            <div>
-              <Label className="text-sm text-muted-foreground mb-2 block">資格效期</Label>
-              {isCreate ? (
-                <div className="bg-muted/50 px-4 py-3 rounded-lg text-muted-foreground italic text-sm">
-                  新申請（待審核後核定）
-                </div>
-              ) : (
-                <div className="bg-muted/50 px-4 py-3 rounded-lg text-foreground text-sm">
-                  {expiry}
-                </div>
-              )}
-            </div>
-
-            {/* 延長效期 */}
-            <div>
-              <Label className="text-sm text-muted-foreground mb-2 block">延長效期</Label>
-              <div className="flex items-center gap-3">
-                <Select value={extensionYears} onValueChange={setExtensionYears}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">不延長</SelectItem>
-                    <SelectItem value="1">1 年</SelectItem>
-                    <SelectItem value="2">2 年</SelectItem>
-                    <SelectItem value="3">3 年</SelectItem>
-                    <SelectItem value="4">4 年</SelectItem>
-                  </SelectContent>
-                </Select>
-                {extensionYears !== "0" && (
-                  <span className="text-muted-foreground text-sm">
-                    (至 {calculateExtensionDate(extensionYears)})
-                  </span>
-                )}
-              </div>
-            </div>
-
             {/* 前年度核定容額 */}
             <div>
               <Label className="text-sm text-muted-foreground mb-2 block">前年度核定容額</Label>
@@ -313,52 +263,9 @@ export function QuotaForm({
                 </div>
               )}
             </div>
-          </div>
 
-          {/* 合作醫院（聯合申請 + 非 internal-medicine） */}
-          {applicationMode === "joint" && !isInternalMedicine && (
-            <div className="mt-8">
-              <Label className="text-sm font-medium mb-3 block">
-                合作醫院 <span className="text-destructive">*</span>
-                <span className="text-muted-foreground font-normal ml-1">（可多選）</span>
-              </Label>
-              <HospitalMultiSelect
-                hospitals={AVAILABLE_HOSPITALS.filter(
-                  (h) => !selectedMainHospitals.includes(h.code)
-                )}
-                selected={selectedPartnerHospitals}
-                onSelect={setSelectedPartnerHospitals}
-                mode="multiple"
-                triggerLabel="請選擇合作醫院"
-              />
-              {selectedPartnerHospitals.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {selectedPartnerHospitals.map((code) => (
-                    <div
-                      key={code}
-                      className="inline-flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm"
-                    >
-                      {getHospitalName(code)}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedPartnerHospitals((prev) => prev.filter((c) => c !== code))
-                        }
-                        className="hover:bg-primary/20 rounded-full p-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            <div>{/* 空白佔位 */}</div>
 
-          {/* ── 本年度容額設定 ── */}
-          <h2 className="text-lg font-bold text-foreground mt-10 mb-6">本年度容額設定</h2>
-
-          <div className="grid grid-cols-2 gap-x-12 gap-y-6">
             <div>
               <Label className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
                 可收訓容額 <span className="text-destructive">*</span>
