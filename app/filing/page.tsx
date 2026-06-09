@@ -34,6 +34,7 @@ import {
   Check,
   X as XIcon,
   HelpCircle,
+  ChevronDown,
 } from "lucide-react"
 import {
   Tooltip,
@@ -41,6 +42,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
 import { HospitalMultiSelect, type Hospital } from "@/components/filing/hospital-multi-select"
@@ -749,8 +756,44 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
             <p className={`text-3xl font-bold ${notAppliedCount > 0 ? "text-amber-700" : "text-gray-400"}`}>{notAppliedCount}</p>
           </div>
 
-          {/* 佔位 - 保持三欄對齊 */}
-          <div></div>
+          {/* 建議分配容額上限 */}
+          {(() => {
+            const QUOTA_LIMIT = 120
+            const usedQuota = totalCurrentQuota
+            const remaining = QUOTA_LIMIT - usedQuota
+            const usedPercent = Math.min(100, Math.round((usedQuota / QUOTA_LIMIT) * 100))
+            const isOver = remaining < 0
+            const isNearLimit = !isOver && remaining <= 10
+            return (
+              <div className={`rounded-lg border px-5 py-4 flex flex-col justify-between gap-3 ${isOver ? "bg-red-50 border-red-200" : isNearLimit ? "bg-amber-50 border-amber-200" : "bg-card border-border"}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-0.5">建議分配容額</p>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className={`text-2xl font-bold ${isOver ? "text-red-700" : isNearLimit ? "text-amber-700" : "text-foreground"}`}>
+                        {usedQuota}
+                      </span>
+                      <span className="text-sm text-muted-foreground">/ {QUOTA_LIMIT} 名</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground mb-0.5">剩餘可分配</p>
+                    <p className={`text-xl font-bold ${isOver ? "text-red-600" : isNearLimit ? "text-amber-600" : "text-foreground"}`}>
+                      {isOver ? `超出 ${Math.abs(remaining)}` : remaining}
+                      {!isOver && <span className="text-sm font-normal text-muted-foreground ml-0.5">名</span>}
+                    </p>
+                  </div>
+                </div>
+                {/* 進度條 */}
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${isOver ? "bg-red-500" : isNearLimit ? "bg-amber-400" : "bg-primary"}`}
+                    style={{ width: `${usedPercent}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </div>
 
@@ -798,7 +841,7 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs text-sm" side="top">
-                        係指醫院實��訓練量能，最大訓練容量之容額數
+                        係指醫院實際訓練量能，最大訓練容量之容額數
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -907,7 +950,7 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
                 onClick={() => setShowAddTbProgramDialog(true)}
               >
                 <Plus className="h-4 w-4" />
-                新增醫院
+                新���醫院
               </Button>
               <Button
                 variant="outline"
@@ -1891,10 +1934,44 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
       })()}
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline" className="gap-2">
-          <Download className="h-4 w-4" />
-          匯出 PDF
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-1.5">
+              <Download className="h-4 w-4" />
+              匯出 PDF
+              <ChevronDown className="h-3.5 w-3.5 ml-0.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuItem className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span>認定合格名冊及訓練容量</span>
+                <span className="text-xs text-muted-foreground">含備註</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span>不合格醫院名單</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span>未申請醫院名單</span>
+              </div>
+            </DropdownMenuItem>
+            {isInternalMedicine && (
+              <DropdownMenuItem className="gap-2 cursor-pointer">
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex flex-col">
+                  <span>結核病計畫醫院名單</span>
+                </div>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         {!isSubmitted && (
           <Button variant="outline" className="gap-2">
             暫時儲存
