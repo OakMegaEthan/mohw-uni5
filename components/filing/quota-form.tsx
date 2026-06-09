@@ -181,7 +181,7 @@ export function QuotaForm({
               <div className="max-w-xs">
                 <div className="p-4 rounded-lg border-2 border-primary bg-primary/5 text-center">
                   <div className="font-medium text-foreground">單一機構申請</div>
-                  <div className="text-sm text-muted-foreground mt-1">僅由一個主體申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">由單一機構獨立申請</div>
                 </div>
               </div>
             ) : (
@@ -196,7 +196,7 @@ export function QuotaForm({
                   }`}
                 >
                   <div className="font-medium text-foreground">單一機構申請</div>
-                  <div className="text-sm text-muted-foreground mt-1">僅由一個主體申請</div>
+                  <div className="text-sm text-muted-foreground mt-1">由單一機構獨立申請</div>
                 </button>
                 <button
                   type="button"
@@ -208,7 +208,7 @@ export function QuotaForm({
                   }`}
                 >
                   <div className="font-medium text-foreground">聯合申請</div>
-                  <div className="text-sm text-muted-foreground mt-1">主訓與合作機構聯合</div>
+                  <div className="text-sm text-muted-foreground mt-1">主訓機構與合作機構聯合申請</div>
                 </button>
               </div>
             )}
@@ -225,7 +225,7 @@ export function QuotaForm({
               triggerLabel="選擇主訓機構"
             />
             <p className="text-sm text-muted-foreground mt-2">
-              主訓機構可以是單一醫療機構，或將多個機構合併為一個主體
+              主訓機構可以是單一醫療機構，或由多個機構合併進行申請
             </p>
           </div>
 
@@ -240,9 +240,9 @@ export function QuotaForm({
                 label="合作機構"
                 triggerLabel="新增合作機構"
               />
-              <p className="text-sm text-muted-foreground mt-2">
-                可新增多個合作機構，每個合作機構可以是單一醫療機構或合併主體
-              </p>
+            <p className="text-sm text-muted-foreground mt-2">
+                可新增多個合作機構，每個合作機構可以是單一醫療機構，或由多個機構合併申請
+            </p>
             </div>
           )}
 

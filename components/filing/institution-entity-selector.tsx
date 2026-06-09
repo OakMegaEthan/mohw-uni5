@@ -341,7 +341,7 @@ export function InstitutionEntitySelector({
             <DialogTitle>
               {step === "select-type" && "選擇機構類型"}
               {step === "select-hospitals" && entityType === "single" && "選擇機構"}
-              {step === "select-hospitals" && entityType === "merged" && editingEntityId ? "編輯機構組合" : "建立機構組合"}
+              {step === "select-hospitals" && entityType === "merged" && editingEntityId ? "編輯合併申請" : "建立合併申請"}
             </DialogTitle>
           </DialogHeader>
 
@@ -373,9 +373,9 @@ export function InstitutionEntitySelector({
                   >
                     <Combine className="h-10 w-10 text-muted-foreground" />
                     <div className="text-center">
-                      <div className="font-medium">機構組合</div>
+                      <div className="font-medium">合併申請</div>
                       <div className="text-sm text-muted-foreground mt-1">
-                        將多間機構組合成一個
+                        多間機構合併進行申請
                       </div>
                     </div>
                   </button>
@@ -390,7 +390,7 @@ export function InstitutionEntitySelector({
                 {entityType === "merged" && (
                   <div>
                     <Label className="text-sm text-muted-foreground mb-2 block">
-                      機構組合名稱 <span className="text-destructive">*</span>
+                      合併申請名稱 <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       value={mergedName}
