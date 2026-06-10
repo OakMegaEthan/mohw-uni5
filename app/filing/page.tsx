@@ -244,7 +244,7 @@ function FilingPageContent() {
                             {doc.status === "通過" || doc.status === "審查中" ? (
                               <Button size="sm" variant="outline" className="gap-2">
                                 <FileText className="h-4 w-4" />
-                                {doc.status === "通過" ? "���通過" : "審查中"}
+                                {doc.status === "通過" ? "已通過" : "審查中"}
                               </Button>
                             ) : doc.status === "尚未送出" ? (
                               <Button size="sm" className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white">
@@ -363,7 +363,7 @@ function FilingPageContent() {
           <div className="space-y-6 py-4">
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-base text-muted-foreground mb-3">
-                請先下載���例文件，依照格式填寫後再上傳
+                請先下載範例文件，依照格式填寫後再上傳
               </p>
               <Button variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
@@ -951,7 +951,7 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
                 onClick={() => setShowAddTbProgramDialog(true)}
               >
                 <Plus className="h-4 w-4" />
-                新���醫院
+                新增醫院
               </Button>
               <Button
                 variant="outline"
