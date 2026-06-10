@@ -73,10 +73,10 @@ export type HospitalQuotaDetail = {
 }
 
 export const mockHospitalQuotaDetails: Record<string, HospitalQuotaDetail> = {
-  // ── id "1"：台灣內科醫學會（內科版型，資料豐沛）──────────────────────────
+  // ── id "1"：台灣家庭醫學醫學會（一般版型，資料豐沛）────────────────────────
   "1": {
     society: mockHospitalQuotaSocieties[0],
-    isInternalMedicine: true,
+    isInternalMedicine: false,
     hospitals: [
       {
         id: 1,
@@ -274,48 +274,14 @@ export const mockHospitalQuotaDetails: Record<string, HospitalQuotaDetail> = {
         reason: "醫院表示資料尚未備齊，將於下一申請期程提出",
       },
     ],
-    tuberculosisHospitals: [
-      {
-        id: 1,
-        code: "0401180014",
-        name: "台大醫院",
-        county: "台北市",
-        expiry: "有效至 2026/7/31",
-        quota: 3,
-      },
-      {
-        id: 2,
-        code: "0401190015",
-        name: "台北榮民總醫院",
-        county: "台北市",
-        expiry: "有效至 2026/7/31",
-        quota: 2,
-      },
-      {
-        id: 3,
-        code: "0401350031",
-        name: "成大醫院",
-        county: "台南市",
-        expiry: "有效至 2025/7/31",
-        quota: 2,
-      },
-      {
-        id: 4,
-        code: "0401360032",
-        name: "高雄醫學大學附設中和紀念醫院",
-        county: "高雄市",
-        expiry: "有效至 2026/7/31",
-        quota: 1,
-      },
-    ],
     reviewComment: "",
     groupReviewData: undefined,
   },
 
-  // ── id "2"：台灣外科醫學會（一般版型，資料豐沛）────────────────────────
+  // ── id "2"：台灣內科醫學會（內科版型，資料豐沛，有結核病計畫區塊）────────────────────────
   "2": {
     society: mockHospitalQuotaSocieties[1],
-    isInternalMedicine: false,
+    isInternalMedicine: true,
     hospitals: [
       {
         id: 1,
@@ -471,9 +437,43 @@ export const mockHospitalQuotaDetails: Record<string, HospitalQuotaDetail> = {
       },
     ],
     reviewComment: "外科醫學會整體申請容額與前年度差異不大，建議維持原核定容額；高雄長庚與高雄榮總聯合認定案請確認合作協議書是否已更新。",
+    tuberculosisHospitals: [
+      {
+        id: 1,
+        code: "0401180014",
+        name: "台大醫院",
+        county: "台北市",
+        expiry: "有效至 2026/7/31",
+        quota: 3,
+      },
+      {
+        id: 2,
+        code: "0401190015",
+        name: "台北榮民總醫院",
+        county: "台北市",
+        expiry: "有效至 2026/7/31",
+        quota: 2,
+      },
+      {
+        id: 3,
+        code: "0401350031",
+        name: "成大醫院",
+        county: "台南市",
+        expiry: "有效至 2025/7/31",
+        quota: 2,
+      },
+      {
+        id: 4,
+        code: "0401360032",
+        name: "高雄醫學大學附設中和紀念醫院",
+        county: "高雄市",
+        expiry: "有效至 2026/7/31",
+        quota: 1,
+      },
+    ],
     groupReviewData: {
       meetingDate: "115/02/14",
-      meetingRecord: "115年度外科醫學會容額分組審查會議紀錄.pdf",
+      meetingRecord: "115年度內科醫學會容額分組審查會議紀錄.pdf",
       decision: "通過",
     },
   },
