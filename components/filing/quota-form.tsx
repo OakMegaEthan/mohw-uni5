@@ -261,24 +261,7 @@ export function QuotaForm({
               <Label className="text-sm font-medium mb-2 block">
                 前年度核定容額
               </Label>
-              {isNewApplication ? (
-                <div className="bg-muted/50 px-4 py-3 rounded-lg text-muted-foreground italic text-sm">
-                  新申請
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={prevQuota}
-                    onChange={(e) => setPrevQuota(e.target.value)}
-                    placeholder="請輸入前年度核定容額"
-                    className="max-w-[160px]"
-                  />
-                  <span className="text-sm text-muted-foreground shrink-0">名</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-2 mb-3">
                 <Checkbox
                   id="isNewApplication"
                   checked={isNewApplication}
@@ -291,9 +274,23 @@ export function QuotaForm({
                   htmlFor="isNewApplication"
                   className="text-sm text-muted-foreground cursor-pointer select-none"
                 >
-                  本醫院為今年度新申請
+                  今年度新申請
                 </label>
               </div>
+              {isNewApplication ? (
+                <div className="bg-muted/50 px-4 py-3 rounded-lg text-muted-foreground italic text-sm">
+                  新申請
+                </div>
+              ) : (
+                <Input
+                  type="number"
+                  min={0}
+                  value={prevQuota}
+                  onChange={(e) => setPrevQuota(e.target.value)}
+                  placeholder="前年度核定容額"
+                  className="max-w-[160px]"
+                />
+              )}
             </div>
 
             <div>{/* 空白佔位 */}</div>
