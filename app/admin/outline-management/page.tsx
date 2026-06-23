@@ -59,9 +59,9 @@ export default function FilingItemManagementPage() {
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">文件名稱</th>
                   <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide w-28">狀態</th>
-                  <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">填報期間</th>
                   <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">新增公告日期</th>
                   <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">發文字號</th>
+                  <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">填報期間</th>
                   <th className="text-right px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide w-40">操作</th>
                 </tr>
               </thead>
@@ -75,13 +75,13 @@ export default function FilingItemManagementPage() {
                       {getStatusBadge(item)}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-500">{getFilingPeriod(item)}</span>
-                    </td>
-                    <td className="px-6 py-4">
                       <span className="text-sm text-gray-500">{item.announcementDate ?? "—"}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-500">{item.documentNumber ?? "—"}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-500">{getFilingPeriod(item)}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
