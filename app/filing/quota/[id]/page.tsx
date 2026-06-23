@@ -13,7 +13,8 @@ const hospitalData: Record<
   {
     mainEntity: InstitutionEntity
     partnerEntities: InstitutionEntity[]
-    prevQuota: number
+    prevQuota: string
+    isNewApplication: boolean
     quotaLimit: number
     currentQuota: number
     applicationMode: ApplicationMode
@@ -29,7 +30,8 @@ const hospitalData: Record<
       expiryEndYear: "115",
     },
     partnerEntities: [],
-    prevQuota: 5,
+    prevQuota: "5",
+    isNewApplication: false,
     quotaLimit: 15,
     currentQuota: 5,
     applicationMode: "single",
@@ -43,7 +45,8 @@ const hospitalData: Record<
       expiryEndYear: "115",
     },
     partnerEntities: [],
-    prevQuota: 3,
+    prevQuota: "3",
+    isNewApplication: false,
     quotaLimit: 12,
     currentQuota: 4,
     applicationMode: "single",
@@ -57,7 +60,8 @@ const hospitalData: Record<
       expiryEndYear: "115",
     },
     partnerEntities: [],
-    prevQuota: 2,
+    prevQuota: "2",
+    isNewApplication: false,
     quotaLimit: 10,
     currentQuota: 3,
     applicationMode: "single",
@@ -71,7 +75,8 @@ const hospitalData: Record<
       expiryEndYear: "115",
     },
     partnerEntities: [],
-    prevQuota: 2,
+    prevQuota: "2",
+    isNewApplication: false,
     quotaLimit: 8,
     currentQuota: 2,
     applicationMode: "single",
@@ -101,7 +106,8 @@ const hospitalData: Record<
         extensionYears: "2",
       },
     ],
-    prevQuota: 4,
+    prevQuota: "4",
+    isNewApplication: false,
     quotaLimit: 15,
     currentQuota: 5,
     applicationMode: "joint",
@@ -123,7 +129,8 @@ const hospitalData: Record<
         extensionYears: "0",
       },
     ],
-    prevQuota: 3,
+    prevQuota: "3",
+    isNewApplication: false,
     quotaLimit: 9,
     currentQuota: 4,
     applicationMode: "joint",
@@ -139,7 +146,8 @@ const hospitalData: Record<
       expiryEndYear: "115",
     },
     partnerEntities: [],
-    prevQuota: 6,
+    prevQuota: "6",
+    isNewApplication: false,
     quotaLimit: 18,
     currentQuota: 7,
     applicationMode: "single",
@@ -153,7 +161,8 @@ const hospitalData: Record<
       expiryEndYear: "115",
     },
     partnerEntities: [],
-    prevQuota: 4,
+    prevQuota: "4",
+    isNewApplication: false,
     quotaLimit: 11,
     currentQuota: 4,
     applicationMode: "single",
@@ -167,7 +176,8 @@ const hospitalData: Record<
       extensionYears: "4",
     },
     partnerEntities: [],
-    prevQuota: 2,
+    prevQuota: "2",
+    isNewApplication: false,
     quotaLimit: 7,
     currentQuota: 3,
     applicationMode: "single",
@@ -222,11 +232,12 @@ function QuotaEditPageContent({
         applicationMode: data.applicationMode,
         mainEntity: data.mainEntity,
         partnerEntities: data.partnerEntities,
+        prevQuota: data.prevQuota,
+        isNewApplication: data.isNewApplication,
         quotaLimit: data.quotaLimit.toString(),
         currentQuota: data.currentQuota.toString(),
         note: quotaNotesStore.hospitalNotes[id] ?? "",
       }}
-      prevQuota={data.prevQuota}
       onSave={handleSave}
       onCancel={() => router.push(backUrl)}
     />

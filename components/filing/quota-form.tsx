@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ChevronLeft, Save, HelpCircle } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Tooltip,
   TooltipContent,
@@ -62,6 +63,8 @@ export interface QuotaFormValues {
   // 合作機構（聯合申請時才有，可多個）
   partnerEntities: InstitutionEntity[]
   // 容額設定
+  prevQuota: string
+  isNewApplication: boolean
   quotaLimit: string
   currentQuota: string
   note: string
@@ -72,8 +75,6 @@ export interface QuotaFormProps {
   variant?: string
   // 初始值（edit 模式時帶入現有資料）
   initialValues?: Partial<QuotaFormValues>
-  // 編輯模式才有的唯讀欄位
-  prevQuota?: number
   // 儲存 / 確認後的回呼
   onSave: (values: QuotaFormValues) => void
   onCancel: () => void
@@ -83,7 +84,6 @@ export function QuotaForm({
   mode,
   variant = "",
   initialValues,
-  prevQuota,
   onSave,
   onCancel,
 }: QuotaFormProps) {
@@ -103,6 +103,10 @@ export function QuotaForm({
     initialValues?.partnerEntities ?? []
   )
 
+  const [isNewApplication, setIsNewApplication] = useState<boolean>(
+    initialValues?.isNewApplication ?? mode === "create"
+  )
+  const [prevQuota, setPrevQuota] = useState(initialValues?.prevQuota ?? "")
   const [quotaLimit, setQuotaLimit] = useState(initialValues?.quotaLimit ?? "")
   const [currentQuota, setCurrentQuota] = useState(initialValues?.currentQuota ?? "")
   const [note, setNote] = useState(initialValues?.note ?? "")
@@ -124,6 +128,8 @@ export function QuotaForm({
       applicationMode,
       mainEntity,
       partnerEntities,
+      prevQuota,
+      isNewApplication,
       quotaLimit,
       currentQuota,
       note,
@@ -252,16 +258,42 @@ export function QuotaForm({
           <div className="grid grid-cols-2 gap-x-12 gap-y-6">
             {/* 前年度核定容額 */}
             <div>
-              <Label className="text-sm text-muted-foreground mb-2 block">前年度核定容額</Label>
-              {isCreate ? (
+              <Label className="text-sm font-medium mb-2 block">
+                前年度核定容額
+              </Label>
+              {isNewApplication ? (
                 <div className="bg-muted/50 px-4 py-3 rounded-lg text-muted-foreground italic text-sm">
                   新申請
                 </div>
               ) : (
-                <div className="bg-muted/50 px-4 py-3 rounded-lg text-foreground text-sm">
-                  {prevQuota} 名
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={prevQuota}
+                    onChange={(e) => setPrevQuota(e.target.value)}
+                    placeholder="請輸入前年度核定容額"
+                    className="max-w-[160px]"
+                  />
+                  <span className="text-sm text-muted-foreground shrink-0">名</span>
                 </div>
               )}
+              <div className="flex items-center gap-2 mt-3">
+                <Checkbox
+                  id="isNewApplication"
+                  checked={isNewApplication}
+                  onCheckedChange={(checked) => {
+                    setIsNewApplication(checked === true)
+                    if (checked) setPrevQuota("")
+                  }}
+                />
+                <label
+                  htmlFor="isNewApplication"
+                  className="text-sm text-muted-foreground cursor-pointer select-none"
+                >
+                  本醫院為今年度新申請
+                </label>
+              </div>
             </div>
 
             <div>{/* 空白佔位 */}</div>
