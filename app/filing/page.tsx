@@ -885,7 +885,8 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
               <tr className="bg-muted/50 border-b text-sm font-medium text-muted-foreground">
                 {/* 固定首兩欄：編號 + 醫院名稱 */}
                 <th className="px-2 py-2.5 text-left whitespace-nowrap w-10 sticky left-0 bg-muted/50 z-20">編號</th>
-                <th className="px-2 py-2.5 text-left whitespace-nowrap min-w-[260px] sticky left-10 bg-muted/50 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">醫院名稱</th>
+                <th className="px-2 py-2.5 text-left whitespace-nowrap min-w-[240px] sticky left-10 bg-muted/50 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">醫院名稱</th>
+                <th className="px-2 py-2.5 text-left whitespace-nowrap">類別</th>
                 <th className="px-2 py-2.5 text-left whitespace-nowrap">所在地</th>
                 <th className="px-2 py-2.5 text-center whitespace-nowrap">前年度核定</th>
                 <th className="px-2 py-2.5 text-center whitespace-nowrap">
@@ -922,25 +923,28 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
                 >
                   {/* 固定首兩欄 */}
                   <td className="px-2 py-3 text-sm text-muted-foreground whitespace-nowrap sticky left-0 bg-card z-10">{hospital.id}</td>
-                  <td className="px-2 py-3 text-sm font-medium align-top sticky left-10 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)] min-w-[260px] max-w-[340px]">
-                    <div className={`flex items-start gap-1.5 ${hospital.isSubRow ? "pl-5" : ""}`}>
-                      <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                        {hospital.applicationType === "joint" && !hospital.isSubRow && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">主訓機構</span>
-                        )}
-                        {hospital.applicationType === "joint" && hospital.isSubRow && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 whitespace-nowrap">合作機構</span>
-                        )}
-                        {hospital.mergedHospitalCodes.length > 0 && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">合併</span>
-                        )}
-                      </div>
-                      <span className="leading-snug break-words">
-                        {quotaNotesStore.hospitalNotes[String(hospital.id)] && (
-                          <span className="text-destructive mr-0.5" title="此醫院有備註">*</span>
-                        )}
-                        {hospital.name}
-                      </span>
+                  <td className="px-2 py-3 text-sm font-medium align-top sticky left-10 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)] min-w-[240px] max-w-[360px]">
+                    <span className={`leading-snug break-words block ${hospital.isSubRow ? "pl-5" : ""}`}>
+                      {quotaNotesStore.hospitalNotes[String(hospital.id)] && (
+                        <span className="text-destructive mr-0.5" title="此醫院有備註">*</span>
+                      )}
+                      {hospital.name}
+                    </span>
+                  </td>
+                  <td className="px-2 py-3 align-top">
+                    <div className="flex flex-col items-start gap-1">
+                      {hospital.applicationType === "joint" && !hospital.isSubRow && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">主訓機構</span>
+                      )}
+                      {hospital.applicationType === "joint" && hospital.isSubRow && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">合作機構</span>
+                      )}
+                      {hospital.applicationType === "single" && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap">單一機構</span>
+                      )}
+                      {hospital.mergedHospitalCodes.length > 0 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">合併認定</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-2 py-3 text-sm whitespace-nowrap align-top">
@@ -1021,6 +1025,7 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
               <tr className="bg-muted/60 border-t-2 border-border">
                 <td className="px-2 py-2.5 text-sm font-semibold text-foreground sticky left-0 bg-muted/60 z-10">合計</td>
                 <td className="px-2 py-2.5 sticky left-10 bg-muted/60 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"></td>
+                <td className="px-2 py-2.5"></td>
                 <td className="px-2 py-2.5"></td>
                 <td className="px-2 py-2.5 text-sm text-center font-bold text-foreground">{totalPrevQuota}</td>
                 <td className="px-2 py-2.5 text-sm text-center font-bold text-foreground">{totalLimit}</td>
@@ -1992,7 +1997,7 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
                     </div>
                   )}
 
-                  {/* 自動備註（來自各名��自動合併）
+                  {/* 自動備註（來自各名單自動合併）
                       序號基底 = 手動備註數，不計入 isAddingNote 佔位 */}
                   {autoNotes.length > 0 && (
                     <div className="px-6 py-2 bg-blue-50 border-t border-blue-100 flex items-center gap-2">
@@ -2115,7 +2120,7 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
         </DropdownMenu>
         {!isSubmitted && (
           <Button variant="outline" className="gap-2">
-            ��時儲存
+            暫時儲存
           </Button>
         )}
         {isSubmitted ? (
@@ -2184,7 +2189,7 @@ function FilingPageQuotaTab({ variant, isSubmitted, isReturned }: { variant: str
             <DialogTitle>匯入名單</DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-4">
-            {/* ���驟一：選擇匯入方式 */}
+            {/* 步驟一：選擇匯入方式 */}
             <div>
               <Label className="text-base font-medium mb-3 block">匯入方式</Label>
               <RadioGroup
