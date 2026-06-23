@@ -327,7 +327,7 @@ export function TrainingPlanFilingDialog({
                           {isLocked ? (
                             <Badge variant="secondary" className="gap-1 font-normal text-gray-600">
                               <Lock className="w-3 h-3" />
-                              不可修改
+                              未滿4年
                             </Badge>
                           ) : (
                             <span className="text-sm text-gray-400">可修改</span>
