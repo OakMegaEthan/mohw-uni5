@@ -28,6 +28,8 @@ export interface FilingItemConfig {
   closingDate?: string
   isScheduled: boolean
   isManualControl: boolean
+  announcementDate?: string   // 新增公告日期
+  documentNumber?: string     // 發文字號
 }
 
 export interface SocietyFilingConfig {
@@ -107,6 +109,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/03/31 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/02/20",
+    documentNumber: "衛部醫字第1150201234號",
   },
   {
     id: "training-curriculum",
@@ -116,6 +120,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/04/30 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/02/20",
+    documentNumber: "衛部醫字第1150201235號",
   },
   {
     id: "evaluation-standards",
@@ -125,6 +131,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/04/30 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/02/20",
+    documentNumber: "衛部醫字第1150201236號",
   },
   {
     id: "quota-allocation",
@@ -134,6 +142,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/04/15 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/03/05",
+    documentNumber: "衛部醫字第1150202891號",
   },
   {
     id: "improvement-guide",
@@ -143,6 +153,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "",
     isScheduled: false,
     isManualControl: true,
+    announcementDate: undefined,
+    documentNumber: undefined,
   },
   {
     id: "screening-principle",
@@ -152,6 +164,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/03/31 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/02/20",
+    documentNumber: "衛部醫字第1150201237號",
   },
 ]
 
