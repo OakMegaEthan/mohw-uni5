@@ -37,16 +37,6 @@ const organizationOptions = {
     { value: "otolaryngology", label: "台灣耳鼻喉科醫學會" },
     { value: "dermatology", label: "台灣皮膚科醫學會" },
   ],
-  hospital: [
-    { value: "ntuh", label: "台大醫院" },
-    { value: "vgh", label: "榮民總醫院" },
-    { value: "cgmh", label: "長庚醫院" },
-    { value: "mmh", label: "馬偕醫院" },
-    { value: "cmuh", label: "中國醫藥大學附設醫院" },
-    { value: "nckuh", label: "成大醫院" },
-    { value: "kmuh", label: "高雄醫學大學附設醫院" },
-    { value: "cch", label: "彰化基督教醫院" },
-  ],
 }
 
 interface AddUserDialogProps {
@@ -129,25 +119,12 @@ const roleTemplatePermissions: Record<string, PermissionState> = {
     "admin-pending": "none",
     "admin-published": "none",
   },
-  "hospital-admin": {
-    "submission-general": "view",
-    "submission-hospital": "edit",
-    "submission-extra": "edit",
-    "review-general": "none",
-    "review-hospital": "view",
-    "review-extra": "view",
-    statistics: "view",
-    "account-users": "view",
-    "account-templates": "none",
-    "admin-pending": "none",
-    "admin-published": "none",
-  },
 }
 
 export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [orgLevel, setOrgLevel] = useState<"central" | "society" | "hospital">("central")
+  const [orgLevel, setOrgLevel] = useState<"central" | "society">("central")
   const [organization, setOrganization] = useState("")
   const [roleTemplate, setRoleTemplate] = useState("")
   const [showPermissions, setShowPermissions] = useState(false)
@@ -181,7 +158,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
   }
 
   // 當層級改變時，重置單位選擇
-  const handleOrgLevelChange = (value: "central" | "society" | "hospital") => {
+  const handleOrgLevelChange = (value: "central" | "society") => {
     setOrgLevel(value)
     setOrganization("")
   }
@@ -254,7 +231,6 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                 <SelectContent>
                   <SelectItem value="central">中央</SelectItem>
                   <SelectItem value="society">醫學會</SelectItem>
-                  <SelectItem value="hospital">醫療機構</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -293,7 +269,6 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                 <SelectItem value="editor">編輯者</SelectItem>
                 <SelectItem value="user">一般使用者</SelectItem>
                 <SelectItem value="society-admin">醫學會管理者</SelectItem>
-                <SelectItem value="hospital-admin">醫院管理者</SelectItem>
               </SelectContent>
             </Select>
           </div>
