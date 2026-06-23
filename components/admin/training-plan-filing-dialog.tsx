@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil } from "lucide-react"
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Lock } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -30,11 +30,13 @@ interface TrainingPlanState {
 
 const FOUR_YEARS_MS = 4 * 365 * 24 * 60 * 60 * 1000
 
-function isOverFourYears(dateStr: string | null): boolean {
+// 距前次公告 4 年內 → 原則上不可再修改（少數特例，仍可由管理者個別開放）
+// 從未公告或已超過 4 年 → 可修改（常態）
+function isWithinFourYears(dateStr: string | null): boolean {
   if (!dateStr) return false
   const parts = dateStr.split("/")
   const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
-  return Date.now() - date.getTime() > FOUR_YEARS_MS
+  return Date.now() - date.getTime() <= FOUR_YEARS_MS
 }
 
 export function TrainingPlanFilingDialog({
@@ -56,7 +58,7 @@ export function TrainingPlanFilingDialog({
 
   // UI state
   const [searchTerm, setSearchTerm] = useState("")
-  const [sortBy, setSortBy] = useState<"id" | "announcedDate">("id")
+  const [sortBy, setSortBy] = useState<"id" | "announcedDate" | "modifiable">("id")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
   const [editingOverride, setEditingOverride] = useState<string | null>(null)
   const [tempOverrideStart, setTempOverrideStart] = useState("")
@@ -78,6 +80,11 @@ export function TrainingPlanFilingDialog({
       let compareVal = 0
       if (sortBy === "id") {
         compareVal = Number(a.societyId) - Number(b.societyId)
+      } else if (sortBy === "modifiable") {
+        // 不可修改（4 年內）排在前，方便管理者快速聚焦少數特例
+        const lockedA = isWithinFourYears(a.lastAnnouncedDate) ? 0 : 1
+        const lockedB = isWithinFourYears(b.lastAnnouncedDate) ? 0 : 1
+        compareVal = lockedA - lockedB
       } else {
         const dateA = a.lastAnnouncedDate
           ? new Date(a.lastAnnouncedDate).getTime()
@@ -104,7 +111,7 @@ export function TrainingPlanFilingDialog({
     )
   }
 
-  const handleToggleSort = (field: "id" | "announcedDate") => {
+  const handleToggleSort = (field: "id" | "announcedDate" | "modifiable") => {
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc")
     } else {
@@ -239,8 +246,8 @@ export function TrainingPlanFilingDialog({
             </div>
 
             {/* Legend */}
-            <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-              橘色標示：距前次公告已超過 4 年
+            <div className="text-sm text-gray-500">
+              修改狀態：距前次公告 4 年內者原則上不可再修改，可點擊欄位標題排序以聚焦此類醫學會
             </div>
 
             {/* Table */}
@@ -253,6 +260,23 @@ export function TrainingPlanFilingDialog({
                     </th>
                     <th className="px-5 py-3 text-left font-semibold text-gray-700">
                       醫學會名稱
+                    </th>
+                    <th
+                      className="px-5 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 whitespace-nowrap"
+                      onClick={() => handleToggleSort("modifiable")}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>修改狀態</span>
+                        {sortBy === "modifiable" ? (
+                          sortOrder === "asc" ? (
+                            <ArrowUp className="w-4 h-4" />
+                          ) : (
+                            <ArrowDown className="w-4 h-4" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
                     </th>
                     <th
                       className="px-5 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
@@ -276,7 +300,7 @@ export function TrainingPlanFilingDialog({
                 </thead>
                 <tbody>
                   {filteredConfigs.map((config) => {
-                    const isOld = isOverFourYears(config.lastAnnouncedDate)
+                    const isLocked = isWithinFourYears(config.lastAnnouncedDate)
                     const period = getPeriod(config.societyId)
                     const hasOverride = !!overrides[config.societyId]
                     const isEditing = editingOverride === config.societyId
@@ -284,9 +308,7 @@ export function TrainingPlanFilingDialog({
                     return (
                       <tr
                         key={config.societyId}
-                        className={`border-t ${
-                          isOld ? "bg-amber-50" : ""
-                        } ${hasOverride ? "bg-blue-50/30" : ""}`}
+                        className={`border-t ${hasOverride ? "bg-blue-50/30" : ""}`}
                       >
                         <td className="px-5 py-3">
                           <Switch
@@ -302,14 +324,18 @@ export function TrainingPlanFilingDialog({
                           </span>
                         </td>
                         <td className="px-5 py-3">
+                          {isLocked ? (
+                            <Badge variant="secondary" className="gap-1 font-normal text-gray-600">
+                              <Lock className="w-3 h-3" />
+                              不可修改
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-gray-400">可修改</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3">
                           {config.lastAnnouncedDate ? (
-                            <span
-                              className={
-                                isOld
-                                  ? "text-amber-700 font-medium"
-                                  : "text-gray-600"
-                              }
-                            >
+                            <span className="text-gray-600">
                               {config.lastAnnouncedDate}
                             </span>
                           ) : (
