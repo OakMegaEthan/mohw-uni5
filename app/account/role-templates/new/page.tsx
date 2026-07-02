@@ -1,16 +1,36 @@
+"use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
-import { ROLE_TEMPLATE_LEVEL_LABELS } from "@/lib/mock/role-templates"
+import { RoleTemplateModules } from "@/components/account/role-template-modules"
+import {
+  ROLE_TEMPLATE_LEVEL_LABELS,
+  type PermissionState,
+  type PermissionValue,
+  type RoleTemplateLevel,
+} from "@/lib/mock/role-templates"
 
 export default function NewRoleTemplatePage() {
+  const [level, setLevel] = useState<RoleTemplateLevel>("central")
+  const [permissions, setPermissions] = useState<PermissionState>({})
+
+  // 切換層級時，各層級可設定的模組不同，重置已設定的權限避免殘留無效組合
+  const handleLevelChange = (value: RoleTemplateLevel) => {
+    setLevel(value)
+    setPermissions({})
+  }
+
+  const handlePermissionChange = (key: string, value: PermissionValue) => {
+    setPermissions((prev) => ({ ...prev, [key]: value }))
+  }
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -57,7 +77,7 @@ export default function NewRoleTemplatePage() {
               <Label htmlFor="level">
                 層級 <span className="text-red-500">*</span>
               </Label>
-              <Select defaultValue="central">
+              <Select value={level} onValueChange={(value) => handleLevelChange(value as RoleTemplateLevel)}>
                 <SelectTrigger id="level" className="w-60">
                   <SelectValue placeholder="請選擇層級" />
                 </SelectTrigger>
@@ -67,7 +87,7 @@ export default function NewRoleTemplatePage() {
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                層級決定此模板可套用的使用者範圍：中央或醫學會人員。
+                層級決定此模板可套用的使用者範圍，並影響下方可設定的功能模組。
               </p>
             </div>
             <div className="space-y-2">
@@ -81,236 +101,10 @@ export default function NewRoleTemplatePage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>功能模組權限</CardTitle>
-            <CardDescription>設定此角色在各功能模組的操作權限</CardDescription>
+            <CardDescription>依所選層級設定此角色在各功能模組的操作權限</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* 填報專區 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-foreground border-b pb-2">填報專區</h3>
-              <p className="text-sm text-muted-foreground -mt-2 mb-2">各類規範的填報功能</p>
-              {[
-                {
-                  id: "submission-general",
-                  name: "一般填報申請",
-                  description: "包含甄審原則、訓練醫院認定基準、訓練課程基準、評核標準與評核表、容額分配原則",
-                },
-                { id: "submission-hospital-quota", name: "醫院與容額分配填報" },
-                { id: "submission-extra-quota", name: "外加容額填報" },
-              ].map((item) => (
-                <div key={item.id} className="py-3 border-b last:border-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <Label className="text-sm font-medium">{item.name}</Label>
-                      {item.description && <p className="text-sm text-muted-foreground mt-0.5">{item.description}</p>}
-                    </div>
-                  </div>
-                  <RadioGroup defaultValue="none" className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="none" id={`${item.id}-none`} />
-                      <Label htmlFor={`${item.id}-none`} className="text-sm font-normal cursor-pointer">
-                        無權限
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="view" id={`${item.id}-view`} />
-                      <Label htmlFor={`${item.id}-view`} className="text-sm font-normal cursor-pointer">
-                        可檢視
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="edit" id={`${item.id}-edit`} />
-                      <Label htmlFor={`${item.id}-edit`} className="text-sm font-normal cursor-pointer">
-                        可編輯
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              ))}
-            </div>
-
-            {/* 審查專區 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-foreground border-b pb-2">審查專區</h3>
-              <p className="text-sm text-muted-foreground -mt-2 mb-2">各類填報案件的審查與核定功能</p>
-              {[
-                {
-                  id: "review-general",
-                  name: "一般填報審查",
-                  description: "包含甄審原則、訓練醫院認定基準、訓練課程基準、評核標準、容額分配原則審查",
-                },
-                { id: "review-hospital-quota", name: "醫院與容額分配審查" },
-                { id: "review-extra-quota", name: "外加容額審查" },
-              ].map((item) => (
-                <div key={item.id} className="py-3 border-b last:border-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <Label className="text-sm font-medium">{item.name}</Label>
-                      {item.description && <p className="text-sm text-muted-foreground mt-0.5">{item.description}</p>}
-                    </div>
-                  </div>
-                  <RadioGroup defaultValue="none" className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="none" id={`${item.id}-none`} />
-                      <Label htmlFor={`${item.id}-none`} className="text-sm font-normal cursor-pointer">
-                        無權限
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="view" id={`${item.id}-view`} />
-                      <Label htmlFor={`${item.id}-view`} className="text-sm font-normal cursor-pointer">
-                        可檢視
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="edit" id={`${item.id}-edit`} />
-                      <Label htmlFor={`${item.id}-edit`} className="text-sm font-normal cursor-pointer">
-                        可編輯
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              ))}
-            </div>
-
-            {/* 統計專區 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-foreground border-b pb-2">統計專區</h3>
-              <div className="flex items-center justify-between py-3 border-b">
-                <Label className="text-sm font-normal">統計資料檢視</Label>
-                <RadioGroup defaultValue="none" className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="none" id="stats-none" />
-                    <Label htmlFor="stats-none" className="text-sm font-normal cursor-pointer">
-                      無權限
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="view" id="stats-view" />
-                    <Label htmlFor="stats-view" className="text-sm font-normal cursor-pointer">
-                      可檢視
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="edit" id="stats-edit" />
-                    <Label htmlFor="stats-edit" className="text-sm font-normal cursor-pointer">
-                      可編輯
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-              <div className="pl-4 space-y-3">
-                <Label className="text-sm font-medium">匯出格式權限</Label>
-                <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="export-pdf" />
-                    <Label htmlFor="export-pdf" className="text-sm font-normal cursor-pointer">
-                      可匯出 PDF
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="export-word" />
-                    <Label htmlFor="export-word" className="text-sm font-normal cursor-pointer">
-                      可匯出 Word
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 帳號管理 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-foreground border-b pb-2">帳號管理</h3>
-              {[
-                { id: "account-personal", name: "個人設定" },
-                { id: "account-users", name: "使用者管理" },
-                { id: "account-templates", name: "角色模板管理" },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-3 border-b last:border-0">
-                  <Label className="text-sm font-normal">{item.name}</Label>
-                  <RadioGroup defaultValue="none" className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="none" id={`${item.id}-none`} />
-                      <Label htmlFor={`${item.id}-none`} className="text-sm font-normal cursor-pointer">
-                        無權限
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="view" id={`${item.id}-view`} />
-                      <Label htmlFor={`${item.id}-view`} className="text-sm font-normal cursor-pointer">
-                        可檢視
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="edit" id={`${item.id}-edit`} />
-                      <Label htmlFor={`${item.id}-edit`} className="text-sm font-normal cursor-pointer">
-                        可編輯
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              ))}
-            </div>
-
-            {/* 後台機能 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-foreground border-b pb-2">後台機能</h3>
-              {[
-                { id: "admin-pending", name: "待發佈管理" },
-                { id: "admin-published", name: "已發佈管理" },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-3 border-b last:border-0">
-                  <Label className="text-sm font-normal">{item.name}</Label>
-                  <RadioGroup defaultValue="none" className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="none" id={`${item.id}-none`} />
-                      <Label htmlFor={`${item.id}-none`} className="text-sm font-normal cursor-pointer">
-                        無權限
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="view" id={`${item.id}-view`} />
-                      <Label htmlFor={`${item.id}-view`} className="text-sm font-normal cursor-pointer">
-                        可檢視
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="edit" id={`${item.id}-edit`} />
-                      <Label htmlFor={`${item.id}-edit`} className="text-sm font-normal cursor-pointer">
-                        可編輯
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              ))}
-            </div>
-
-            {/* 前台機能 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-foreground border-b pb-2">前台機能</h3>
-              <div className="flex items-center justify-between py-3">
-                <Label className="text-sm font-normal">公告欄檢視</Label>
-                <RadioGroup defaultValue="view" className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="none" id="public-none" />
-                    <Label htmlFor="public-none" className="text-sm font-normal cursor-pointer">
-                      無權限
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="view" id="public-view" />
-                    <Label htmlFor="public-view" className="text-sm font-normal cursor-pointer">
-                      可檢視
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="edit" id="public-edit" />
-                    <Label htmlFor="public-edit" className="text-sm font-normal cursor-pointer">
-                      可編輯
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
+          <CardContent>
+            <RoleTemplateModules level={level} permissions={permissions} onChange={handlePermissionChange} />
           </CardContent>
         </Card>
 

@@ -44,8 +44,10 @@ const EMPTY_PERMISSIONS: PermissionState = {
   "review-hospital": "none",
   "review-extra": "none",
   statistics: "none",
+  "admin-filing-items": "none",
   "account-users": "none",
   "account-templates": "none",
+  "admin-announcement": "none",
   "admin-pending": "none",
   "admin-published": "none",
 }
@@ -123,7 +125,9 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
       "review-hospital": "view",
       "review-extra": "view",
       statistics: "edit",
+      "admin-filing-items": "edit",
       "account-users": "view",
+      "admin-announcement": "edit",
       "admin-pending": "edit",
       "admin-published": "edit",
     },
@@ -145,8 +149,10 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
       "review-hospital": "edit",
       "review-extra": "edit",
       statistics: "edit",
+      "admin-filing-items": "edit",
       "account-users": "edit",
       "account-templates": "edit",
+      "admin-announcement": "edit",
       "admin-pending": "edit",
       "admin-published": "edit",
     },
@@ -167,6 +173,79 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     },
   },
 ]
+
+// 功能模組結構：依層級決定可設定的模組區塊與項目
+// 中央與醫學會的模組範圍不同，此結構同時供「新增 / 編輯角色模板」頁渲染
+export interface ModulePermissionItem {
+  id: string
+  name: string
+  description?: string
+}
+
+export interface ModuleSection {
+  title: string
+  description?: string
+  items: ModulePermissionItem[]
+  // 統計專區額外提供匯出格式（PDF / Word）設定
+  hasExport?: boolean
+}
+
+export const MODULE_SECTIONS_BY_LEVEL: Record<RoleTemplateLevel, ModuleSection[]> = {
+  society: [
+    {
+      title: "填報專區",
+      description: "各類規範的填報功能",
+      items: [
+        {
+          id: "submission-general",
+          name: "文件填報",
+          description: "包含甄審原則、訓練醫院認定基準、訓練課程基準、評核標準與評核表、容額分配原則",
+        },
+        { id: "submission-hospital", name: "容額填報" },
+      ],
+    },
+    {
+      title: "統計專區",
+      items: [{ id: "statistics", name: "統計資料檢視" }],
+      hasExport: true,
+    },
+  ],
+  central: [
+    {
+      title: "填報專區",
+      description: "各類規範的填報功能",
+      items: [{ id: "submission-extra", name: "外加容額填報" }],
+    },
+    {
+      title: "審查專區",
+      description: "各類填報案件的審查與核定功能",
+      items: [
+        {
+          id: "review-general",
+          name: "文件填報審查",
+          description: "包含甄審原則、訓練醫院認定基準、訓練課程基準、評核標準、容額分配原則審查",
+        },
+        { id: "review-hospital", name: "容額填報審查" },
+        { id: "review-extra", name: "外加容額審查" },
+      ],
+    },
+    {
+      title: "統計專區",
+      items: [{ id: "statistics", name: "統計資料檢視" }],
+      hasExport: true,
+    },
+    {
+      title: "管理專區",
+      description: "後台管理與維運功能",
+      items: [
+        { id: "admin-filing-items", name: "填報項目管理" },
+        { id: "account-users", name: "使用者管理" },
+        { id: "account-templates", name: "角色模板管理" },
+        { id: "admin-announcement", name: "公告管理" },
+      ],
+    },
+  ],
+}
 
 export function getRoleTemplateById(id: string): RoleTemplate | undefined {
   return ROLE_TEMPLATES.find((template) => template.id === id)
