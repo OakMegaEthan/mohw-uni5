@@ -80,9 +80,11 @@ export default function RoleTemplatesPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Button size="sm" variant="ghost" title="複製模板">
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                          <Link href={`/account/role-templates/new?from=${template.id}`}>
+                            <Button size="sm" variant="ghost" title="複製模板">
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           {!template.isSystem && (
                             <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" title="刪除">
                               <Trash2 className="h-4 w-4" />

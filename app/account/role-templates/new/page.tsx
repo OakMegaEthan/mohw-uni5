@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,15 +12,23 @@ import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
 import { RoleTemplateModules } from "@/components/account/role-template-modules"
 import {
+  getRoleTemplateById,
   ROLE_TEMPLATE_LEVEL_LABELS,
   type PermissionState,
   type PermissionValue,
   type RoleTemplateLevel,
 } from "@/lib/mock/role-templates"
 
-export default function NewRoleTemplatePage() {
-  const [level, setLevel] = useState<RoleTemplateLevel>("central")
-  const [permissions, setPermissions] = useState<PermissionState>({})
+function NewRoleTemplateForm() {
+  const searchParams = useSearchParams()
+  const fromId = searchParams.get("from")
+  const sourceTemplate = fromId ? getRoleTemplateById(fromId) : undefined
+  const isCopy = !!sourceTemplate
+
+  const [level, setLevel] = useState<RoleTemplateLevel>(sourceTemplate?.level ?? "central")
+  const [permissions, setPermissions] = useState<PermissionState>(
+    sourceTemplate ? { ...sourceTemplate.permissions } : {},
+  )
 
   // 切換層級時，各層級可設定的模組不同，重置已設定的權限避免殘留無效組合
   const handleLevelChange = (value: RoleTemplateLevel) => {
@@ -30,6 +39,11 @@ export default function NewRoleTemplatePage() {
   const handlePermissionChange = (key: string, value: PermissionValue) => {
     setPermissions((prev) => ({ ...prev, [key]: value }))
   }
+
+  const pageTitle = isCopy ? "複製角色模板" : "新增角色模板"
+  const pageDescription = isCopy
+    ? `以「${sourceTemplate?.name}」為基礎建立新的角色模板`
+    : "建立新的角色權限模板"
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -46,8 +60,8 @@ export default function NewRoleTemplatePage() {
         {/* 頁面標題 */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">新增角色模板</h1>
-            <p className="text-sm text-muted-foreground mt-1">建立新的角色權限模板</p>
+            <h1 className="text-2xl font-bold text-foreground">{pageTitle}</h1>
+            <p className="text-sm text-muted-foreground mt-1">{pageDescription}</p>
           </div>
           <div className="flex gap-2">
             <Link href="/account/role-templates">
@@ -71,7 +85,11 @@ export default function NewRoleTemplatePage() {
               <Label htmlFor="name">
                 角色名稱 <span className="text-red-500">*</span>
               </Label>
-              <Input id="name" placeholder="例如：專科醫學會編輯" />
+              <Input
+                id="name"
+                placeholder="例如：專科醫學會編輯"
+                defaultValue={sourceTemplate ? `${sourceTemplate.name} (複本)` : ""}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="level">
@@ -92,7 +110,12 @@ export default function NewRoleTemplatePage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">角色說明</Label>
-              <Textarea id="description" placeholder="描述此角色的用途與適用對象..." rows={3} />
+              <Textarea
+                id="description"
+                placeholder="描述此角色的用途與適用對象..."
+                rows={3}
+                defaultValue={sourceTemplate?.description ?? ""}
+              />
             </div>
           </CardContent>
         </Card>
@@ -120,5 +143,13 @@ export default function NewRoleTemplatePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function NewRoleTemplatePage() {
+  return (
+    <Suspense fallback={null}>
+      <NewRoleTemplateForm />
+    </Suspense>
   )
 }
