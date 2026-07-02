@@ -7,81 +7,16 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Filter, UserPlus, Edit, Power, MoreHorizontal, ShieldCheck, ChevronRight, ArrowLeft } from "lucide-react"
+import { Search, Filter, UserPlus, Edit, ShieldCheck, ChevronRight } from "lucide-react"
 import Link from "next/link"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AddUserDialog } from "@/components/account/add-user-dialog"
-
-// 層級對應的顏色
-const levelColors: Record<string, string> = {
-  "醫事司": "bg-purple-50 text-purple-700 border-purple-200",
-  "醫策會": "bg-blue-50 text-blue-700 border-blue-200",
-  "醫學會": "bg-amber-50 text-amber-700 border-amber-200",
-}
-
-// 層級預設排序順序：醫事司 -> 醫策會 -> 醫學會
-const LEVEL_SORT_ORDER: Record<string, number> = {
-  "醫事司": 0,
-  "醫策會": 1,
-  "醫學會": 2,
-}
-
-// 模擬使用者資料
-const users = [
-  {
-    id: "1",
-    name: "王小明",
-    email: "wang.xiaoming@mohw.gov.tw",
-    level: "醫事司",
-    organization: "衛生福利部醫事司",
-    status: "active",
-    lastLogin: "2026/04/22 09:30",
-  },
-  {
-    id: "2",
-    name: "李小華",
-    email: "li.xiaohua@tjcha.org.tw",
-    level: "醫策會",
-    organization: "財團法人醫院評鑑暨醫療品質策進會",
-    status: "active",
-    lastLogin: "2026/04/21 14:20",
-  },
-  {
-    id: "3",
-    name: "張大明",
-    email: "zhang.daming@ima.org.tw",
-    level: "醫學會",
-    organization: "中華民國內科醫學會",
-    status: "active",
-    lastLogin: "2026/04/22 08:15",
-  },
-  {
-    id: "5",
-    name: "林志明",
-    email: "lin.zhiming@surgery.org.tw",
-    level: "醫學會",
-    organization: "台灣外科醫學會",
-    status: "active",
-    lastLogin: "2026/04/20 11:30",
-  },
-  {
-    id: "7",
-    name: "吳淑芬",
-    email: "wu.shufen@tjcha.org.tw",
-    level: "醫策會",
-    organization: "財團法人醫院評鑑暨醫療品質策進會",
-    status: "inactive",
-    lastLogin: "2026/03/28 16:45",
-  },
-]
+import { USERS, USER_LEVEL_BADGE_CLASS, getSortedUsers } from "@/lib/mock/users"
 
 export default function UsersManagementPage() {
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false)
 
   // 預設排序：醫事司 -> 醫策會 -> 醫學會，同層級維持原始順序
-  const sortedUsers = [...users].sort(
-    (a, b) => (LEVEL_SORT_ORDER[a.level] ?? 99) - (LEVEL_SORT_ORDER[b.level] ?? 99),
-  )
+  const sortedUsers = getSortedUsers()
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -106,7 +41,7 @@ export default function UsersManagementPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>使用者列表</CardTitle>
-                <CardDescription>共 {users.length} 位使用者</CardDescription>
+                <CardDescription>共 {USERS.length} 位使用者</CardDescription>
               </div>
               <Button onClick={() => setAddUserDialogOpen(true)}>
                 <UserPlus className="h-4 w-4 mr-2" />
@@ -165,7 +100,7 @@ export default function UsersManagementPage() {
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={levelColors[user.level]}>{user.level}</Badge>
+                        <Badge variant="outline" className={USER_LEVEL_BADGE_CLASS[user.level]}>{user.level}</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground max-w-[200px] truncate">{user.organization}</TableCell>
                       <TableCell>
@@ -181,25 +116,12 @@ export default function UsersManagementPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{user.lastLogin}</TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/account/users/${user.id}`} className="flex items-center">
-                                <Edit className="h-4 w-4 mr-2" />
-                                編輯權限
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Power className="h-4 w-4 mr-2" />
-                              {user.status === "active" ? "停用帳號" : "啟用帳號"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button variant="ghost" size="sm" asChild title="編輯權限">
+                          <Link href={`/account/users/${user.id}`} className="flex items-center">
+                            <Edit className="h-4 w-4 mr-2" />
+                            編輯權限
+                          </Link>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -210,7 +132,7 @@ export default function UsersManagementPage() {
             {/* 分頁 */}
             <div className="flex items-center justify-between mt-4">
               <p className="text-base text-muted-foreground">
-                顯示 1-{users.length} 筆，共 {users.length} 筆
+                顯示 1-{USERS.length} 筆，共 {USERS.length} 筆
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled>
