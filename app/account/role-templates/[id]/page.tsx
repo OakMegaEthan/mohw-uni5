@@ -6,19 +6,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, History } from "lucide-react"
 import Link from "next/link"
+import { ROLE_TEMPLATES, ROLE_TEMPLATE_LEVEL_LABELS } from "@/lib/mock/role-templates"
 
 export default function EditRoleTemplatePage({ params }: { params: { id: string } }) {
-  // 模擬資料
-  const template = {
-    id: params.id,
-    name: "專科醫學會編輯",
-    description: "可填報與編輯各類規範文件，適用於專科醫學會人員",
-    isSystem: true,
-    userCount: 28,
-    lastModified: "2025/09/15",
-  }
+  // 依 id 從共用來源取得模板，找不到時退回第一筆
+  const template = ROLE_TEMPLATES.find((t) => t.id === params.id) ?? ROLE_TEMPLATES[0]
+  const permissions = template.permissions
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -87,6 +83,23 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
               <Input id="name" defaultValue={template.name} />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="level">
+                層級 <span className="text-red-500">*</span>
+              </Label>
+              <Select defaultValue={template.level}>
+                <SelectTrigger id="level" className="w-60">
+                  <SelectValue placeholder="請選擇層級" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="central">{ROLE_TEMPLATE_LEVEL_LABELS.central}</SelectItem>
+                  <SelectItem value="society">{ROLE_TEMPLATE_LEVEL_LABELS.society}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                層級決定此模板可套用的使用者範圍：中央或醫學會人員。
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="description">角色說明</Label>
               <Textarea id="description" defaultValue={template.description} rows={3} />
             </div>
@@ -109,10 +122,9 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
                   id: "submission-general",
                   name: "一般填報申請",
                   description: "包含甄審原則、訓練醫院認定基準、訓練課程基準、評核標準與評核表、容額分配原則",
-                  defaultValue: "edit",
                 },
-                { id: "submission-hospital-quota", name: "醫院與容額分配填報", defaultValue: "view" },
-                { id: "submission-extra-quota", name: "外加容額填報", defaultValue: "edit" },
+                { id: "submission-hospital", name: "醫院與容額分配填報" },
+                { id: "submission-extra", name: "外加容額填報" },
               ].map((item) => (
                 <div key={item.id} className="py-3 border-b last:border-0">
                   <div className="flex items-center justify-between mb-2">
@@ -121,7 +133,7 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
                       {item.description && <p className="text-sm text-muted-foreground mt-0.5">{item.description}</p>}
                     </div>
                   </div>
-                  <RadioGroup defaultValue={item.defaultValue} className="flex gap-4">
+                  <RadioGroup defaultValue={permissions[item.id]} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="none" id={`${item.id}-none`} />
                       <Label htmlFor={`${item.id}-none`} className="text-sm font-normal cursor-pointer">
@@ -154,10 +166,9 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
                   id: "review-general",
                   name: "一般填報審查",
                   description: "包含甄審原則、訓練醫院認定基準、訓練課程基準、評核標準、容額分配原則審查",
-                  defaultValue: "none",
                 },
-                { id: "review-hospital-quota", name: "醫院與容額分配審查", defaultValue: "none" },
-                { id: "review-extra-quota", name: "外加容額審查", defaultValue: "none" },
+                { id: "review-hospital", name: "醫院與容額分配審查" },
+                { id: "review-extra", name: "外加容額審查" },
               ].map((item) => (
                 <div key={item.id} className="py-3 border-b last:border-0">
                   <div className="flex items-center justify-between mb-2">
@@ -166,7 +177,7 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
                       {item.description && <p className="text-sm text-muted-foreground mt-0.5">{item.description}</p>}
                     </div>
                   </div>
-                  <RadioGroup defaultValue={item.defaultValue} className="flex gap-4">
+                  <RadioGroup defaultValue={permissions[item.id]} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="none" id={`${item.id}-none`} />
                       <Label htmlFor={`${item.id}-none`} className="text-sm font-normal cursor-pointer">
@@ -195,7 +206,7 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
               <h3 className="text-base font-semibold text-foreground border-b pb-2">統計專區</h3>
               <div className="flex items-center justify-between py-3 border-b">
                 <Label className="text-sm font-normal">統計資料檢視</Label>
-                <RadioGroup defaultValue="view" className="flex gap-4">
+                <RadioGroup defaultValue={permissions.statistics} className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="none" id="stats-none" />
                     <Label htmlFor="stats-none" className="text-sm font-normal cursor-pointer">
@@ -245,7 +256,7 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
               ].map((item) => (
                 <div key={item.id} className="flex items-center justify-between py-3 border-b last:border-0">
                   <Label className="text-sm font-normal">{item.name}</Label>
-                  <RadioGroup defaultValue={item.defaultValue} className="flex gap-4">
+                  <RadioGroup defaultValue={permissions[item.id] ?? item.defaultValue} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="none" id={`${item.id}-none`} />
                       <Label htmlFor={`${item.id}-none`} className="text-sm font-normal cursor-pointer">
@@ -278,7 +289,7 @@ export default function EditRoleTemplatePage({ params }: { params: { id: string 
               ].map((item) => (
                 <div key={item.id} className="flex items-center justify-between py-3 border-b last:border-0">
                   <Label className="text-sm font-normal">{item.name}</Label>
-                  <RadioGroup defaultValue={item.defaultValue} className="flex gap-4">
+                  <RadioGroup defaultValue={permissions[item.id] ?? item.defaultValue} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="none" id={`${item.id}-none`} />
                       <Label htmlFor={`${item.id}-none`} className="text-sm font-normal cursor-pointer">

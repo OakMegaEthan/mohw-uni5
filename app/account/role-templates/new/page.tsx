@@ -5,8 +5,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
+import { ROLE_TEMPLATE_LEVEL_LABELS } from "@/lib/mock/role-templates"
 
 export default function NewRoleTemplatePage() {
   return (
@@ -50,6 +52,23 @@ export default function NewRoleTemplatePage() {
                 角色名稱 <span className="text-red-500">*</span>
               </Label>
               <Input id="name" placeholder="例如：專科醫學會編輯" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="level">
+                層級 <span className="text-red-500">*</span>
+              </Label>
+              <Select defaultValue="central">
+                <SelectTrigger id="level" className="w-60">
+                  <SelectValue placeholder="請選擇層級" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="central">{ROLE_TEMPLATE_LEVEL_LABELS.central}</SelectItem>
+                  <SelectItem value="society">{ROLE_TEMPLATE_LEVEL_LABELS.society}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                層級決定此模板可套用的使用者範圍：中央或醫學會人員。
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">角色說明</Label>

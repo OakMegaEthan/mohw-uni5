@@ -19,6 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ChevronDown, ChevronUp } from "lucide-react"
+import { getRoleTemplatesByLevel, getRoleTemplateById } from "@/lib/mock/role-templates"
 
 // 單位選項資料
 const organizationOptions = {
@@ -51,74 +52,6 @@ interface PermissionState {
 interface ExportPermissions {
   pdf: boolean
   word: boolean
-}
-
-const roleTemplatePermissions: Record<string, PermissionState> = {
-  admin: {
-    "submission-general": "edit",
-    "submission-hospital": "edit",
-    "submission-extra": "edit",
-    "review-general": "edit",
-    "review-hospital": "edit",
-    "review-extra": "edit",
-    statistics: "edit",
-    "account-users": "edit",
-    "account-templates": "edit",
-    "admin-pending": "edit",
-    "admin-published": "edit",
-  },
-  reviewer: {
-    "submission-general": "view",
-    "submission-hospital": "view",
-    "submission-extra": "view",
-    "review-general": "edit",
-    "review-hospital": "edit",
-    "review-extra": "edit",
-    statistics: "view",
-    "account-users": "none",
-    "account-templates": "none",
-    "admin-pending": "none",
-    "admin-published": "none",
-  },
-  editor: {
-    "submission-general": "edit",
-    "submission-hospital": "edit",
-    "submission-extra": "edit",
-    "review-general": "none",
-    "review-hospital": "none",
-    "review-extra": "none",
-    statistics: "view",
-    "account-users": "none",
-    "account-templates": "none",
-    "admin-pending": "none",
-    "admin-published": "none",
-  },
-  user: {
-    "submission-general": "view",
-    "submission-hospital": "view",
-    "submission-extra": "view",
-    "review-general": "none",
-    "review-hospital": "none",
-    "review-extra": "none",
-    statistics: "view",
-    "account-users": "none",
-    "account-templates": "none",
-    "admin-pending": "none",
-    "admin-published": "none",
-  },
-  "society-admin": {
-    "submission-general": "edit",
-    "submission-hospital": "view",
-    "submission-extra": "view",
-    "review-general": "view",
-    "review-hospital": "none",
-    "review-extra": "none",
-    statistics: "view",
-    "account-users": "view",
-    "account-templates": "none",
-    "admin-pending": "none",
-    "admin-published": "none",
-  },
 }
 
 export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
@@ -157,16 +90,23 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
     onOpenChange(false)
   }
 
-  // 當層級改變時，重置單位選擇
+  // 依所選層級篩選可套用的角色模板（模板的層級限制了它可套用的使用者範圍）
+  const availableTemplates = getRoleTemplatesByLevel(orgLevel)
+
+  // 當層級改變時，重置單位選擇；先前選的模板可能不屬於新層級，一併重置模板與權限
   const handleOrgLevelChange = (value: "central" | "society") => {
     setOrgLevel(value)
     setOrganization("")
+    setRoleTemplate("")
+    setPermissions({})
+    setShowPermissions(false)
   }
 
   const handleRoleTemplateChange = (value: string) => {
     setRoleTemplate(value)
-    if (roleTemplatePermissions[value]) {
-      setPermissions(roleTemplatePermissions[value])
+    const template = getRoleTemplateById(value)
+    if (template) {
+      setPermissions(template.permissions)
     }
   }
 
@@ -264,13 +204,14 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                 <SelectValue placeholder="請選擇角色模板" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">系統管理者</SelectItem>
-                <SelectItem value="reviewer">審查委員</SelectItem>
-                <SelectItem value="editor">編輯者</SelectItem>
-                <SelectItem value="user">一般使用者</SelectItem>
-                <SelectItem value="society-admin">醫學會管理者</SelectItem>
+                {availableTemplates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            <p className="text-sm text-muted-foreground">僅顯示適用於「{orgLevel === "central" ? "中央" : "醫學會"}」層級的角色模板。</p>
           </div>
 
           {/* 展開查看詳細權限 */}
