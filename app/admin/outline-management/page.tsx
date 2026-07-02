@@ -50,15 +50,17 @@ export default function FilingItemManagementPage() {
           <p className="text-base text-gray-500 mt-1">設定各填報項目的開放時間和狀態</p>
         </div>
 
-        {/* 文件填報管理 */}
+        {/* 專科醫師訓練相關文件填報管理 */}
         <div className="mb-8">
-          <h2 className="text-base font-semibold text-gray-700 mb-3">文件填報管理</h2>
+          <h2 className="text-base font-semibold text-gray-700 mb-3">專科醫師訓練相關文件填報管理</h2>
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">文件名稱</th>
                   <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide w-28">狀態</th>
+                  <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">新增公告日期</th>
+                  <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">發文字號</th>
                   <th className="text-left px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">填報期間</th>
                   <th className="text-right px-6 py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide w-40">操作</th>
                 </tr>
@@ -71,6 +73,12 @@ export default function FilingItemManagementPage() {
                     </td>
                     <td className="px-6 py-4">
                       {getStatusBadge(item)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-500">{item.announcementDate ?? "—"}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-500">{item.documentNumber ?? "—"}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-500">{getFilingPeriod(item)}</span>
@@ -101,9 +109,9 @@ export default function FilingItemManagementPage() {
           </div>
         </div>
 
-        {/* 容額填報管理 */}
+        {/* 專科醫師訓練醫院名冊及訓練容量填報管理 */}
         <div>
-          <h2 className="text-base font-semibold text-gray-700 mb-3">容額填報管理</h2>
+          <h2 className="text-base font-semibold text-gray-700 mb-3">專科醫師訓練醫院名冊及訓練容量填報管理</h2>
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>

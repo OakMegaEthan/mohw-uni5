@@ -28,6 +28,8 @@ export interface FilingItemConfig {
   closingDate?: string
   isScheduled: boolean
   isManualControl: boolean
+  announcementDate?: string   // 新增公告日期
+  documentNumber?: string     // 發文字號
 }
 
 export interface SocietyFilingConfig {
@@ -38,42 +40,46 @@ export interface SocietyFilingConfig {
 
 // 25 個醫學會對應的年度公告日期
 // 同一年度的公告統一在同一天，時間在 9-10 月
+// 現在為 2026 年，距前次公告 4 年內（2022/06 之後）者「不可修改」，屬少數特例
+// 多數醫學會公告後已逾 4 年未變更，屬「可修改」常態
 const ANNOUNCEMENT_DATES: { year: number; date: string }[] = [
-  { year: 2025, date: "2025/09/03" },
-  { year: 2024, date: "2024/10/01" },
-  { year: 2023, date: "2023/09/25" },
-  { year: 2022, date: "2022/09/15" },
-  { year: 2021, date: "2021/10/08" },
+  { year: 2025, date: "2025/09/03" }, // 4 年內 → 不可修改
+  { year: 2024, date: "2024/10/01" }, // 4 年內 → 不可修改
+  { year: 2023, date: "2023/09/25" }, // 4 年內 → 不可修改
+  { year: 2021, date: "2021/10/08" }, // 逾 4 年 → 可修改
+  { year: 2020, date: "2020/09/20" }, // 逾 4 年 → 可修改
+  { year: 2019, date: "2019/10/05" }, // 逾 4 年 → 可修改
+  { year: 2018, date: "2018/09/12" }, // 逾 4 年 → 可修改
 ]
 
 // 每個醫學會最後一次公告的年度（用 index 對應 allSocieties 的 id 1-25）
 // null 表示從未公告
 const SOCIETY_LAST_YEAR: (number | null)[] = [
-  2025, // 1 台灣家庭醫學醫學會
-  2025, // 2 台灣內科醫學會
-  2024, // 3 台灣外科醫學會
-  2025, // 4 臺灣兒科醫學會
-  2025, // 5 台灣婦產科醫學會
-  2024, // 6 中華民國骨科醫學會
-  2023, // 7 社團法人台灣神經外科醫學會
-  2025, // 8 台灣泌尿科醫學會
-  2024, // 9 台灣耳鼻喉頭頸外科醫學會
-  2025, // 10 中華民國眼科醫學會
-  2021, // 11 社團法人臺灣皮膚科醫學會
-  2025, // 12 台灣神經學學會
-  2024, // 13 台灣精神醫學會
-  2023, // 14 台灣復健醫學會
-  2025, // 15 台灣麻醉醫學會
-  2022, // 16 社團法人中華民國放射線醫學會
-  2025, // 17 台灣放射腫瘤學會
-  2024, // 18 台灣病理學會
-  2025, // 19 台灣臨床病理暨檢驗醫學會
-  2023, // 20 中華民國核醫學學會
-  2025, // 21 社團法人台灣急診醫學會
-  2024, // 22 中華民國環境職業醫學會
-  2021, // 23 台灣整形外科醫學會
-  2025, // 24 重症醫學專科醫師聯合訓練及甄審籌備委員會
-  2025, // 25 台灣感染症醫學會
+  2021, // 1 台灣家庭醫學醫學會（可修改）
+  2020, // 2 台灣內科醫學會（可修改）
+  2024, // 3 台灣外科醫學會（不可修改，4 年內特例）
+  2019, // 4 臺灣兒科醫學會（可修改）
+  2021, // 5 台灣婦產科醫學會（可修改）
+  2018, // 6 中華民國骨科醫學會（可修改）
+  2025, // 7 社團法人台灣神經外科醫學會（不可修改，4 年內特例）
+  2020, // 8 台灣泌尿科醫學會（可修改）
+  2019, // 9 台灣耳鼻喉頭頸外科醫學會（可修改）
+  2021, // 10 中華民國眼科醫學會（可修改）
+  2018, // 11 社團法人臺灣皮膚科醫學會（可修改）
+  2020, // 12 台灣神經學學會（可修改）
+  null, // 13 台灣精神醫學會（從未公告）
+  2024, // 14 台灣復健醫學會（不可修改，4 年內特例）
+  2019, // 15 台灣麻醉醫學會（可修改）
+  2021, // 16 社團法人中華民國放射線醫學會（可修改）
+  2020, // 17 台灣放射腫瘤學會（可修改）
+  2018, // 18 台灣病理學會（可修改）
+  2019, // 19 台灣臨床病理暨檢驗醫學會（可修改）
+  2025, // 20 中華民國核醫學學會（不可修改，4 年內特例）
+  2021, // 21 社團法人台灣急診醫學會（可修改）
+  2023, // 22 中華民國環境職業醫學會（不可修改，4 年內特例）
+  2020, // 23 台灣整形外科醫學會（可修改）
+  2018, // 24 重症醫學專科醫師聯合訓練及甄審籌備委員會（可修改）
+  null, // 25 台灣感染症醫學會（從未公告）
 ]
 
 function getAnnouncementDate(year: number | null): string | null {
@@ -107,6 +113,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/03/31 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/02/20",
+    documentNumber: "衛部醫字第1150201234號",
   },
   {
     id: "training-curriculum",
@@ -116,6 +124,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/04/30 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/02/20",
+    documentNumber: "衛部醫字第1150201235號",
   },
   {
     id: "evaluation-standards",
@@ -125,6 +135,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/04/30 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/02/20",
+    documentNumber: "衛部醫字第1150201236號",
   },
   {
     id: "quota-allocation",
@@ -134,6 +146,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/04/15 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/03/05",
+    documentNumber: "衛部醫字第1150202891號",
   },
   {
     id: "improvement-guide",
@@ -143,6 +157,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "",
     isScheduled: false,
     isManualControl: true,
+    announcementDate: undefined,
+    documentNumber: undefined,
   },
   {
     id: "screening-principle",
@@ -152,6 +168,8 @@ export const filingItemsConfig: FilingItemConfig[] = [
     closingDate: "2026/03/31 17:00",
     isScheduled: true,
     isManualControl: false,
+    announcementDate: "2026/02/20",
+    documentNumber: "衛部醫字第1150201237號",
   },
 ]
 

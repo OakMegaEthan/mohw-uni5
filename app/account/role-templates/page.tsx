@@ -2,66 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Edit, Trash2, Copy, Shield, Users, ArrowLeft } from "lucide-react"
+import { Plus, Edit, Shield, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-
-// 模擬角色模板資料
-const roleTemplates = [
-  {
-    id: "1",
-    name: "一般使用者",
-    description: "基本的檢視權限，適用於一般瀏覽者",
-    userCount: 45,
-    isSystem: true,
-    createdDate: "2025/01/01",
-    lastModified: "2025/01/01",
-  },
-  {
-    id: "2",
-    name: "專科醫學會編輯",
-    description: "可填報與編輯各類規範文件，適用於專科醫學會人員",
-    userCount: 28,
-    isSystem: true,
-    createdDate: "2025/01/01",
-    lastModified: "2025/09/15",
-  },
-  {
-    id: "3",
-    name: "醫策會審查委員",
-    description: "可審查各類填報與變更案件，適用於醫策會審查委員",
-    userCount: 12,
-    isSystem: true,
-    createdDate: "2025/01/01",
-    lastModified: "2025/08/20",
-  },
-  {
-    id: "4",
-    name: "醫事司承辦",
-    description: "擁有公告管理與後台操作權限，適用於醫事司承辦人員",
-    userCount: 8,
-    isSystem: true,
-    createdDate: "2025/01/01",
-    lastModified: "2025/10/01",
-  },
-  {
-    id: "5",
-    name: "系統管理員",
-    description: "擁有所有功能的完整權限，適用於系統管理人員",
-    userCount: 3,
-    isSystem: true,
-    createdDate: "2025/01/01",
-    lastModified: "2025/01/01",
-  },
-  {
-    id: "6",
-    name: "外部審查委員",
-    description: "僅可審查特定類型的案件，適用於外部專家",
-    userCount: 15,
-    isSystem: false,
-    createdDate: "2025/03/10",
-    lastModified: "2025/09/28",
-  },
-]
+import {
+  ROLE_TEMPLATES,
+  ROLE_TEMPLATE_LEVEL_LABELS,
+  ROLE_TEMPLATE_LEVEL_BADGE_CLASS,
+} from "@/lib/mock/role-templates"
 
 export default function RoleTemplatesPage() {
   return (
@@ -103,14 +50,14 @@ export default function RoleTemplatesPage() {
                   <TableRow>
                     <TableHead>角色名稱</TableHead>
                     <TableHead>說明</TableHead>
+                    <TableHead>適用層級</TableHead>
                     <TableHead>類型</TableHead>
-                    <TableHead>使用人數</TableHead>
                     <TableHead>最後修改</TableHead>
                     <TableHead className="text-right">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {roleTemplates.map((template) => (
+                  {ROLE_TEMPLATES.map((template) => (
                     <TableRow key={template.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -120,6 +67,11 @@ export default function RoleTemplatesPage() {
                       </TableCell>
                       <TableCell className="max-w-md">
                         <p className="text-sm text-muted-foreground line-clamp-2">{template.description}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={ROLE_TEMPLATE_LEVEL_BADGE_CLASS[template.level]}>
+                          {ROLE_TEMPLATE_LEVEL_LABELS[template.level]}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {template.isSystem ? (
@@ -132,12 +84,6 @@ export default function RoleTemplatesPage() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{template.userCount}</span>
-                        </div>
-                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{template.lastModified}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -146,14 +92,6 @@ export default function RoleTemplatesPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Button size="sm" variant="ghost" title="複製模板">
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          {!template.isSystem && (
-                            <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" title="刪除">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>

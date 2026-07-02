@@ -17,7 +17,13 @@ const levelColors: Record<string, string> = {
   "醫事司": "bg-purple-50 text-purple-700 border-purple-200",
   "醫策會": "bg-blue-50 text-blue-700 border-blue-200",
   "醫學會": "bg-amber-50 text-amber-700 border-amber-200",
-  "訓練醫院": "bg-teal-50 text-teal-700 border-teal-200",
+}
+
+// 層級預設排序順序：醫事司 -> 醫策會 -> 醫學會
+const LEVEL_SORT_ORDER: Record<string, number> = {
+  "醫事司": 0,
+  "醫策會": 1,
+  "醫學會": 2,
 }
 
 // 模擬使用者資料
@@ -50,15 +56,6 @@ const users = [
     lastLogin: "2026/04/22 08:15",
   },
   {
-    id: "4",
-    name: "陳小芳",
-    email: "chen.xiaofang@ntu.edu.tw",
-    level: "訓練醫院",
-    organization: "國立台灣大學醫學院附設醫院",
-    status: "inactive",
-    lastLogin: "2026/03/28 16:45",
-  },
-  {
     id: "5",
     name: "林志明",
     email: "lin.zhiming@surgery.org.tw",
@@ -68,18 +65,23 @@ const users = [
     lastLogin: "2026/04/20 11:30",
   },
   {
-    id: "6",
-    name: "黃美玲",
-    email: "huang.meiling@vghtpe.gov.tw",
-    level: "訓練醫院",
-    organization: "臺北榮民總醫院",
-    status: "active",
-    lastLogin: "2026/04/19 10:00",
+    id: "7",
+    name: "吳淑芬",
+    email: "wu.shufen@tjcha.org.tw",
+    level: "醫策會",
+    organization: "財團法人醫院評鑑暨醫療品質策進會",
+    status: "inactive",
+    lastLogin: "2026/03/28 16:45",
   },
 ]
 
 export default function UsersManagementPage() {
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false)
+
+  // 預設排序：醫事司 -> 醫策會 -> 醫學會，同層級維持原始順序
+  const sortedUsers = [...users].sort(
+    (a, b) => (LEVEL_SORT_ORDER[a.level] ?? 99) - (LEVEL_SORT_ORDER[b.level] ?? 99),
+  )
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -129,7 +131,6 @@ export default function UsersManagementPage() {
                   <SelectItem value="mohw">醫事司</SelectItem>
                   <SelectItem value="tjcha">醫策會</SelectItem>
                   <SelectItem value="society">醫學會</SelectItem>
-                  <SelectItem value="hospital">訓練醫院</SelectItem>
                 </SelectContent>
               </Select>
               <Select defaultValue="all">
@@ -159,7 +160,7 @@ export default function UsersManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
+                  {sortedUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
