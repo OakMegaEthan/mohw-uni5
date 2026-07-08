@@ -25,11 +25,11 @@ function FilingDetailContent({ id }: { id: string }) {
   const variant = doc?.variant ?? "section-edit"
 
   if (variant === "single-upload") {
-    return <SingleUploadFiling documentTitle={documentTitle} status={status} />
+    return <SingleUploadFiling documentId={id} documentTitle={documentTitle} status={status} />
   }
 
   if (variant === "evaluation-upload") {
-    return <EvaluationUploadFiling documentTitle={documentTitle} status={status} />
+    return <EvaluationUploadFiling documentId={id} documentTitle={documentTitle} status={status} />
   }
 
   return <SectionEditFiling documentTitle={documentTitle} status={status} />
