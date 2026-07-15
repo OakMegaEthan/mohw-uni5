@@ -1,12 +1,3 @@
-export type FilingDocumentStatus = "待審查" | "需補件" | "通過"
-
-export interface FilingDocument {
-  id: string
-  title: string
-  status: FilingDocumentStatus
-  deadline: string
-}
-
 export interface HospitalQuotaRow {
   id: number | string
   code: string
@@ -32,15 +23,6 @@ export interface FilingHospitalOption {
   code: string
   name: string
 }
-
-export const filingDocuments: FilingDocument[] = [
-  { id: "plan", title: "計畫認定基準", status: "需補件", deadline: "2025/03/31" },
-  { id: "course", title: "訓練課程基準", status: "需補件", deadline: "2025/03/31" },
-  { id: "evaluation", title: "評核標準", status: "待審查", deadline: "2025/04/15" },
-  { id: "quota-principle", title: "容額分配原則", status: "通過", deadline: "2025/03/15" },
-  { id: "guidelines", title: "精進指南", status: "待審查", deadline: "2025/04/30" },
-  { id: "review-principles", title: "甄審原則", status: "通過", deadline: "2025/03/15" },
-]
 
 export const filingAvailableHospitals: FilingHospitalOption[] = [
   { code: "0401180014", name: "台大醫院" },

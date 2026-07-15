@@ -62,6 +62,7 @@ import {
   ReviewFeedbackBanner,
   type ReviewFeedback,
 } from "@/components/filing/review-feedback-banner"
+import { FILING_DOCUMENTS, getFilingStatusLabel } from "@/lib/mock/filing-documents"
 
 // Mock 退回審查意見
 const MOCK_QUOTA_REVIEW_FEEDBACK: ReviewFeedback = {
@@ -111,29 +112,23 @@ const filingStatusMap = Object.fromEntries(
   filingItemsConfig.map((item) => [item.id, item.status])
 )
 
-const documents = [
-  { id: "training-plan", title: "訓練計畫認定基準", status: "需補件", deadline: "114/03/31", latestAnnouncementDate: "114/09/03", latestAnnouncementNumber: "衛部醫字第1141660001號" },
-  { id: "training-curriculum", title: "訓練課程基準", status: "尚未送出", deadline: "114/04/30", latestAnnouncementDate: "114/09/03", latestAnnouncementNumber: "衛部醫字第1141660002號" },
-  { id: "evaluation-standards", title: "評核標準與評核表", status: "審查中", deadline: "114/04/15", latestAnnouncementDate: "113/10/01", latestAnnouncementNumber: "衛部醫字第1131660015號" },
-  { id: "quota-allocation", title: "容額分配原則", status: "通過", deadline: "114/03/15", latestAnnouncementDate: "114/09/03", latestAnnouncementNumber: "衛部醫字第1141660003號" },
-  { id: "improvement-guide", title: "精進指南", status: "待送件", deadline: "114/04/30", latestAnnouncementDate: "112/09/25", latestAnnouncementNumber: "衛部醫字第1121660008號" },
-  { id: "screening-principle", title: "甄審原則", status: "通過", deadline: "114/03/15", latestAnnouncementDate: "114/09/03", latestAnnouncementNumber: "衛部醫字第1141660004號" },
-]
+// 文件與版型完全耦合，統一由 lib/mock/filing-documents.ts 提供
+const documents = FILING_DOCUMENTS
 
 // 可送件的狀態（已有內容但尚未送出）
-const submittableStatuses = ["待送件", "需補件", "尚未送出"]
+const submittableStatuses = ["pending", "needs-revision", "not-submitted"]
 
 const getStatusStyle = (status: string) => {
   switch (status) {
-    case "尚未送出":
+    case "not-submitted":
       return "text-muted-foreground"
-    case "待送件":
+    case "pending":
       return "text-muted-foreground"
-    case "審查中":
+    case "under-review":
       return "text-blue-600"
-    case "需補件":
+    case "needs-revision":
       return "text-orange-600"
-    case "通過":
+    case "approved":
       return "text-green-600"
     default:
       return "text-muted-foreground"
@@ -241,7 +236,7 @@ function FilingPageContent() {
                         {doc.latestAnnouncementNumber || "—"}
                       </div>
                       <div className={`col-span-1 text-center font-medium ${!filingOpen ? "text-muted-foreground/60" : getStatusStyle(doc.status)}`}>
-                        {filingOpen ? doc.status : "尚未開放"}
+                        {filingOpen ? getFilingStatusLabel(doc.status) : "尚未開放"}
                       </div>
                       <div className="col-span-1 text-center text-sm text-muted-foreground">
                         {filingOpen ? doc.deadline : "—"}
@@ -249,12 +244,12 @@ function FilingPageContent() {
                       <div className="col-span-2 flex justify-end">
                         {filingOpen ? (
                           <Link href={`/filing/${doc.id}?status=${doc.status}`}>
-                            {doc.status === "通過" || doc.status === "審查中" ? (
+                            {doc.status === "approved" || doc.status === "under-review" ? (
                               <Button size="sm" variant="outline" className="gap-2">
                                 <FileText className="h-4 w-4" />
-                                {doc.status === "通過" ? "已通過" : "審查中"}
+                                {doc.status === "approved" ? "已通過" : "審查中"}
                               </Button>
-                            ) : doc.status === "尚未送出" ? (
+                            ) : doc.status === "not-submitted" ? (
                               <Button size="sm" className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white">
                                 <Edit3 className="h-4 w-4" />
                                 開始填寫
@@ -339,7 +334,7 @@ function FilingPageContent() {
                       <p className="font-medium text-base">{doc.title}</p>
                       <p className="text-base text-muted-foreground mt-0.5">
                         送件期限：{doc.deadline}　狀態：
-                        <span className={getStatusStyle(doc.status)}>{doc.status}</span>
+                        <span className={getStatusStyle(doc.status)}>{getFilingStatusLabel(doc.status)}</span>
                       </p>
                     </div>
                   </div>
