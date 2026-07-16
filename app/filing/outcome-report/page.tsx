@@ -101,10 +101,8 @@ export default function OutcomeReportPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>專科醫學會</TableHead>
-                          <TableHead className="w-28">階段</TableHead>
-                          <TableHead className="w-28">初審結果</TableHead>
-                          <TableHead className="w-24">檔案數</TableHead>
-                          <TableHead className="w-32">上傳日期</TableHead>
+                          <TableHead className="w-32">階段</TableHead>
+                          <TableHead className="w-32">初審結果</TableHead>
                           <TableHead className="w-28" />
                         </TableRow>
                       </TableHeader>
@@ -126,10 +124,6 @@ export default function OutcomeReportPage() {
                                 <span className="text-sm text-gray-400">—</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {c.reports.length > 0 ? `${c.reports.length} 份` : "—"}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">{c.uploadedDate ?? "—"}</TableCell>
                             <TableCell>
                               <Button variant="outline" size="sm" asChild>
                                 <Link
@@ -137,7 +131,7 @@ export default function OutcomeReportPage() {
                                   className="flex items-center gap-1"
                                 >
                                   <FileText className="h-4 w-4" />
-                                  {c.stage === "已歸檔" ? "檢視" : "填報"}
+                                  編輯
                                   <ChevronRight className="h-4 w-4" />
                                 </Link>
                               </Button>
@@ -146,7 +140,7 @@ export default function OutcomeReportPage() {
                         ))}
                         {filtered.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={6} className="py-12 text-center text-gray-500">
+                            <TableCell colSpan={4} className="py-12 text-center text-gray-500">
                               此階段目前沒有案件
                             </TableCell>
                           </TableRow>

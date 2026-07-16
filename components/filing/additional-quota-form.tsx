@@ -126,57 +126,6 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
         )}
 
         <div className="space-y-6">
-          {/* 本年度容額資訊：申請時的對照脈絡，不可編輯 */}
-          <Card className="border-blue-200 bg-blue-50/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span>本年度容額資訊</span>
-                <Badge variant="outline" className="bg-white">
-                  {quota.specialty}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-lg border border-gray-200 bg-white p-4">
-                  <Label className="text-sm font-medium text-gray-500">已核定容額</Label>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">{quota.approved} 名</p>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-4">
-                  <Label className="text-sm font-medium text-gray-500">容額上限</Label>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">{quota.limit} 名</p>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-4">
-                  <Label className="text-sm font-medium text-gray-500">本次申請數</Label>
-                  <p className="mt-1 text-2xl font-bold text-blue-600">+{requestedNumber} 名</p>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-4">
-                  <Label className="text-sm font-medium text-gray-500">核定後總容額</Label>
-                  <p className={`mt-1 text-2xl font-bold ${exceedsLimit ? "text-red-600" : "text-green-600"}`}>
-                    {totalAfterApproval} 名
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 border-t border-gray-200 pt-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">容額效期</Label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {quota.validFrom} ~ {quota.validTo}
-                    </p>
-                  </div>
-                  {exceedsLimit && (
-                    <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-red-600">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
-                      <p className="text-sm font-medium">核定後將超過容額上限，請補充說明必要性</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* 本次申請內容：對應審查端同名區段 */}
           <Card>
             <CardHeader>
@@ -225,20 +174,57 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                 <Label className="text-sm font-medium text-gray-700">
                   申請容額數 {editable && <span className="text-destructive">*</span>}
                 </Label>
-                {editable ? (
-                  <div className="mt-1 flex items-center gap-2">
-                    <Input
-                      value={requestedQuota}
-                      onChange={(e) => handleQuotaChange(e.target.value)}
-                      placeholder="0"
-                      className="w-32 bg-white"
-                      inputMode="numeric"
-                    />
-                    <span className="text-sm text-gray-500">名</span>
-                  </div>
-                ) : (
-                  <p className="mt-1 text-lg font-semibold text-blue-600">{application.requestedQuota} 名</p>
-                )}
+
+                {/* 容額現況與試算緊鄰輸入欄：填報者決定申請幾名時，
+                    需要的正是這三個數字，放在頁面頂端等於要他來回捲動 */}
+                <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
+                  <span>
+                    已核定容額 <strong className="text-gray-900">{quota.approved}</strong> 名
+                  </span>
+                  <span>
+                    容額上限 <strong className="text-gray-900">{quota.limit}</strong> 名
+                  </span>
+                  <span className="text-gray-500">
+                    效期 {quota.validFrom} ~ {quota.validTo}
+                  </span>
+                </div>
+
+                <div className="border-x border-gray-200 bg-white px-4 py-3">
+                  {editable ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={requestedQuota}
+                        onChange={(e) => handleQuotaChange(e.target.value)}
+                        placeholder="0"
+                        className="w-32"
+                        inputMode="numeric"
+                      />
+                      <span className="text-sm text-gray-500">名</span>
+                    </div>
+                  ) : (
+                    <p className="text-lg font-semibold text-blue-600">{application.requestedQuota} 名</p>
+                  )}
+                </div>
+
+                {/* 核定後總容額：隨輸入即時試算，讓填報者當下就知道是否超額 */}
+                <div
+                  className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-b-lg border px-4 py-3 ${
+                    exceedsLimit ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"
+                  }`}
+                >
+                  <p className="text-sm text-gray-700">
+                    已核定 {quota.approved} ＋ 本次申請 {requestedNumber} ＝
+                    <span className={`ml-1.5 text-base font-bold ${exceedsLimit ? "text-red-600" : "text-green-600"}`}>
+                      核定後總容額 {totalAfterApproval} 名
+                    </span>
+                  </p>
+                  {exceedsLimit && (
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      超過上限 {quota.limit} 名，請於申請說明補充必要性
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div>
