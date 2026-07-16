@@ -6,11 +6,11 @@ import { ArrowLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { AdditionalQuotaForm } from "@/components/filing/additional-quota-form"
-import { getAdditionalQuotaApplication } from "@/lib/mock/filing-additional-quota"
+import { getAdditionalQuotaApplication } from "@/lib/mock/additional-quota"
 
 /**
- * 外加容額申請詳情。草稿與退回修改可編輯，審查中與已核定僅供檢視 ——
- * 由 AdditionalQuotaForm 依 status 自行切換。
+ * 外加容額申請詳情。單頁工作流：依階段（待審查／待公告／已公告）決定可編輯範圍，
+ * 由 AdditionalQuotaForm 自行切換。
  */
 export default function AdditionalQuotaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)

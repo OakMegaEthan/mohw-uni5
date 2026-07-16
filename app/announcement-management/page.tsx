@@ -279,7 +279,7 @@ export default function AnnouncementManagementPage() {
                                   pendingCase.sourceModule === "submissions"
                                     ? `/review/submissions/${pendingCase.type}/${pendingCase.caseId}`
                                     : pendingCase.sourceModule === "additional-quota"
-                                      ? `/review/additional-quota/${pendingCase.caseId}`
+                                      ? `/filing/additional-quota/${pendingCase.caseId}`
                                       : `/review/hospital-quota/${pendingCase.caseId}`
                                 }
                                 onClick={() => setPopoverOpen(false)}
