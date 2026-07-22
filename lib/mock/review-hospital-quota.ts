@@ -165,6 +165,33 @@ export interface HospitalQuotaRow {
   partnerHospitalCodes?: string[]
 }
 
+// ── 審查歷程 ────────────────────────────────────────────────
+// 每個審查階段結束時留下一筆紀錄。案件走到第 N 階段時，第 1～N-1 階段的紀錄都應可檢視，
+// 讓後段的審查者（尤其待公告的醫事司）看得到前面每一關的結論，而不是只看得到分組會議。
+//
+// kind 區分兩種審查形態：
+//   meeting —— 分組會議、RRC 大會，產出的是會議紀錄
+//   desk    —— 醫策會初審、醫事司核定，產出的是意見表／核定函，沒有會議紀錄可言
+// 兩者的按鈕文案與彈窗標題因此不同，不硬套「檢視會議記錄」。
+
+export interface StageReviewRecord {
+  /** 這筆紀錄屬於哪個階段 */
+  stage: QuotaReviewStage
+  /** 審查單位（醫策會／RRC 大會／醫事司），由 QUOTA_FILING_STAGE_UNIT 推導 */
+  unit: string
+  kind: "meeting" | "desk"
+  /** 會議日期或審查日期（民國） */
+  reviewDate: string
+  /** 會議／文件名稱 */
+  title: string
+  /** 決議：通過／修正後通過／同意公告／退回補正 */
+  decision: string
+  /** 紀錄檔名，供下載按鈕顯示 */
+  recordFileName: string
+  /** 紀錄全文，供「檢視會議記錄／檢視審查意見」彈窗顯示 */
+  recordContent: string
+}
+
 export type HospitalQuotaDetail = {
   society: HospitalQuotaReviewSociety
   hospitals: HospitalQuotaRow[]
@@ -183,11 +210,12 @@ export type HospitalQuotaDetail = {
     reason: string
   }>
   reviewComment: string
-  groupReviewData?: {
-    meetingDate: string
-    meetingRecord: string
-    decision: string
-  }
+  /**
+   * 前置階段的審查歷程，依階段順序排列（由 buildReviewHistory 產生）。
+   * 取代原本硬寫的 groupReviewData —— 舊做法只塞得下「分組會議」一塊，
+   * 導致案件走到待公告時，醫事司看不到分組會議之後的 RRC 大會結論。
+   */
+  reviewHistory: StageReviewRecord[]
   // 是否為內科版型（有結核病計畫區塊）
   isInternalMedicine?: boolean
   // 結核病計畫容額（僅內科版型）。欄位比照填報端：可收訓容額 + 建議分配
@@ -201,7 +229,7 @@ export type HospitalQuotaDetail = {
   }>
 }
 
-const richDetails: Record<string, Omit<HospitalQuotaDetail, "society">> = {
+const richDetails: Record<string, Omit<HospitalQuotaDetail, "society" | "reviewHistory">> = {
   // ── id "1"：台灣家庭醫學醫學會（一般版型，資料豐沛）────────────────────────
   "1": {
     isInternalMedicine: false,
@@ -404,7 +432,6 @@ const richDetails: Record<string, Omit<HospitalQuotaDetail, "society">> = {
       },
     ],
     reviewComment: "",
-    groupReviewData: undefined,
   },
 
   // ── id "2"：台灣內科醫學會（內科版型，有結核病計畫容額）────────────────────
@@ -611,11 +638,6 @@ const richDetails: Record<string, Omit<HospitalQuotaDetail, "society">> = {
         currentQuota: 1,
       },
     ],
-    groupReviewData: {
-      meetingDate: "115/02/14",
-      meetingRecord: "115年度內科醫學會容額分組審查會議紀錄.pdf",
-      decision: "通過",
-    },
   },
 }
 
@@ -629,7 +651,9 @@ const LIGHT_HOSPITAL_TEMPLATE = [
   { name: "國立成功大學醫學院附設醫院", county: "台南市", district: "東區" },
 ]
 
-function buildLightDetail(society: HospitalQuotaReviewSociety): Omit<HospitalQuotaDetail, "society"> {
+function buildLightDetail(
+  society: HospitalQuotaReviewSociety,
+): Omit<HospitalQuotaDetail, "society" | "reviewHistory"> {
   const seed = Number(society.id)
   const count = 2 + (seed % 3) // 2～4 家
   const codePrefix = String(1000 + seed * 7).slice(0, 4)
@@ -650,9 +674,6 @@ function buildLightDetail(society: HospitalQuotaReviewSociety): Omit<HospitalQuo
     applicationType: "single",
     mergedHospitalCodes: [],
   }))
-
-  const needsGroupReview =
-    society.stage === "RRC大會" || society.stage === "待公告" || society.stage === "已公告"
 
   return {
     hospitals,
@@ -681,14 +702,206 @@ function buildLightDetail(society: HospitalQuotaReviewSociety): Omit<HospitalQuo
           ]
         : [],
     reviewComment: "",
-    groupReviewData: needsGroupReview
-      ? {
-          meetingDate: `115/02/${String(10 + (seed % 15)).padStart(2, "0")}`,
-          meetingRecord: `115年度${society.name}容額分組審查會議紀錄.pdf`,
-          decision: "通過",
-        }
-      : undefined,
   }
+}
+
+// ── 審查歷程產生 ─────────────────────────────────────────────
+// 案件在階段 S 時，S 之前的每個階段都已完成審查、都應留下一筆可檢視的紀錄。
+// 退件案件另外在 returnedFrom 那一階段留下一筆「退回補正」，讓審查者看得到為什麼被退。
+
+type StageRecordTemplate = Pick<StageReviewRecord, "kind"> & {
+  title: (societyName: string) => string
+  decision: string
+  recordFileName: (societyName: string) => string
+  recordContent: (societyName: string) => string
+}
+
+const STAGE_RECORD_TEMPLATES: Record<QuotaReviewStage, StageRecordTemplate> = {
+  醫策會初審: {
+    kind: "desk",
+    title: () => "115年度容額填報初審",
+    decision: "通過",
+    recordFileName: (s) => `115年度${s}容額填報初審意見表.pdf`,
+    recordContent: (s) => `一、初審單位：財團法人醫院評鑑暨醫療品質策進會
+
+二、初審日期：115年1月20日
+
+三、初審範圍：${s}所送115年度專科醫師訓練醫院認定合格名冊及訓練容量
+
+四、初審意見：
+
+（一）形式審查
+    1. 申請名冊格式、欄位填載完整，資格效期起訖年度均已填列。
+    2. 聯合申請案件之主訓機構與合作機構對應關係明確，合作協議書已檢附。
+    3. 合併認定機構已依規定併列於同一列，未重複計列容額。
+
+（二）實質審查
+    1. 各訓練醫院之可收訓容額與前年度核定容額差異均在合理範圍內。
+    2. 不合格醫院名單所載不合格原因均已敘明依據條文，符合認定基準之引用格式。
+    3. 未申請醫院名單已載明前一年度資格與未申請原因，資料齊備。
+
+五、初審結論：通過，提送分組會議審查。`,
+  },
+  分組會議: {
+    kind: "meeting",
+    title: () => "115年度第一次容額分組審查會議",
+    decision: "通過",
+    recordFileName: (s) => `115年度${s}容額分組審查會議紀錄.pdf`,
+    recordContent: (s) => `一、會議名稱：115年度第一次容額分組審查會議
+
+二、會議時間：115年2月14日（星期五）上午10時
+
+三、會議地點：財團法人醫院評鑑暨醫療品質策進會第二會議室
+
+四、主席：○○○召集人　　紀錄：○○○
+
+五、出席人員：分組審查委員 7 人（詳簽到表）
+
+六、審查案由：${s}115年度訓練醫院容額分配案
+
+七、審查意見：
+
+（一）本案申請容額與前年度核定容額之差異，經委員逐案檢視，均有合理之師資與量能佐證。
+
+（二）聯合申請案之合作機構容額不另計列，由主訓機構統籌分配，與認定基準規定相符。
+
+（三）委員建議：申請容額增幅超過 2 名之訓練醫院，請於 RRC 大會補充說明近三年招收率及
+    完訓率，以利大會綜合評估。
+
+八、決議：通過，提送 RRC 大會審核。`,
+  },
+  RRC大會: {
+    kind: "meeting",
+    title: () => "115年度專科醫師訓練計畫認定會第一次大會",
+    decision: "通過",
+    recordFileName: (s) => `115年度RRC大會審查結論_${s}.pdf`,
+    recordContent: (s) => `一、會議名稱：115年度專科醫師訓練計畫認定會（RRC）第一次大會
+
+二、會議時間：115年3月12日（星期三）下午2時
+
+三、會議地點：衛生福利部第一會議室
+
+四、主席：○○○主任委員　　紀錄：○○○
+
+五、審查案由：${s}115年度訓練醫院容額分配案（經分組會議審查通過）
+
+六、大會決議：
+
+（一）同意分組會議審查結果，${s}所送訓練醫院認定合格名冊及訓練容量照案通過。
+
+（二）分組會議所提「增幅超過 2 名之訓練醫院應補充招收率及完訓率」一節，經各該醫院補件
+    說明，資料齊備，同意其申請容額。
+
+（三）不合格醫院名單所列各院，其不合格事由與認定基準相符，同意列為不合格；請醫學會於
+    公告後函知各該醫院並敘明改善方向。
+
+（四）本案容額總數未逾該醫學會設定之容額上限，同意送醫事司辦理公告。
+
+七、後續作業：提送衛生福利部醫事司辦理核定及公告。`,
+  },
+  待公告: {
+    kind: "desk",
+    title: () => "115年度容額核定",
+    decision: "同意公告",
+    recordFileName: (s) => `115年度${s}容額核定函.pdf`,
+    recordContent: (s) => `一、核定機關：衛生福利部醫事司
+
+二、核定日期：115年4月8日
+
+三、核定內容：${s}115年度專科醫師訓練醫院認定合格名冊及訓練容量，業經專科醫師訓練計畫
+    認定會（RRC）115年度第一次大會審查通過，本部核定如所送名冊。
+
+四、核定意見：
+
+（一）所送名冊之訓練醫院認定資格效期、訓練容量均與 RRC 大會決議相符，予以核定。
+
+（二）本案容額自115年8月1日起生效，至116年7月31日止。
+
+（三）請該醫學會於公告後一個月內辦理容額成果報告（RRC 審查後之審查細節補充資料）之
+    上傳作業。
+
+五、辦理情形：同意公告，移請公告管理作業。`,
+  },
+  已公告: {
+    kind: "desk",
+    title: () => "115年度容額公告",
+    decision: "已公告",
+    recordFileName: (s) => `115年度${s}容額公告.pdf`,
+    recordContent: (s) => `${s}115年度專科醫師訓練醫院認定合格名冊及訓練容量業經公告，
+公告內容以公告管理所發布之版本為準。`,
+  },
+}
+
+const RETURN_REASON_BY_STAGE: Record<QuotaReviewStage, string> = {
+  醫策會初審:
+    "初審發現部分訓練醫院之資格效期起訖年度填載有誤，另有 2 家醫院未檢附合作協議書，請補正後重新送件。",
+  分組會議:
+    "分組會議認為申請容額增幅較大之訓練醫院，其師資與訓練量能佐證資料不足，請補充近三年招收率及完訓率後重新送件。",
+  RRC大會:
+    "大會決議本案不合格醫院名單所載事由與認定基準引用條文不符，另聯合申請案之主訓機構容額分配方式須補充說明，請補正後重新送件。",
+  待公告:
+    "核定作業發現所送名冊容額總數逾該醫學會設定之容額上限，請重新調整分配後送件。",
+  已公告: "已公告案件之退回情形，請洽醫事司。",
+}
+
+/**
+ * 產生案件的審查歷程：目前階段之前的所有階段各一筆。
+ * 退件案件在 returnedFrom 那一階段追加一筆「退回補正」。
+ */
+export function buildReviewHistory(society: HospitalQuotaReviewSociety): StageReviewRecord[] {
+  const currentIndex = quotaReviewStages.indexOf(society.stage)
+  if (currentIndex < 0) return []
+
+  const records: StageReviewRecord[] = quotaReviewStages
+    .slice(0, currentIndex)
+    .map((stage) => {
+      const tpl = STAGE_RECORD_TEMPLATES[stage]
+      return {
+        stage,
+        unit: QUOTA_FILING_STAGE_UNIT[stage],
+        kind: tpl.kind,
+        reviewDate: STAGE_REVIEW_DATE[stage],
+        title: tpl.title(society.name),
+        decision: tpl.decision,
+        recordFileName: tpl.recordFileName(society.name),
+        recordContent: tpl.recordContent(society.name),
+      }
+    })
+
+  if (society.returnedFrom) {
+    const stage = society.returnedFrom
+    records.push({
+      stage,
+      unit: QUOTA_FILING_STAGE_UNIT[stage],
+      kind: STAGE_RECORD_TEMPLATES[stage].kind,
+      reviewDate: STAGE_REVIEW_DATE[stage],
+      title: `${STAGE_RECORD_TEMPLATES[stage].title(society.name)}（退回補正）`,
+      decision: "退回補正",
+      recordFileName: `115年度${society.name}容額填報退件意見.pdf`,
+      recordContent: `一、退件單位：${QUOTA_FILING_STAGE_UNIT[stage]}
+
+二、退件階段：${stage}
+
+三、退件日期：${STAGE_REVIEW_DATE[stage]}
+
+四、退件意見：
+
+${RETURN_REASON_BY_STAGE[stage]}
+
+五、後續作業：請醫學會依上開意見補正後重新送件。本案重新送件後回到「${stage}」階段續審，
+不重走先前已通過的階段。`,
+    })
+  }
+
+  return records
+}
+
+const STAGE_REVIEW_DATE: Record<QuotaReviewStage, string> = {
+  醫策會初審: "115/01/20",
+  分組會議: "115/02/14",
+  RRC大會: "115/03/12",
+  待公告: "115/04/08",
+  已公告: "115/04/20",
 }
 
 // ── 查詢函式 ────────────────────────────────────────────────
@@ -707,7 +920,11 @@ export function getHospitalQuotaDetail(id: string): HospitalQuotaDetail | null {
   if (!society || !society.submitted) return null
 
   const rich = richDetails[id]
-  return { society, ...(rich ?? buildLightDetail(society)) }
+  return {
+    society,
+    ...(rich ?? buildLightDetail(society)),
+    reviewHistory: buildReviewHistory(society),
+  }
 }
 
 /** 退件時顯示「退回自 X（由 Y 退回）」用 */

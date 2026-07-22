@@ -14,12 +14,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ArrowLeft, Upload, Download, Eye, HelpCircle } from "lucide-react"
+import { ArrowLeft, Upload, HelpCircle } from "lucide-react"
 import {
   getHospitalQuotaDetail,
   getHospitalQuotaStageConfig,
   getQuotaReviewStageUnit,
 } from "@/lib/mock/review-hospital-quota"
+import { StageReviewHistory } from "@/components/review/stage-review-history"
 import { quotaNotesStore } from "@/lib/stores/quota-notes-store"
 import { societyQuotaLimits } from "@/lib/mock/society-quota-limits"
 
@@ -66,13 +67,12 @@ export default function HospitalQuotaDetailPage({
     disqualifiedHospitals,
     notAppliedHospitals,
     tuberculosisHospitals,
-    groupReviewData,
+    reviewHistory,
     isInternalMedicine,
   } = detail
 
   const isReturned = society.returnedFrom !== null
   const isAnnounced = society.stage === "已公告"
-  const showGroupReview = society.stage === "RRC大會" || society.stage === "待公告" || isAnnounced
 
   // 聯合申請組合的色帶，與填報端同一套配色
   const groupColors: Record<string, string> = {}
@@ -232,41 +232,10 @@ export default function HospitalQuotaDetailPage({
           </div>
         </div>
 
-        {/* RRC 大會／待公告／已公告階段：顯示分組會議資料 */}
-        {showGroupReview && groupReviewData && (
-          <Card className="mb-6 border-purple-200 bg-purple-50/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-medium text-purple-900">分組會議審查結果</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-base text-gray-600">
-                    會議日期：
-                    <span className="font-medium text-gray-900">{groupReviewData.meetingDate}</span>
-                  </p>
-                  <p className="text-base text-gray-600">
-                    審查決議：
-                    <Badge variant="outline" className="ml-1 border-green-200 bg-green-50 text-green-700">
-                      {groupReviewData.decision}
-                    </Badge>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="gap-1">
-                    <Eye className="h-4 w-4" />
-                    檢視會議記錄
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1">
-                    <Download className="h-4 w-4" />
-                    下載
-                  </Button>
-                </div>
-              </div>
-              <p className="text-base text-gray-500">檔案：{groupReviewData.meetingRecord}</p>
-            </CardContent>
-          </Card>
-        )}
+        {/* 前置階段審查結果：目前階段之前的每一關都列出來。
+            待公告的醫事司因此看得到醫策會初審、分組會議與 RRC 大會三份結論，
+            而不是像先前只硬寫一塊分組會議。 */}
+        <StageReviewHistory records={reviewHistory} />
 
         {/* 專科醫師訓練醫院認定合格名冊及訓練容量（版型比照填報端） */}
         <div className="mb-6">
