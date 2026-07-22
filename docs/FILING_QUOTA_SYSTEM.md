@@ -19,11 +19,11 @@
 
 | 資料欄位 | 歸屬對象 |
 |---------|---------|
-| 資格效期、延長效期 | 申請主體（單一或組合） |
+| 效期起始／結束年度 | 申請主體（單一或組合） |
 | 容額（前年度核定、可收訓容額、建議分配） | 整個申請案 |
 | 醫事機構代碼、醫院名稱 | 單一醫療機構或申請主體名稱 |
 
-**關鍵原則**：資格效期跟著「醫院名稱」（即申請主體），而非跟著個別的醫療機構代碼。
+**關鍵原則**：效期跟著「醫院名稱」（即申請主體），而非跟著個別的醫療機構代碼。
 
 ---
 
@@ -66,9 +66,9 @@ interface InstitutionEntity {
   mergedName?: string               // 組合名稱（如「北部聯合訓練中心」）
   mergedHospitalCodes?: string[]    // 組成機構的代碼列表
   
-  // 效期（兩種主體都有）
-  qualificationExpiry: string       // 資格效期（如「115/7/31」）
-  extensionYears: "0" | "1" | "2" | "3" | "4"  // 延長效期
+  // 效期（兩種主體都有）。民國年份字串，UI 以下拉選單選取（108～127）
+  expiryStartYear: string           // 效期起始年度（如「113」）
+  expiryEndYear: string             // 效期結束年度（如「115」）
 }
 ```
 
@@ -79,13 +79,14 @@ interface QuotaFormValues {
   applicationMode: "single" | "joint"  // 申請方式
   
   // 主訓機構（單一/聯合都有）
-  mainEntity: InstitutionEntity
+  mainEntity: InstitutionEntity | null
   
   // 合作機構（聯合申請時）
   partnerEntities: InstitutionEntity[]
   
   // 容額設定
-  extensionYears: string              // 延長年限
+  prevQuota: string                   // 前年度核定容額
+  isNewApplication: boolean           // 是否為新申請（無前年度核定）
   quotaLimit: string                  // 容額數字（整個申請案共用）
   currentQuota: string                // 可收訓容額
   
@@ -124,9 +125,9 @@ interface QuotaFormValues {
   └─ 已選擇機構標籤
         ↓ 選完醫院
         
-第三層：設定資格效期（藍色背景突出）
-  ├─ 資格效期：[輸入欄]
-  ├─ 延長效期：[下拉選單]
+第三層：設定效期（藍色背景突出）
+  ├─ 效期起始年度：[下拉選單]
+  ├─ 效期結束年度：[下拉選單]
   └─ 按鈕：[上一步] [取消] [確認新增]
 ```
 
@@ -140,15 +141,15 @@ interface QuotaFormValues {
 ├─────────────────────────────────┤
 │ 機構名稱：台大醫院              │
 │                                 │
-│ 資格效期：[115/7/31] ▼           │
-│ 延長效期：[4年]      ▼           │
+│ 效期起始年度：[113 年] ▼         │
+│ 效期結束年度：[115 年] ▼         │
 │                                 │
 │ [編輯機構]  [×]                 │
 └─────────────────────────────────┘
 ```
 
 **卡片功能**：
-- **資格效期 & 延長效期**：直接在卡片上編輯（內聯編輯）
+- **效期起始／結束年度**：直接在卡片上編輯（內聯編輯）
 - **編輯機構**：僅機構組合時顯示，點擊進入 Dialog 第一層重新配置組成
 - **×**：刪除此申請主體
 
@@ -203,7 +204,7 @@ interface QuotaFormValues {
 ### 機構組合在列表上
 - **顯示**：組合的名稱（如「北部聯合訓練中心」）
 - **醫事機構代碼**：組合名稱時自動生成或使用特殊標識（如 `merged-001`）
-- **資格效期**：跟著組合主體，不展開顯示組成機構的各自效期
+- **效期**：跟著組合主體，不展開顯示組成機構的各自效期
 - **標記**：無特殊標記（因為「機構組合」不是申請方式，而是申請主體的一種形式）
 
 ---
@@ -264,7 +265,7 @@ components/filing/
 **建立機構組合時**：
 - 機構組合名稱不為空
 - 至少選擇 2 間醫療機構
-- 資格效期不為空（留空表示「待核定」需要確認是否允許）
+- 效期起始與結束年度皆須選取
 
 **填寫容額申請表單時**：
 - 主訓機構必選
@@ -293,9 +294,10 @@ Body: QuotaFormValues {
   applicationMode,
   mainEntity: InstitutionEntity,
   partnerEntities: InstitutionEntity[],
+  prevQuota,
+  isNewApplication,
   quotaLimit,
   currentQuota,
-  extensionYears,
   note
 }
 ```
@@ -317,7 +319,7 @@ Body: QuotaFormValues {
 與技術團隊對齐時確認：
 
 - [ ] 單一機構和機構組合的定義清楚
-- [ ] 資格效期歸屬於申請主體的邏輯已理解
+- [ ] 效期歸屬於申請主體的邏輯已理解
 - [ ] 聯合申請中容額共用的邏輯已理解
 - [ ] 同機構多身份場景已評估
 - [ ] Dialog 分層的高度限制（240px 醫院列表）已同意
