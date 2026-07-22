@@ -77,7 +77,8 @@ export function DocumentSwitcherViewer({
   // 鍵盤快捷鍵：T 切年度、G 開關對照表；輸入中或組字中不觸發
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.ctrlKey || e.metaKey || e.altKey || e.nativeEvent?.isComposing || e.isComposing) return
+      // 原生 KeyboardEvent 直接有 isComposing；nativeEvent 是 React 合成事件才有的屬性
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return
       const target = document.activeElement as HTMLElement | null
       if (target) {
         const tag = target.tagName
