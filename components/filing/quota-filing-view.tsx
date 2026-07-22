@@ -508,27 +508,40 @@ export function QuotaFilingView({
             const currentIndex = QUOTA_FILING_STAGES.indexOf(stage)
             const isCurrent = !isReturned && s === stage
             const isPast = !isReturned && i < currentIndex
+            const params = new URLSearchParams({ stage: s })
+            if (variant) params.set("variant", variant)
             return (
               <div key={s} className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
+                {/* 可點擊切換階段：原型無案件列表可進入，故以此作為各階段的檢視入口 */}
+                <Link
+                  href={`/filing/quota-filing?${params.toString()}`}
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                     isCurrent
                       ? "bg-[#2d3a8c] text-white"
                       : isPast
-                        ? "bg-blue-50 text-blue-600"
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
                   }`}
                 >
                   {s}
-                </span>
+                </Link>
                 {i < QUOTA_FILING_STAGES.length - 1 && <span className="text-muted-foreground/50">→</span>}
               </div>
             )
           })}
-          {isReturned && (
+          {isReturned ? (
             <span className="ml-1 inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700">
               退件補正中
             </span>
+          ) : (
+            <Link
+              href={`/filing/quota-filing?returnedFrom=${encodeURIComponent(stage === "待送件" ? "醫策會初審" : stage)}${
+                variant ? `&variant=${variant}` : ""
+              }`}
+              className="ml-1 inline-flex items-center rounded-full border border-orange-200 px-3 py-1 text-sm font-medium text-orange-700 transition-colors hover:bg-orange-50"
+            >
+              檢視退件狀態
+            </Link>
           )}
         </div>
       </div>
@@ -551,11 +564,27 @@ export function QuotaFilingView({
         <div className="rounded-lg border border-blue-200 bg-blue-50/40 px-6 py-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-lg font-bold text-foreground">容額成果報告</h3>
-            <span
-              className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium ${OUTCOME_REPORT_SUB_CONFIG[reportStatus].color}`}
-            >
-              {OUTCOME_REPORT_SUB_CONFIG[reportStatus].label}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 原型：無實際送件流程，提供各子狀態的檢視入口 */}
+              {(Object.keys(OUTCOME_REPORT_SUB_CONFIG) as OutcomeReportSubStatus[]).map((s) => {
+                const params = new URLSearchParams({ stage, report: s })
+                if (variant) params.set("variant", variant)
+                const active = s === reportStatus
+                return (
+                  <Link
+                    key={s}
+                    href={`/filing/quota-filing?${params.toString()}`}
+                    className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+                      active
+                        ? OUTCOME_REPORT_SUB_CONFIG[s].color
+                        : "border-transparent text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {OUTCOME_REPORT_SUB_CONFIG[s].label}
+                  </Link>
+                )
+              })}
+            </div>
           </div>
           <p className="mb-4 text-sm text-muted-foreground">
             本案已進入待公告，請上傳容額成果報告（RRC 審查後之審查細節補充資料），送出後由醫事司確認歸檔。

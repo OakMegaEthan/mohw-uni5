@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ReviewSimpleNav } from "@/components/review/simple-nav"
 import { MultiFileUpload } from "@/components/filing/multi-file-upload"
 import { OUTCOME_REPORT_SUB_CONFIG, getQuotaOutcomeReportCase } from "@/lib/mock/quota-outcome-report"
 
@@ -33,7 +32,6 @@ export default function QuotaOutcomeReportReviewDetailPage({
   if (!reportCase) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <ReviewSimpleNav />
         <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
           <Link
             href="/review/outcome-report"
@@ -70,7 +68,6 @@ export default function QuotaOutcomeReportReviewDetailPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ReviewSimpleNav />
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           href="/review/outcome-report"

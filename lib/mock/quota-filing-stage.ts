@@ -48,7 +48,7 @@ export type OutcomeReportSubStatus = "待上傳" | "已送出" | "已歸檔" | "
 
 export const OUTCOME_REPORT_SUB_CONFIG: Record<OutcomeReportSubStatus, { color: string; label: string }> = {
   待上傳: { color: "bg-gray-100 text-gray-600 border-gray-200", label: "待上傳" },
-  已送出: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "已送出，待醫事司確認" },
+  已送出: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "待確認" },
   已歸檔: { color: "bg-green-100 text-green-700 border-green-200", label: "已歸檔" },
   退回補件: { color: "bg-orange-100 text-orange-700 border-orange-200", label: "退回補件" },
 }

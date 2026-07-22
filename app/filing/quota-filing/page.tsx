@@ -32,7 +32,17 @@ function QuotaFilingContent() {
   const reportStatus: OutcomeReportSubStatus = isValidOutcomeReportSubStatus(reportParam) ? reportParam : "待上傳"
 
   return (
-    <QuotaFilingView variant={variant} stage={stage} returnedFrom={returnedFrom} reportStatus={reportStatus} />
+    // 頁面外框：拆分前這層（容器邊距與標題）在 /filing 父層，抽出元件時需一併帶過來
+    <div className="min-h-screen bg-[#f5f7fa]">
+      <div className="container mx-auto px-6 py-4">
+        <h1 className="text-2xl font-bold text-foreground">容額填報</h1>
+        <p className="text-base text-muted-foreground mt-1">內科醫學會 - 2025年度</p>
+      </div>
+
+      <div className="container mx-auto px-6 pb-8">
+        <QuotaFilingView variant={variant} stage={stage} returnedFrom={returnedFrom} reportStatus={reportStatus} />
+      </div>
+    </div>
   )
 }
 

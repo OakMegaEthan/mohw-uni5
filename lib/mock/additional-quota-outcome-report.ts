@@ -32,6 +32,11 @@ export interface AqOutcomeReportCase {
   specialty: string
   classificationPrinciple: string
   announcementDate: string
+  // 承自申請案，供查找與交叉對照（與外加容額管理的欄位一致）
+  ministryDocNumber: string
+  announcementNumber: string
+  // 該案核定的外加容額數；成果報告即檢視這些容額的執行情形
+  approvedQuota: number
   status: OutcomeReportReviewStatus
   // 訓練醫院提交的成果報告（系統外發函，於系統登錄）
   reports: AqOutcomeReportFile[]
@@ -60,6 +65,9 @@ const CASES: AqOutcomeReportCase[] = ADDITIONAL_QUOTA_APPLICATIONS.filter(
     specialty: a.specialty,
     classificationPrinciple: a.classificationPrinciple,
     announcementDate: a.announcementDate ?? "—",
+    ministryDocNumber: a.ministryDocNumber,
+    announcementNumber: a.announcementNumber ?? "—",
+    approvedQuota: a.approvedQuota ?? 0,
     status,
     reports: buildReports(a.hospitalName, a.specialty),
     mohwComment: archived
