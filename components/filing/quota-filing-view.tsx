@@ -66,6 +66,7 @@ import { FILING_DOCUMENTS, getFilingStatusLabel } from "@/lib/mock/filing-docume
 import { toast } from "sonner"
 import { MultiFileUpload, type UploadedFile } from "@/components/filing/multi-file-upload"
 import {
+  MOCK_OUTCOME_REPORT_RETURN,
   OUTCOME_REPORT_SUB_CONFIG,
   QUOTA_FILING_STAGES,
   QUOTA_FILING_STAGE_UNIT,
@@ -591,9 +592,22 @@ export function QuotaFilingView({
             此作業不影響公告進度。
           </p>
 
+          {/* 退回補件意見：醫事司於容額成果報告審查頁填寫的單則意見，直接內嵌呈現。
+              有別於案件層級的退件（附審查會議紀錄全文，另以 ReviewFeedbackBanner 呈現）。 */}
           {reportStatus === "退回補件" && (
-            <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
-              醫事司已退回本報告，請補齊後重新上傳送出。
+            <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+              <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-sm font-medium text-orange-800">
+                  {MOCK_OUTCOME_REPORT_RETURN.reviewer}退回補件
+                </span>
+                <span className="text-sm text-orange-700">
+                  退回日期：{MOCK_OUTCOME_REPORT_RETURN.returnedDate}
+                </span>
+              </div>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-orange-800">
+                {MOCK_OUTCOME_REPORT_RETURN.comment}
+              </p>
+              <p className="mt-2 text-sm text-orange-700">請依上述意見補齊後，重新上傳並送出。</p>
             </div>
           )}
 

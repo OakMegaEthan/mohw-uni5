@@ -56,3 +56,13 @@ export const OUTCOME_REPORT_SUB_CONFIG: Record<OutcomeReportSubStatus, { color: 
 export function isValidOutcomeReportSubStatus(value: string): value is OutcomeReportSubStatus {
   return Object.keys(OUTCOME_REPORT_SUB_CONFIG).includes(value)
 }
+
+// 成果報告退回補件時，醫事司於容額成果報告審查頁填寫的意見。
+// 與案件層級的「退件」不同：案件退件是醫策會／RRC／醫事司對容額申請本身的退回，
+// 附審查會議紀錄全文；此處僅為醫事司對補充報告的單則意見，故直接內嵌呈現。
+export const MOCK_OUTCOME_REPORT_RETURN = {
+  reviewer: "醫事司",
+  returnedDate: "115/03/06",
+  comment:
+    "所送容額成果報告之審查細節未涵蓋全部訓練醫院，計缺漏 3 家（詳如附件標示）。另請補附各訓練醫院之容額分配對照表，以利核對 RRC 審查結論。請補齊後重新送出。",
+}
