@@ -7,14 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Search, FileText, Calendar, Pin } from "lucide-react"
 import Link from "next/link"
-import { getAnnouncements } from "@/lib/mock/announcements"
+import { ANNOUNCEMENT_CATEGORIES, getAnnouncements, getCategoryLabel } from "@/lib/mock/announcements"
 
-const categoryConfig = {
-  all: { label: "全部公告", color: "default" },
-  training: { label: "專科訓練認定", color: "blue" },
-  "additional-quota": { label: "外加容額", color: "green" },
-  review: { label: "甄審", color: "purple" },
-}
+// 類別與後台共用同一組 key（見 lib/mock/announcements.ts），不再各自定義
+const categoryTabs = [{ value: "all", label: "全部公告" }, ...ANNOUNCEMENT_CATEGORIES]
 
 export default function AnnouncementsPage() {
   const [activeTab, setActiveTab] = useState("all")
@@ -59,19 +55,12 @@ export default function AnnouncementsPage() {
 
       {/* 分類 Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2 gap-1 h-auto sm:grid-cols-4 lg:w-auto lg:inline-grid lg:h-10">
-          <TabsTrigger value="all" className="text-sm sm:text-base">
-            全部公告
-          </TabsTrigger>
-          <TabsTrigger value="training" className="text-sm sm:text-base">
-            專科訓練認定
-          </TabsTrigger>
-          <TabsTrigger value="additional-quota" className="text-sm sm:text-base">
-            外加容額
-          </TabsTrigger>
-          <TabsTrigger value="review" className="text-sm sm:text-base">
-            甄審
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 gap-1 h-auto sm:grid-cols-5 lg:w-auto lg:inline-grid lg:h-10">
+          {categoryTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className="text-base">
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-4">
@@ -111,7 +100,7 @@ export default function AnnouncementsPage() {
                         </div>
                         <CardDescription className="flex items-center gap-3 text-base flex-wrap">
                           <Badge variant="outline" className="text-sm">
-                            {categoryConfig[announcement.category as keyof typeof categoryConfig].label}
+                            {getCategoryLabel(announcement.category)}
                           </Badge>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />

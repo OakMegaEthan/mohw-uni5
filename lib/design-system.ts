@@ -15,7 +15,7 @@
 export const TYPOGRAPHY = {
   // 核心規範：最小字級
   CORE: {
-    minFontSize: "16px", // 0.875rem - 不可再小
+    minFontSize: "16px", // 1rem - 不可再小
     minTailwind: "text-base",
     description: "正文、表格內容、按鈕的最小字級。絕不使用 text-xs（12px）或 text-sm（14px）在主要內容區",
   },

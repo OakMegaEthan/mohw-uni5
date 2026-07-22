@@ -114,7 +114,7 @@ export default function StatisticsPage() {
           {/* Submission Review Progress */}
           <Card>
             <CardHeader>
-              <CardTitle>填報審查進度</CardTitle>
+              <CardTitle>文件填報審查進度</CardTitle>
               <CardDescription>各類文件填報完成狀況</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -230,7 +230,7 @@ export default function StatisticsPage() {
           <Card>
             <CardHeader>
               <CardTitle>各醫學會審查進度</CardTitle>
-              <CardDescription>填報審查完成百分比</CardDescription>
+              <CardDescription>文件填報審查完成百分比</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -313,7 +313,7 @@ export default function StatisticsPage() {
                   }
                 />
                 <Label htmlFor="submissions" className="cursor-pointer">
-                  填報審查統計
+                  文件填報審查統計
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
@@ -337,7 +337,7 @@ export default function StatisticsPage() {
                   }
                 />
                 <Label htmlFor="hospitalQuota" className="cursor-pointer">
-                  醫院容額分配審查統計
+                  容額填報審查統計
                 </Label>
               </div>
               <div className="flex items-center space-x-2">

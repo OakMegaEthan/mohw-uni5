@@ -177,7 +177,7 @@ export default function SubmissionsReviewPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">填報審查</h1>
+          <h1 className="text-2xl font-bold text-gray-900">文件填報審查</h1>
           <p className="text-base text-gray-500 mt-1">以文件類型為單位檢視各醫學會的填報狀態並進行審查</p>
         </div>
 

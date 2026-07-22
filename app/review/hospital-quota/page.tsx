@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import Link from "next/link"
+import { ChevronRight, ArrowRight, AlertCircle, Undo2 } from "lucide-react"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -13,113 +15,136 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Search, ChevronRight, ArrowRight, AlertCircle } from "lucide-react"
-import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
+  RETURNED_BUCKET,
+  advanceQuotaReviewSocieties,
+  getAdvanceCheckStatsForQuota,
   getHospitalQuotaSocieties,
   getHospitalQuotaStageConfig,
-  hospitalQuotaStages,
-  getAdvanceCheckStatsForQuota,
+  getNextQuotaReviewStage,
+  getQuotaReviewStageUnit,
+  quotaReviewStages,
+  type HospitalQuotaReviewSociety,
+  type QuotaReviewStage,
 } from "@/lib/mock/review-hospital-quota"
 
+/**
+ * 容額填報審查列表（醫策會／RRC／醫事司視角）。
+ * 階段語彙與容額填報端共用；醫學會固定 25 個，未送件者標「尚未填寫」留在第一個審查階段；
+ * 退件為一等狀態，自階段分頁移出、另立「退件補正中」分頁。
+ */
 export default function HospitalQuotaReviewPage() {
-  const [searchExpanded, setSearchExpanded] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState("pending")
+  const [activeTab, setActiveTab] = useState<string>(quotaReviewStages[0])
   const [showAdvanceDialog, setShowAdvanceDialog] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [, forceUpdate] = useState(0)
 
-  const societies = getHospitalQuotaSocieties()
   const stageConfig = getHospitalQuotaStageConfig()
+  const societies = getHospitalQuotaSocieties()
 
-  const filteredSocieties = societies.filter((s) =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // 退件案件自階段分頁移出，改列退件分頁
+  const inStage = (stage: QuotaReviewStage) =>
+    societies.filter((s) => s.stage === stage && s.returnedFrom === null)
+  const returnedSocieties = societies.filter((s) => s.returnedFrom !== null)
+
+  const activeStage = activeTab === RETURNED_BUCKET.value ? null : (activeTab as QuotaReviewStage)
+  const nextStage = activeStage ? getNextQuotaReviewStage(activeStage) : null
+  const advanceStats = useMemo(
+    () => (activeStage ? getAdvanceCheckStatsForQuota(activeStage) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeStage, forceUpdate],
   )
-
-  const societiesByStage = (stage: string) =>
-    filteredSocieties.filter((s) => s.stage === stage)
-
-  const currentStageLabel = stageConfig[activeTab as keyof typeof stageConfig]?.label || activeTab
-  const currentStageIndex = hospitalQuotaStages.findIndex((s) => s.value === activeTab)
-  const nextStage = hospitalQuotaStages[currentStageIndex + 1] ?? null
 
   const handleOpenAdvanceDialog = () => {
     // 預設全選當前階段已審查通過的醫學會
-    const inStage = societiesByStage(activeTab)
-    setSelectedIds(inStage.filter((s) => s.reviewResult === "approved").map((s) => s.id))
+    const approved = (advanceStats?.societies ?? []).filter((s) => s.reviewResult === "approved")
+    setSelectedIds(approved.map((s) => s.id))
     setShowAdvanceDialog(true)
   }
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
-  }
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
 
   const toggleSelectAll = () => {
-    const inStage = societiesByStage(activeTab)
-    if (selectedIds.length === inStage.length) {
-      setSelectedIds([])
-    } else {
-      setSelectedIds(inStage.map((s) => s.id))
-    }
+    const all = advanceStats?.societies ?? []
+    setSelectedIds((prev) => (prev.length === all.length ? [] : all.map((s) => s.id)))
   }
 
   const handleConfirmAdvance = () => {
+    if (nextStage) advanceQuotaReviewSocieties(selectedIds, nextStage)
     setShowAdvanceDialog(false)
     setSelectedIds([])
-    if (nextStage) setActiveTab(nextStage.value)
+    forceUpdate((n) => n + 1)
+    if (nextStage) setActiveTab(nextStage)
   }
 
-  const advanceStats = getAdvanceCheckStatsForQuota(activeTab)
-
-  const renderReviewResultBadge = (result: string) => {
-    if (result === "approved")
-      return <Badge className="bg-green-100 text-green-700 text-sm">審查通過</Badge>
-    if (result === "needs-revision")
-      return <Badge className="bg-orange-100 text-orange-700 text-sm">需補件</Badge>
-    return <Badge className="bg-gray-100 text-gray-600 text-sm">待審查</Badge>
+  const renderReviewResult = (society: HospitalQuotaReviewSociety) => {
+    if (!society.submitted)
+      return <Badge className="bg-gray-100 text-gray-600 border-gray-200 text-sm">尚未填寫</Badge>
+    if (society.reviewResult === "approved")
+      return <Badge className="bg-green-100 text-green-700 border-green-200 text-sm">審查通過</Badge>
+    return <Badge className="bg-gray-100 text-gray-600 border-gray-200 text-sm">待審查</Badge>
   }
 
-  const renderTable = (stage: string) => {
-    const rows = societiesByStage(stage)
+  const renderStageTable = (stage: QuotaReviewStage) => {
+    const rows = inStage(stage)
     return (
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">#</TableHead>
                 <TableHead>醫學會名稱</TableHead>
-                <TableHead>年度</TableHead>
-                <TableHead>送件日期</TableHead>
-                <TableHead>審查結果</TableHead>
-                <TableHead className="text-right">操作</TableHead>
+                <TableHead className="w-28">年度</TableHead>
+                <TableHead className="w-36">送件日期</TableHead>
+                <TableHead className="w-32">審查結果</TableHead>
+                <TableHead className="w-36 text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length > 0 ? (
-                rows.map((society) => (
-                  <TableRow key={society.id}>
-                    <TableCell className="font-medium">{society.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-sm">{society.year}</Badge>
+                rows.map((society, index) => (
+                  <TableRow key={society.id} className={!society.submitted ? "bg-gray-50" : ""}>
+                    <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {!society.submitted && <AlertCircle className="h-4 w-4 shrink-0 text-gray-400" />}
+                        <span className={!society.submitted ? "text-gray-500" : ""}>{society.name}</span>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{society.submittedDate}</TableCell>
-                    <TableCell>{renderReviewResultBadge(society.reviewResult)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-sm">
+                        {society.year}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {society.submittedDate ?? <span className="text-gray-400">未送件</span>}
+                    </TableCell>
+                    <TableCell>{renderReviewResult(society)}</TableCell>
                     <TableCell className="text-right">
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={`/review/hospital-quota/${society.id}`} className="flex items-center gap-2">
-                          檢視審查
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      </Button>
+                      {society.submitted ? (
+                        <Button asChild size="sm" variant="outline">
+                          <Link
+                            href={`/review/hospital-quota/${society.id}`}
+                            className="flex items-center gap-2"
+                          >
+                            檢視審查
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : (
+                        <span className="text-base text-gray-400">等待送件</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-base text-gray-500">
-                    目前沒有符合條件的醫學會
+                  <TableCell colSpan={6} className="py-12 text-center text-base text-gray-500">
+                    此階段目前沒有案件
                   </TableCell>
                 </TableRow>
               )}
@@ -130,130 +155,221 @@ export default function HospitalQuotaReviewPage() {
     )
   }
 
+  const renderReturnedTable = () => (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">#</TableHead>
+              <TableHead>醫學會名稱</TableHead>
+              <TableHead className="w-28">年度</TableHead>
+              <TableHead className="w-44">退回自</TableHead>
+              <TableHead className="w-36">原送件日期</TableHead>
+              <TableHead className="w-36 text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {returnedSocieties.length > 0 ? (
+              returnedSocieties.map((society, index) => (
+                <TableRow key={society.id}>
+                  <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                  <TableCell className="font-medium">{society.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-sm">
+                      {society.year}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <Badge className={`${stageConfig[society.returnedFrom!].color} text-sm`}>
+                        {society.returnedFrom}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        （{getQuotaReviewStageUnit(society.returnedFrom!)}）
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{society.submittedDate}</TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        href={`/review/hospital-quota/${society.id}`}
+                        className="flex items-center gap-2"
+                      >
+                        檢視退件
+                        <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="py-12 text-center text-base text-gray-500">
+                  目前沒有退件補正中的案件
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">醫院容額分配審查</h1>
-            <p className="text-base text-gray-500 mt-1">審查各醫學會提交的醫院訓練容額分配申請</p>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSearchExpanded(!searchExpanded)}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <Search className="w-5 h-5" />
-          </Button>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">容額填報審查</h1>
+          <p className="mt-1 text-base text-gray-500">
+            審查 25 個醫學會提交的訓練醫院容額分配，依階段推進至公告
+          </p>
         </div>
-
-        {searchExpanded && (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <Input
-                placeholder="搜尋醫學會名稱..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-xs"
-              />
-            </CardContent>
-          </Card>
-        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-6 h-11">
-            {hospitalQuotaStages.map((stage) => (
-              <TabsTrigger key={stage.value} value={stage.value} className="text-base px-5 flex items-center gap-2">
-                {stage.label}
+            {quotaReviewStages.map((stage) => (
+              <TabsTrigger key={stage} value={stage} className="flex items-center gap-2 px-5 text-base">
+                {stageConfig[stage].label}
                 <Badge variant="secondary" className="ml-1">
-                  {societiesByStage(stage.value).length}
+                  {inStage(stage).length}
                 </Badge>
               </TabsTrigger>
             ))}
+            <TabsTrigger
+              value={RETURNED_BUCKET.value}
+              className="flex items-center gap-2 px-5 text-base"
+            >
+              <Undo2 className="h-4 w-4" />
+              {RETURNED_BUCKET.label}
+              <Badge variant="secondary" className="ml-1">
+                {returnedSocieties.length}
+              </Badge>
+            </TabsTrigger>
           </TabsList>
 
-          {hospitalQuotaStages.map((stage) => {
-            const stageIndex = hospitalQuotaStages.findIndex((s) => s.value === stage.value)
-            const nextStageForTab = hospitalQuotaStages[stageIndex + 1] ?? null
-            const isActiveStage = stage.value === activeTab
-
+          {quotaReviewStages.map((stage) => {
+            const nextForTab = getNextQuotaReviewStage(stage)
+            const notFiledCount = societies.filter((s) => s.stage === stage && !s.submitted).length
             return (
-              <TabsContent key={stage.value} value={stage.value}>
-                {/* 目前階段標示與推進按鈕 */}
-                <div className="flex items-center justify-between mb-4">
+              <TabsContent key={stage} value={stage}>
+                <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-base text-gray-600">目前階段：</span>
-                    <Badge className={`${stageConfig[stage.value as keyof typeof stageConfig]?.color || "bg-gray-100 text-gray-800"} text-base px-3 py-1`}>
-                      {stageConfig[stage.value as keyof typeof stageConfig]?.label || stage.label}
+                    <Badge className={`${stageConfig[stage].color} px-3 py-1 text-base`}>
+                      {stageConfig[stage].label}
                     </Badge>
+                    {notFiledCount > 0 && (
+                      <span className="text-base text-gray-500">
+                        （其中 {notFiledCount} 個醫學會尚未填寫）
+                      </span>
+                    )}
                   </div>
-                  {nextStageForTab && isActiveStage && (
+                  {nextForTab && stage === activeTab && (
                     <Button
                       variant="outline"
                       size="sm"
                       className="gap-1.5"
                       onClick={handleOpenAdvanceDialog}
-                      disabled={societiesByStage(stage.value).length === 0}
+                      disabled={(advanceStats?.societies.length ?? 0) === 0}
                     >
                       <ArrowRight className="h-4 w-4" />
-                      推進至{nextStageForTab.label}
+                      推進至{nextForTab}
                     </Button>
                   )}
                 </div>
-                {renderTable(stage.value)}
+                {renderStageTable(stage)}
               </TabsContent>
             )
           })}
+
+          <TabsContent value={RETURNED_BUCKET.value}>
+            <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+              <p className="text-base text-orange-800">
+                以下案件已退回醫學會補正。醫學會重新送件後，案件回到「退回自」的階段續審，
+                不重走先前已通過的階段。
+              </p>
+            </div>
+            {renderReturnedTable()}
+          </TabsContent>
         </Tabs>
 
         {/* 批次推進 Dialog */}
         <Dialog open={showAdvanceDialog} onOpenChange={setShowAdvanceDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>選擇推進至{nextStage?.label}的醫學會</DialogTitle>
+              <DialogTitle>選擇推進至{nextStage}的醫學會</DialogTitle>
             </DialogHeader>
-            <div className="py-2 space-y-4">
+            <div className="space-y-4 py-2">
               <p className="text-base text-gray-600">
-                可選擇部分醫學會推進至下一階段，未選取的醫學會將繼續留在「{currentStageLabel}」。
+                可選擇部分醫學會推進至下一階段，未選取的醫學會將繼續留在「{activeStage}」。
+                尚未填寫與退件補正中的醫學會不會出現在此清單。
               </p>
 
               {/* 審查狀態統計 */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                  <p className="text-base text-green-600 mb-0.5">審查通過</p>
-                  <p className="text-xl font-bold text-green-700">{advanceStats.approved.count}</p>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-center">
+                  <p className="mb-0.5 text-base text-green-600">審查通過</p>
+                  <p className="text-xl font-bold text-green-700">{advanceStats?.approved.count ?? 0}</p>
                 </div>
-                <div className={`border rounded-lg p-3 text-center ${advanceStats.needsRevision.count > 0 ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-200"}`}>
-                  <p className={`text-base mb-0.5 ${advanceStats.needsRevision.count > 0 ? "text-orange-600" : "text-gray-500"}`}>需補件</p>
-                  <p className={`text-xl font-bold ${advanceStats.needsRevision.count > 0 ? "text-orange-700" : "text-gray-400"}`}>{advanceStats.needsRevision.count}</p>
+                <div
+                  className={`rounded-lg border p-3 text-center ${
+                    (advanceStats?.pendingReview.count ?? 0) > 0
+                      ? "border-amber-200 bg-amber-50"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <p
+                    className={`mb-0.5 text-base ${
+                      (advanceStats?.pendingReview.count ?? 0) > 0 ? "text-amber-600" : "text-gray-500"
+                    }`}
+                  >
+                    尚未審查
+                  </p>
+                  <p
+                    className={`text-xl font-bold ${
+                      (advanceStats?.pendingReview.count ?? 0) > 0 ? "text-amber-700" : "text-gray-400"
+                    }`}
+                  >
+                    {advanceStats?.pendingReview.count ?? 0}
+                  </p>
                 </div>
-                <div className={`border rounded-lg p-2.5 text-center ${advanceStats.pendingReview.count > 0 ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
-                  <p className={`text-base mb-0.5 ${advanceStats.pendingReview.count > 0 ? "text-amber-600" : "text-gray-500"}`}>尚未審查</p>
-                  <p className={`text-xl font-bold ${advanceStats.pendingReview.count > 0 ? "text-amber-700" : "text-gray-400"}`}>{advanceStats.pendingReview.count}</p>
+                <div
+                  className={`rounded-lg border p-3 text-center ${
+                    (advanceStats?.notFiled.count ?? 0) > 0
+                      ? "border-gray-300 bg-gray-100"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <p className="mb-0.5 text-base text-gray-500">尚未填寫</p>
+                  <p className="text-xl font-bold text-gray-400">{advanceStats?.notFiled.count ?? 0}</p>
                 </div>
               </div>
 
               {/* 勾選列表 */}
-              {advanceStats.societies.length > 0 ? (
-                <div className="border rounded-lg overflow-hidden">
-                  {/* 全選 */}
+              {(advanceStats?.societies.length ?? 0) > 0 ? (
+                <div className="max-h-56 overflow-y-auto rounded-lg border">
                   <div
-                    className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b cursor-pointer"
+                    className="flex cursor-pointer items-center gap-3 border-b bg-gray-50 px-4 py-3"
                     onClick={toggleSelectAll}
                   >
                     <Checkbox
-                      checked={selectedIds.length === advanceStats.societies.length && advanceStats.societies.length > 0}
+                      checked={
+                        selectedIds.length === advanceStats!.societies.length &&
+                        advanceStats!.societies.length > 0
+                      }
                       onCheckedChange={toggleSelectAll}
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <span className="text-base font-medium text-gray-700">全選（{advanceStats.societies.length} 個醫學會）</span>
+                    <span className="text-base font-medium text-gray-700">
+                      全選（{advanceStats!.societies.length} 個醫學會）
+                    </span>
                   </div>
-                  {advanceStats.societies.map((society) => (
+                  {advanceStats!.societies.map((society) => (
                     <div
                       key={society.id}
-                      className={`flex items-center gap-3 px-4 py-3 border-b last:border-b-0 cursor-pointer transition-colors ${
+                      className={`flex cursor-pointer items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 ${
                         selectedIds.includes(society.id) ? "bg-blue-50" : "hover:bg-gray-50"
                       }`}
                       onClick={() => toggleSelect(society.id)}
@@ -263,46 +379,36 @@ export default function HospitalQuotaReviewPage() {
                         onCheckedChange={() => toggleSelect(society.id)}
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-medium">{society.name}</p>
-                      </div>
-                      <div className="shrink-0">
-                        {society.reviewResult === "approved" && (
-                          <Badge className="bg-green-100 text-green-700 text-sm">審查通過</Badge>
-                        )}
-                        {society.reviewResult === "needs-revision" && (
-                          <Badge className="bg-orange-100 text-orange-700 text-sm">需補件</Badge>
-                        )}
-                        {society.reviewResult === "pending" && (
-                          <Badge className="bg-gray-100 text-gray-600 text-sm">待審查</Badge>
-                        )}
-                      </div>
+                      <p className="min-w-0 flex-1 text-base font-medium">{society.name}</p>
+                      <div className="shrink-0">{renderReviewResult(society)}</div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-base text-center text-gray-400 py-4">目前此階段沒有醫學會</p>
+                <p className="py-4 text-center text-base text-gray-400">目前此階段沒有可推進的醫學會</p>
               )}
 
-              {/* 警告 */}
-              {(advanceStats.needsRevision.count > 0 || advanceStats.pendingReview.count > 0) && selectedIds.some((id) => {
-                const s = advanceStats.societies.find((soc) => soc.id === id)
+              {/* 警告：選到尚未審查的案件 */}
+              {selectedIds.some((id) => {
+                const s = advanceStats?.societies.find((soc) => soc.id === id)
                 return s && s.reviewResult !== "approved"
               }) && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
                   <p className="text-base text-amber-700">
-                    <AlertCircle className="h-4 w-4 inline-block mr-1 -mt-0.5" />
+                    <AlertCircle className="mr-1 -mt-0.5 inline-block h-4 w-4" />
                     您選擇了尚未完成審查的醫學會，推進後這些案件將一併進入下一階段。
                   </p>
                 </div>
               )}
             </div>
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setShowAdvanceDialog(false)}>取消</Button>
+              <Button variant="outline" onClick={() => setShowAdvanceDialog(false)}>
+                取消
+              </Button>
               <Button
                 disabled={selectedIds.length === 0}
                 onClick={handleConfirmAdvance}
-                className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                className="gap-1.5 bg-blue-600 text-white hover:bg-blue-700"
               >
                 <ArrowRight className="h-4 w-4" />
                 確認推進 {selectedIds.length > 0 && `(${selectedIds.length} 個)`}

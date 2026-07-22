@@ -103,12 +103,12 @@ export function GlobalNav() {
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem asChild>
                     <Link href="/review/submissions" className="cursor-pointer">
-                      填報審查
+                      文件填報審查
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/review/hospital-quota" className="cursor-pointer">
-                      醫院容額分配審查
+                      容額填報審查
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

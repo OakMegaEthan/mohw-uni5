@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Building2, FileText, Download, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { getAnnouncementDetail } from "@/lib/mock/announcements"
+import { getAnnouncementDetail, getCategoryLabel } from "@/lib/mock/announcements"
 
 export default function AnnouncementDetailPage({
   params,
@@ -17,12 +17,6 @@ export default function AnnouncementDetailPage({
 
   if (!announcement) {
     notFound()
-  }
-
-  const categoryConfig: Record<string, { label: string; color: string }> = {
-    training: { label: "專科訓練認定", color: "blue" },
-    "additional-quota": { label: "外加容額", color: "green" },
-    review: { label: "甄審", color: "purple" },
   }
 
   return (
@@ -43,7 +37,7 @@ export default function AnnouncementDetailPage({
         <CardHeader className="p-4 sm:p-6">
           <div className="space-y-3 sm:space-y-4">
             <Badge variant="outline" className="w-fit text-sm sm:text-sm">
-              {categoryConfig[announcement.category].label}
+              {getCategoryLabel(announcement.category)}
             </Badge>
             <CardTitle className="text-xl sm:text-3xl leading-tight">{announcement.title}</CardTitle>
             <CardDescription className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-sm sm:text-base">

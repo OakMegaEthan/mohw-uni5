@@ -148,9 +148,9 @@ export default function DocumentArchivePage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">全部</SelectItem>
-                    <SelectItem value="填報審查">填報審查</SelectItem>
+                    <SelectItem value="文件填報審查">文件填報審查</SelectItem>
                     <SelectItem value="外加容額審查">外加容額審查</SelectItem>
-                    <SelectItem value="醫院容額分配審查">醫院容額分配審查</SelectItem>
+                    <SelectItem value="容額填報審查">容額填報審查</SelectItem>
                     <SelectItem value="公告管理">公告管理</SelectItem>
                   </SelectContent>
                 </Select>

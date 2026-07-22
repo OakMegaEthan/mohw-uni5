@@ -1,428 +1,305 @@
 "use client"
 
-import { useState } from "react"
+// 公告清單。舊版把「待公告案件」塞在頁首的鈴鐺 Popover 裡（放不下、無法篩選、
+// 數量為 0 時整個入口消失），已改為獨立的待公告工作台，本頁專責管理已建立的公告。
+
+import { useMemo, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { Download, Eye, FileText, MoreHorizontal, Pin, Plus, Search } from "lucide-react"
+
+import { PageContainer, PageHeader } from "@/components/layout/page-container"
+import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { getTotalPendingCount, releaseDraftCases } from "@/lib/mock/announcement-cases"
 import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  Pin,
-  FileText,
-  Calendar,
-  Bell,
-  AlertCircle,
-  ExternalLink,
-  X,
-} from "lucide-react"
+  ANNOUNCEMENT_CATEGORIES,
+  ANNOUNCEMENT_STATUS_CONFIG,
+  createCorrection,
+  deleteDraft,
+  getAnnouncementList,
+  getCategoryLabel,
+  toRocDate,
+  unpublishAnnouncement,
+  type AnnouncementStatus,
+} from "@/lib/mock/announcements"
+import { downloadAnnouncementDocument } from "@/lib/announcement-export"
 
-// Mock 資料
-const mockAnnouncements = [
-  {
-    id: "1",
-    title: "115年度專科醫師訓練計畫甄審原則修訂公告",
-    category: "training",
-    status: "published",
-    isPinned: true,
-    publishDate: "2025-01-15",
-    views: 245,
-    attachments: 2,
-  },
-  {
-    id: "2",
-    title: "外加容額申請作業時程公告",
-    category: "additional",
-    status: "published",
-    isPinned: true,
-    publishDate: "2025-01-10",
-    views: 189,
-    attachments: 1,
-  },
-  {
-    id: "3",
-    title: "114年度醫院容額分配審查結果",
-    category: "review",
-    status: "published",
-    isPinned: false,
-    publishDate: "2025-01-08",
-    views: 156,
-    attachments: 3,
-  },
-  {
-    id: "4",
-    title: "訓練醫院認定基準更新說明",
-    category: "training",
-    status: "draft",
-    isPinned: false,
-    publishDate: null,
-    views: 0,
-    attachments: 1,
-  },
-  {
-    id: "5",
-    title: "專科醫師訓練容額調整通知",
-    category: "review",
-    status: "archived",
-    isPinned: false,
-    publishDate: "2024-12-20",
-    views: 312,
-    attachments: 2,
-  },
-]
+const STATUS_OPTIONS: AnnouncementStatus[] = ["草稿", "已排程", "已發布", "已下架"]
 
-const mockPendingAnnouncements = [
-  {
-    id: "pa-1",
-    title: "台灣內科醫學會 - 甄審原則審查通過",
-    source: "填報審查",
-    sourceModule: "submissions",
-    category: "training",
-    caseId: "1",
-    approvedDate: "2024-11-19",
-    type: "screening-principle",
-  },
-  {
-    id: "pa-2",
-    title: "台大醫院 - 外加容額申請審查通過",
-    source: "外加容額審查",
-    sourceModule: "additional-quota",
-    category: "additional",
-    caseId: "1",
-    approvedDate: "2024-11-18",
-    type: "additional-quota",
-  },
-  {
-    id: "pa-3",
-    title: "台灣外科醫學會 - 訓練醫院認定基準審查通過",
-    source: "填報審查",
-    sourceModule: "submissions",
-    category: "training",
-    caseId: "2",
-    approvedDate: "2024-11-17",
-    type: "hospital-accreditation",
-  },
-  {
-    id: "pa-4",
-    title: "長庚醫院 - 醫院容額分配審查通過",
-    source: "醫院容額分配審查",
-    sourceModule: "hospital-quota",
-    category: "review",
-    caseId: "3",
-    approvedDate: "2024-11-16",
-    type: "hospital-quota",
-  },
-  {
-    id: "pa-5",
-    title: "台灣骨科醫學會 - 評核標準審查通過",
-    source: "填報審查",
-    sourceModule: "submissions",
-    category: "training",
-    caseId: "4",
-    approvedDate: "2024-11-15",
-    type: "evaluation-standard",
-  },
-]
-
-const categories = [
-  { value: "all", label: "全部類別" },
-  { value: "training", label: "專科訓練認定" },
-  { value: "additional", label: "外加容額" },
-  { value: "review", label: "甄審" },
-]
-
-const statuses = [
-  { value: "all", label: "全部狀態" },
-  { value: "published", label: "已發布" },
-  { value: "draft", label: "草稿" },
-  { value: "archived", label: "已下架" },
-]
-
-const getCategoryLabel = (category: string) => {
-  return categories.find((c) => c.value === category)?.label || category
-}
-
-const getStatusBadge = (status: string) => {
-  const variants: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
-    published: { label: "已發布", variant: "default" },
-    draft: { label: "草稿", variant: "secondary" },
-    archived: { label: "已下架", variant: "outline" },
-  }
-  const config = variants[status] || { label: status, variant: "outline" as const }
-  return <Badge variant={config.variant}>{config.label}</Badge>
-}
-
-export default function AnnouncementManagementPage() {
-  const [searchTerm, setSearchTerm] = useState("")
+export default function AnnouncementListPage() {
+  const router = useRouter()
+  const [keyword, setKeyword] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [pendingCases, setPendingCases] = useState(mockPendingAnnouncements)
-  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [yearFilter, setYearFilter] = useState("all")
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [tick, forceUpdate] = useState(0)
 
-  const filteredAnnouncements = mockAnnouncements.filter((announcement) => {
-    const matchesSearch = announcement.title.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || announcement.category === categoryFilter
-    const matchesStatus = statusFilter === "all" || announcement.status === statusFilter
-    return matchesSearch && matchesCategory && matchesStatus
-  })
+  const announcements = useMemo(() => getAnnouncementList(), [tick])
+  const pendingCount = useMemo(() => getTotalPendingCount(), [tick])
+  const yearOptions = useMemo(
+    () => [...new Set(announcements.map((a) => a.year))].sort().reverse(),
+    [announcements],
+  )
 
-  const handleIgnoreCase = (caseId: string) => {
-    setPendingCases(pendingCases.filter((c) => c.id !== caseId))
+  const rows = useMemo(() => {
+    return announcements
+      .filter((a) => (categoryFilter === "all" ? true : a.category === categoryFilter))
+      .filter((a) => (statusFilter === "all" ? true : a.status === statusFilter))
+      .filter((a) => (yearFilter === "all" ? true : a.year === yearFilter))
+      .filter((a) =>
+        keyword.trim() === ""
+          ? true
+          : `${a.title}${a.docNumber}`.toLowerCase().includes(keyword.trim().toLowerCase()),
+      )
+      .sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+        return (b.publishDate ?? b.createdAt).localeCompare(a.publishDate ?? a.createdAt)
+      })
+  }, [announcements, categoryFilter, statusFilter, yearFilter, keyword])
+
+  const handleCorrect = (id: string) => {
+    const correction = createCorrection(id)
+    if (!correction) return
+    toast.success("已建立更正版本", { description: "原公告保留不動，更正稿發布後才會取代" })
+    router.push(`/announcement-management/compose?id=${correction.id}`)
   }
 
-  const handleCreateAnnouncement = (pendingCase: (typeof mockPendingAnnouncements)[0]) => {
-    console.log("[v0] Creating announcement for case:", pendingCase)
-    setPopoverOpen(false)
+  const handleUnpublish = (id: string) => {
+    unpublishAnnouncement(id)
+    forceUpdate((n) => n + 1)
+    toast.success("公告已下架")
+  }
+
+  const handleDelete = () => {
+    if (!deleteTarget) return
+    releaseDraftCases(deleteTarget)
+    deleteDraft(deleteTarget)
+    setDeleteTarget(null)
+    forceUpdate((n) => n + 1)
+    toast.success("草稿已刪除", { description: "其收錄的案件已釋回待公告池" })
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">公告管理</h1>
-              <p className="text-base text-gray-600">管理系統公告的新增、編輯、發布與下架</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/announcement-management/create">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  新增公告
-                </Button>
-              </Link>
+    <PageContainer>
+      <PageHeader title="公告管理" description="彙整審查完成的案件、編製公告文稿並對外發布">
+        <Button asChild className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73]">
+          <Link href="/announcement-management/compose">
+            <Plus className="h-4 w-4" />
+            新增公告
+          </Link>
+        </Button>
+      </PageHeader>
+      <AnnouncementModuleTabs pendingCount={pendingCount} />
 
-              {pendingCases.length > 0 && (
-                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="relative border-amber-300 hover:bg-amber-50 bg-transparent">
-                      <Bell className="w-4 h-4 mr-2 text-amber-600" />
-                      待公告案件
-                      <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800">
-                        {pendingCases.length}
-                      </Badge>
-                      {pendingCases.length > 0 && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[500px] p-0" align="end">
-                    <div className="p-4 border-b bg-amber-50">
-                      <div className="flex items-center gap-2">
-                        <Bell className="w-5 h-5 text-amber-600" />
-                        <h3 className="font-semibold text-gray-900">待公告案件</h3>
-                        <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                          {pendingCases.length}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">以下案件已審查通過，需建立公告</p>
-                    </div>
-
-                    <ScrollArea className="max-h-[400px]">
-                      <div className="p-2">
-                        {pendingCases.map((pendingCase) => (
-                          <div
-                            key={pendingCase.id}
-                            className="p-3 mb-2 rounded-lg border border-amber-100 bg-white hover:bg-amber-50/50 transition-colors"
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-start gap-2 flex-1">
-                                <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium text-sm text-gray-900 mb-1 leading-tight">
-                                    {pendingCase.title}
-                                  </h4>
-                                  <div className="flex flex-col gap-1 text-sm text-gray-600">
-                                    <span className="flex items-center gap-1">
-                                      來源：
-                                      <Badge variant="outline" className="text-sm">
-                                        {pendingCase.source}
-                                      </Badge>
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                      <Calendar className="w-3 h-3" />
-                                      通過日期：{pendingCase.approvedDate}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={() => handleIgnoreCase(pendingCase.id)}
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                            <div className="flex items-center gap-2 ml-6">
-                              <Link
-                                href={`/announcement-management/create?caseId=${pendingCase.id}`}
-                                onClick={() => setPopoverOpen(false)}
-                              >
-                                <Button size="sm" className="h-7 text-sm bg-amber-600 hover:bg-amber-700">
-                                  <Plus className="w-3 h-3 mr-1" />
-                                  建立公告
-                                </Button>
-                              </Link>
-                              <Link
-                                href={
-                                  pendingCase.sourceModule === "submissions"
-                                    ? `/review/submissions/${pendingCase.type}/${pendingCase.caseId}`
-                                    : pendingCase.sourceModule === "additional-quota"
-                                      ? `/filing/additional-quota/${pendingCase.caseId}`
-                                      : `/review/hospital-quota/${pendingCase.caseId}`
-                                }
-                                onClick={() => setPopoverOpen(false)}
-                              >
-                                <Button variant="outline" size="sm" className="h-7 text-sm bg-transparent">
-                                  <ExternalLink className="w-3 h-3 mr-1" />
-                                  查看審查
-                                </Button>
-                              </Link>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-          </div>
+      {/* 篩選工具列（舊版把三個篩選塞進 grid-cols-3 又沒給下拉寬度，三欄長短不一） */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="搜尋標題或公文文號"
+            className="h-10 w-72 pl-9"
+          />
         </div>
-
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="搜尋公告標題..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="選擇類別" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.value} value={category.value}>
-                      {category.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="選擇狀態" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Table */}
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12"></TableHead>
-                  <TableHead>標題</TableHead>
-                  <TableHead>類別</TableHead>
-                  <TableHead>狀態</TableHead>
-                  <TableHead>發布日期</TableHead>
-                  <TableHead className="text-right">瀏覽數</TableHead>
-                  <TableHead className="text-right">附件</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAnnouncements.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      無符合條件的公告
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAnnouncements.map((announcement) => (
-                    <TableRow key={announcement.id}>
-                      <TableCell>
-                        {announcement.isPinned && <Pin className="w-4 h-4 text-amber-500 fill-amber-500" />}
-                      </TableCell>
-                      <TableCell className="font-medium">{announcement.title}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{getCategoryLabel(announcement.category)}</Badge>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(announcement.status)}</TableCell>
-                      <TableCell>
-                        {announcement.publishDate ? (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Calendar className="w-4 h-4" />
-                            {announcement.publishDate}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">未發布</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2 text-sm text-gray-600">
-                          <Eye className="w-4 h-4" />
-                          {announcement.views}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2 text-sm text-gray-600">
-                          <FileText className="w-4 h-4" />
-                          {announcement.attachments}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/announcements/${announcement.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/announcement-management/${announcement.id}/edit`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="h-10 w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部類別</SelectItem>
+            {ANNOUNCEMENT_CATEGORIES.map((c) => (
+              <SelectItem key={c.value} value={c.value}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-10 w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部狀態</SelectItem>
+            {STATUS_OPTIONS.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={yearFilter} onValueChange={setYearFilter}>
+          <SelectTrigger className="h-10 w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部年度</SelectItem>
+            {yearOptions.map((y) => (
+              <SelectItem key={y} value={y}>
+                {y}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="ml-auto text-base text-gray-500">共 {rows.length} 筆</span>
       </div>
-    </div>
+
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10"></TableHead>
+              <TableHead>標題</TableHead>
+              <TableHead className="w-32">類別</TableHead>
+              <TableHead className="w-28">狀態</TableHead>
+              <TableHead className="w-32">發文日期</TableHead>
+              <TableHead className="w-56">公文文號</TableHead>
+              <TableHead className="w-24 text-right">涵蓋案件</TableHead>
+              <TableHead className="w-20 text-right">附件</TableHead>
+              <TableHead className="w-40 text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="py-16 text-center">
+                  <FileText className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+                  <p className="text-base text-gray-500">無符合條件的公告</p>
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((a) => (
+                <TableRow key={a.id} className="h-14">
+                  <TableCell>
+                    {a.isPinned && <Pin className="h-4 w-4 fill-amber-500 text-amber-500" />}
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/announcement-management/${a.id}`}
+                      className="text-base font-medium text-gray-900 hover:text-blue-700"
+                    >
+                      {a.title}
+                    </Link>
+                    <p className="text-sm text-gray-500">{a.year}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-sm">
+                      {getCategoryLabel(a.category)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={`text-sm ${ANNOUNCEMENT_STATUS_CONFIG[a.status].color}`}>
+                      {a.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-base text-gray-600">{toRocDate(a.issueDate)}</TableCell>
+                  <TableCell className="text-base text-gray-600">
+                    {a.docNumber || <span className="text-gray-400">未填</span>}
+                  </TableCell>
+                  <TableCell className="text-right text-base text-gray-600">
+                    {a.cases.length || "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-base text-gray-600">
+                    {a.attachments.length || "—"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button asChild variant="outline" size="sm" className="gap-1">
+                        <Link href={`/announcement-management/${a.id}`}>
+                          <Eye className="h-4 w-4" />
+                          檢視
+                        </Link>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" aria-label="更多操作">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          {(a.status === "草稿" || a.status === "已排程") && (
+                            <DropdownMenuItem asChild>
+                              <Link href={`/announcement-management/compose?id=${a.id}`}>
+                                編輯內容
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
+                          {a.status === "已發布" && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleCorrect(a.id)}>
+                                建立更正公告
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleUnpublish(a.id)}>
+                                下架公告
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuItem onClick={() => downloadAnnouncementDocument(a)}>
+                            <Download className="h-4 w-4" />
+                            匯出文稿
+                          </DropdownMenuItem>
+                          {a.status === "草稿" && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-red-600 focus:text-red-600"
+                                onClick={() => setDeleteTarget(a.id)}
+                              >
+                                刪除草稿
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>刪除公告草稿？</AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              草稿刪除後無法復原，其收錄的案件會釋回待公告池，可重新彙整。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleDelete}>
+              確認刪除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </PageContainer>
   )
 }
