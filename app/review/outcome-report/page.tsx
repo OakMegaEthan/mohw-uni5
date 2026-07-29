@@ -16,7 +16,8 @@ import {
 
 /**
  * 容額成果報告審查（醫事司視角）。
- * 醫學會於容額填報待公告後上傳，直接送醫事司確認歸檔或退回補件（不經醫策會）。
+ * 醫學會對各申請醫院的評估結果，與審查階段時間解耦（待送件起即可上傳），
+ * 直接送醫事司確認歸檔或退回補件（不經醫策會）。
  */
 export default function QuotaOutcomeReportReviewPage() {
   const [statusFilter, setStatusFilter] = useState<OutcomeReportSubStatus | "all">("all")
@@ -43,7 +44,7 @@ export default function QuotaOutcomeReportReviewPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">容額成果報告審查</h1>
           <p className="mt-1 text-base text-gray-500">
-            醫學會於容額填報待公告後上傳之審查細節補充資料，確認無誤即歸檔，或退回補件
+            醫學會就各申請醫院所送之評估結果（容額申請前置依據），確認無誤即歸檔，或退回補件
           </p>
         </div>
 
