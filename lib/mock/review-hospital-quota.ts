@@ -817,9 +817,6 @@ const STAGE_RECORD_TEMPLATES: Record<QuotaReviewStage, StageRecordTemplate> = {
 
 （二）本案容額自115年8月1日起生效，至116年7月31日止。
 
-（三）請該醫學會於公告後一個月內辦理容額成果報告（RRC 審查後之審查細節補充資料）之
-    上傳作業。
-
 五、辦理情形：同意公告，移請公告管理作業。`,
   },
   已公告: {

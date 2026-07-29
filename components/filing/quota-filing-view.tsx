@@ -134,8 +134,9 @@ export function QuotaFilingView({
   const availableHospitals = AVAILABLE_HOSPITALS
   const isInternalMedicine = variant === "internal-medicine"
 
-  // 容額成果報告：案件進待公告後解鎖，醫學會上傳補件送醫事司
-  const showOutcomeReport = stage === "待公告" || stage === "已公告"
+  // 容額成果報告：與審查階段時間解耦，待送件起全程可上傳（醫學會對各申請醫院的評估結果，
+  // 為容額申請的前置依據，直接送醫事司歸檔）。故一律顯示，不以階段 gate。
+  const showOutcomeReport = true
   const reportEditable = reportStatus === "待上傳" || reportStatus === "退回補件"
   const [reportFiles, setReportFiles] = useState<UploadedFile[]>(
     reportStatus === "待上傳"
@@ -560,7 +561,7 @@ export function QuotaFilingView({
         </div>
       )}
 
-      {/* 容額成果報告：待公告後解鎖。RRC 審查後的審查細節補充，直接送醫事司確認歸檔 */}
+      {/* 容額成果報告：全程（待送件起）可上傳，不以審查階段 gate。醫學會對各申請醫院的評估結果，直接送醫事司確認歸檔 */}
       {showOutcomeReport && (
         <div className="rounded-lg border border-blue-200 bg-blue-50/40 px-6 py-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -588,8 +589,8 @@ export function QuotaFilingView({
             </div>
           </div>
           <p className="mb-4 text-sm text-muted-foreground">
-            本案已進入待公告，請上傳容額成果報告（RRC 審查後之審查細節補充資料），送出後由醫事司確認歸檔。
-            此作業不影響公告進度。
+            請上傳容額成果報告（醫學會對各申請醫院的評估結果，為容額申請的前置依據），送出後由醫事司確認歸檔留存。
+            此作業與審查階段獨立，不影響審查與公告進度。
           </p>
 
           {/* 退回補件意見：醫事司於容額成果報告審查頁填寫的單則意見，直接內嵌呈現。
