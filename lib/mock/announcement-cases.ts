@@ -96,7 +96,7 @@ function buildFromSubmissions(): PendingCase[] {
 
   documentTypes.forEach((docType) => {
     getDocumentSubmissions(docType.id)
-      .filter((s) => s.stage === "pending-announcement")
+      .filter((s) => s.stage === "passed")
       .forEach((s) => {
         const society = societies.find((soc) => soc.id === s.societyId)
         if (!society) return

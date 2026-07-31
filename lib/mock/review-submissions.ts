@@ -9,46 +9,50 @@ export const documentTypes = [
   { id: "screening-principle", name: "甄審原則", shortName: "甄審原則" },
 ]
 
+// 審查鏈終點為「審查通過」（passed）＝交棒公告管理；不再有「待公告／已公告」審查階段。
+// 「醫事司審查」（ministry-review）只加在有上游外部審查（分組會議／RRC）的文件類型；
+// 甄審原則、精進指南無分組／RRC，待審查即由醫事司審查，故 待審查 → 審查通過。
 export const stagesByDocumentType: Record<string, Array<{ value: string; label: string }>> = {
   "screening-principle": [
     { value: "pending-review", label: "待審查" },
-    { value: "pending-announcement", label: "待公告" },
-    { value: "announced", label: "已公告" },
+    { value: "passed", label: "審查通過" },
   ],
   "hospital-accreditation": [
     { value: "pending-review", label: "待審查" },
     { value: "group-meeting", label: "分組會議審查" },
     { value: "rrc-meeting", label: "RRC 大會審核" },
-    { value: "pending-announcement", label: "待公告" },
-    { value: "announced", label: "已公告" },
+    { value: "ministry-review", label: "醫事司審查" },
+    { value: "passed", label: "審查通過" },
   ],
   "training-curriculum": [
     { value: "pending-review", label: "待審查" },
     { value: "group-meeting", label: "分組會議審查" },
     { value: "rrc-meeting", label: "RRC 大會審核" },
-    { value: "pending-announcement", label: "待公告" },
-    { value: "announced", label: "已公告" },
+    { value: "ministry-review", label: "醫事司審查" },
+    { value: "passed", label: "審查通過" },
   ],
   "evaluation-standards": [
     { value: "pending-review", label: "待審查" },
     { value: "group-meeting", label: "分組會議審查" },
     { value: "rrc-meeting", label: "RRC 大會審核" },
-    { value: "pending-announcement", label: "待公告" },
-    { value: "announced", label: "已公告" },
+    { value: "ministry-review", label: "醫事司審查" },
+    { value: "passed", label: "審查通過" },
   ],
   "quota-allocation": [
     { value: "pending-review", label: "待審查" },
     { value: "group-meeting", label: "分組會議審查" },
     { value: "rrc-meeting", label: "RRC 大會審核" },
-    { value: "pending-announcement", label: "待公告" },
-    { value: "announced", label: "已公告" },
+    { value: "ministry-review", label: "醫事司審查" },
+    { value: "passed", label: "審查通過" },
   ],
   "improvement-guide": [
     { value: "pending-review", label: "待審查" },
-    { value: "pending-announcement", label: "待公告" },
-    { value: "announced", label: "已公告" },
+    { value: "passed", label: "審查通過" },
   ],
 }
+
+/** 審查通過為交棒終點：不可再推進，於「已審結」唯讀可查 */
+export const SUBMISSION_PASSED_STAGE = "passed"
 
 export type Submission = {
   societyId: string
@@ -123,34 +127,37 @@ const generateMockSubmissionsForDocType = (
 
 // 每個文件類型設定不同的跨階段分布，展示真實的跨階段共存情境
 export const mockDocumentSubmissions: Record<string, Submission[]> = {
-  // 計畫認定基準：大部分在分組會議，少數在待審查與 RRC
+  // 計畫認定基準：大部分在分組會議，少數散在其後各關與已審結
   "hospital-accreditation": generateMockSubmissionsForDocType("hospital-accreditation", [
     { stage: "pending-review", portion: 0.15 },
-    { stage: "group-meeting", portion: 0.55 },
+    { stage: "group-meeting", portion: 0.45 },
     { stage: "rrc-meeting", portion: 0.20 },
-    { stage: "pending-announcement", portion: 0.10 },
+    { stage: "ministry-review", portion: 0.10 },
+    { stage: "passed", portion: 0.10 },
   ]),
-  // 訓練課程基準：大部分在 RRC，少數在分組與待公告
+  // 訓練課程基準：大部分在 RRC，少數在分組、醫事司審查與已審結
   "training-curriculum": generateMockSubmissionsForDocType("training-curriculum", [
     { stage: "group-meeting", portion: 0.20 },
-    { stage: "rrc-meeting", portion: 0.60 },
-    { stage: "pending-announcement", portion: 0.20 },
+    { stage: "rrc-meeting", portion: 0.50 },
+    { stage: "ministry-review", portion: 0.15 },
+    { stage: "passed", portion: 0.15 },
   ]),
-  // 評核標準：跨三個中間階段
+  // 評核標準：跨中間各階段
   "evaluation-standards": generateMockSubmissionsForDocType("evaluation-standards", [
     { stage: "pending-review", portion: 0.25 },
-    { stage: "group-meeting", portion: 0.40 },
-    { stage: "rrc-meeting", portion: 0.35 },
+    { stage: "group-meeting", portion: 0.35 },
+    { stage: "rrc-meeting", portion: 0.30 },
+    { stage: "ministry-review", portion: 0.10 },
   ]),
   // 容額分配原則：主要在待審查
   "quota-allocation": generateMockSubmissionsForDocType("quota-allocation", [
     { stage: "pending-review", portion: 0.70 },
     { stage: "group-meeting", portion: 0.30 },
   ]),
-  // 精進指南：多數已到待公告
+  // 精進指南：多數已審查通過
   "improvement-guide": generateMockSubmissionsForDocType("improvement-guide", [
     { stage: "pending-review", portion: 0.20 },
-    { stage: "pending-announcement", portion: 0.80 },
+    { stage: "passed", portion: 0.80 },
   ]),
   // 甄審原則：全部在待審查（剛開始）
   "screening-principle": generateMockSubmissionsForDocType("screening-principle", [
@@ -162,8 +169,8 @@ export const stageColors: Record<string, string> = {
   "pending-review": "bg-blue-100 text-blue-800 border-blue-200",
   "group-meeting": "bg-purple-100 text-purple-800 border-purple-200",
   "rrc-meeting": "bg-pink-100 text-pink-800 border-pink-200",
-  "pending-announcement": "bg-amber-100 text-amber-800 border-amber-200",
-  "announced": "bg-green-100 text-green-800 border-green-200",
+  "ministry-review": "bg-amber-100 text-amber-800 border-amber-200",
+  "passed": "bg-green-100 text-green-800 border-green-200",
 }
 
 // ── 查詢函式 ──────────────────────────────────────────────
