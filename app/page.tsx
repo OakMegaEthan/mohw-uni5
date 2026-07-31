@@ -62,7 +62,6 @@ export default function HomePage() {
       color: "bg-indigo-500",
       pages: [
         { name: "\u7D71\u8A08\u5100\u8868\u677F", href: "/statistics", description: "\u6AA2\u8996\u6574\u9AD4\u7D71\u8A08\u6578\u64DA\u8207\u8996\u89BA\u5316\u5716\u8868" },
-        { name: "\u6587\u4EF6\u6AA2\u7D22", href: "/document-archive", description: "\u641C\u5C0B\u8207\u7BA1\u7406\u7CFB\u7D71\u4E2D\u7684\u6240\u6709\u6587\u4EF6" },
       ],
     },
     {
