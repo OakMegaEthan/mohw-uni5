@@ -122,7 +122,7 @@ function buildFromSubmissions(): PendingCase[] {
 
 function buildFromQuotaFiling(): PendingCase[] {
   return mockHospitalQuotaSocieties
-    .filter((s) => s.stage === "待公告" && s.returnedFrom === null)
+    .filter((s) => s.stage === "審查通過" && s.returnedFrom === null)
     .map((s) => ({
       id: `quota-${s.id}`,
       sourceModule: "quota-filing" as const,

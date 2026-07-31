@@ -17,19 +17,23 @@ import {
 // 退件為一等狀態（見 docs/business-logic.md「退件規則」）：退件案件自階段分頁移出，
 // 改列「退件補正中」，並記錄 returnedFrom；醫學會補正重送後回該階段續審，不重走整條鏈。
 
-/** 審查端可見的階段：填報鏈去掉醫學會自己的「待送件」 */
-export type QuotaReviewStage = Exclude<QuotaFilingStage, "待送件">
+/** 審查端可推進的四個階段：填報鏈去掉醫學會自己的「待送件」與終點「審查通過」 */
+export type QuotaReviewStage = "醫策會初審" | "分組會議" | "RRC大會" | "醫事司審查"
+
+/** 審查鏈終點：醫事司點「審查通過」後案件離開審查作業區、交棒公告管理，於「已審結」唯讀可查 */
+export const PASSED_STAGE = "審查通過" as const
+export type QuotaCaseStage = QuotaReviewStage | typeof PASSED_STAGE
 
 export const quotaReviewStages: QuotaReviewStage[] = QUOTA_FILING_STAGES.filter(
-  (s): s is QuotaReviewStage => s !== "待送件",
+  (s): s is QuotaReviewStage => s !== "待送件" && s !== PASSED_STAGE,
 )
 
-export const quotaReviewStageConfig: Record<QuotaReviewStage, { color: string; label: string }> = {
+export const quotaReviewStageConfig: Record<QuotaCaseStage, { color: string; label: string }> = {
   醫策會初審: { color: "bg-yellow-100 text-yellow-800 border-yellow-200", label: "醫策會初審" },
   分組會議: { color: "bg-blue-100 text-blue-800 border-blue-200", label: "分組會議" },
   RRC大會: { color: "bg-purple-100 text-purple-800 border-purple-200", label: "RRC大會" },
-  待公告: { color: "bg-amber-100 text-amber-800 border-amber-200", label: "待公告" },
-  已公告: { color: "bg-green-100 text-green-800 border-green-200", label: "已公告" },
+  醫事司審查: { color: "bg-amber-100 text-amber-800 border-amber-200", label: "醫事司審查" },
+  審查通過: { color: "bg-green-100 text-green-800 border-green-200", label: "審查通過" },
 }
 
 /** 退件補正中不是階段，而是與階段並行的一等狀態，於列表另立一個分頁 */
@@ -37,6 +41,13 @@ export const RETURNED_BUCKET = {
   value: "returned" as const,
   label: "退件補正中",
   color: "bg-orange-100 text-orange-800 border-orange-200",
+}
+
+/** 已審結（審查通過）唯讀歸檔分頁：案件已交棒公告管理，於此可回查審查歷程與文件 */
+export const PASSED_BUCKET = {
+  value: PASSED_STAGE,
+  label: "已審結",
+  color: "bg-green-100 text-green-800 border-green-200",
 }
 
 export type QuotaReviewResult = "pending" | "approved"
@@ -48,8 +59,8 @@ export interface HospitalQuotaReviewSociety {
   /** 醫學會是否已送出容額填報。false = 尚未填寫 */
   submitted: boolean
   submittedDate: string | null
-  /** 所在審查階段；未送件者掛在第一個審查階段（沿用填報審查頁的歸位方式） */
-  stage: QuotaReviewStage
+  /** 所在階段；未送件者掛在第一個審查階段。審查通過者為終點 PASSED_STAGE，列於已審結 */
+  stage: QuotaCaseStage
   /** 有值＝退件補正中，值為退回自哪個階段（重送後回該階段續審） */
   returnedFrom: QuotaReviewStage | null
   reviewResult: QuotaReviewResult
@@ -60,7 +71,7 @@ export interface HospitalQuotaReviewSociety {
 type StagePlan =
   | { kind: "not-filed" }
   | { kind: "returned"; from: QuotaReviewStage }
-  | { kind: "in-review"; stage: QuotaReviewStage; result: QuotaReviewResult }
+  | { kind: "in-review"; stage: QuotaCaseStage; result: QuotaReviewResult }
 
 const STAGE_PLAN: StagePlan[] = [
   { kind: "in-review", stage: "醫策會初審", result: "pending" }, // 1 台灣家庭醫學醫學會（完整版型）
@@ -77,16 +88,16 @@ const STAGE_PLAN: StagePlan[] = [
   { kind: "returned", from: "RRC大會" }, // 12
   { kind: "not-filed" }, // 13
   { kind: "in-review", stage: "RRC大會", result: "approved" }, // 14
-  { kind: "in-review", stage: "待公告", result: "approved" }, // 15
-  { kind: "in-review", stage: "待公告", result: "approved" }, // 16
-  { kind: "in-review", stage: "已公告", result: "approved" }, // 17
-  { kind: "in-review", stage: "已公告", result: "approved" }, // 18
-  { kind: "returned", from: "待公告" }, // 19
+  { kind: "in-review", stage: "醫事司審查", result: "approved" }, // 15
+  { kind: "in-review", stage: "審查通過", result: "approved" }, // 16 已審結
+  { kind: "in-review", stage: "審查通過", result: "approved" }, // 17 已審結
+  { kind: "in-review", stage: "審查通過", result: "approved" }, // 18 已審結
+  { kind: "returned", from: "醫事司審查" }, // 19
   { kind: "not-filed" }, // 20
   { kind: "in-review", stage: "醫策會初審", result: "pending" }, // 21
   { kind: "in-review", stage: "分組會議", result: "pending" }, // 22
   { kind: "in-review", stage: "RRC大會", result: "approved" }, // 23
-  { kind: "in-review", stage: "待公告", result: "approved" }, // 24
+  { kind: "in-review", stage: "醫事司審查", result: "pending" }, // 24
   { kind: "not-filed" }, // 25
 ]
 
@@ -795,37 +806,31 @@ const STAGE_RECORD_TEMPLATES: Record<QuotaReviewStage, StageRecordTemplate> = {
 （三）不合格醫院名單所列各院，其不合格事由與認定基準相符，同意列為不合格；請醫學會於
     公告後函知各該醫院並敘明改善方向。
 
-（四）本案容額總數未逾該醫學會設定之容額上限，同意送醫事司辦理公告。
+（四）本案容額總數未逾該醫學會設定之容額上限，同意送醫事司審查。
 
-七、後續作業：提送衛生福利部醫事司辦理核定及公告。`,
+七、後續作業：提送衛生福利部醫事司審查。`,
   },
-  待公告: {
+  醫事司審查: {
     kind: "desk",
-    title: () => "115年度容額核定",
-    decision: "同意公告",
-    recordFileName: (s) => `115年度${s}容額核定函.pdf`,
-    recordContent: (s) => `一、核定機關：衛生福利部醫事司
+    title: () => "115年度容額醫事司審查",
+    decision: "通過",
+    recordFileName: (s) => `115年度${s}容額醫事司審查意見.pdf`,
+    recordContent: (s) => `一、審查機關：衛生福利部醫事司
 
-二、核定日期：115年4月8日
+二、審查日期：115年3月25日
 
-三、核定內容：${s}115年度專科醫師訓練醫院認定合格名冊及訓練容量，業經專科醫師訓練計畫
-    認定會（RRC）115年度第一次大會審查通過，本部核定如所送名冊。
+三、審查範圍：${s}所送115年度專科醫師訓練醫院認定合格名冊及訓練容量，業經 RRC 大會審查通過，
+    由醫事司就名冊格式、法規引用及文字進行最後把關（不涉容額數字之重新審定）。
 
-四、核定意見：
+四、審查意見：
 
-（一）所送名冊之訓練醫院認定資格效期、訓練容量均與 RRC 大會決議相符，予以核定。
+（一）名冊所援引之認定基準條次與現行公告版本相符，資格效期起訖年度填載無誤。
 
-（二）本案容額自115年8月1日起生效，至116年7月31日止。
+（二）不合格醫院之敘明理由格式正確，用語與函稿體例一致。
 
-五、辦理情形：同意公告，移請公告管理作業。`,
-  },
-  已公告: {
-    kind: "desk",
-    title: () => "115年度容額公告",
-    decision: "已公告",
-    recordFileName: (s) => `115年度${s}容額公告.pdf`,
-    recordContent: (s) => `${s}115年度專科醫師訓練醫院認定合格名冊及訓練容量業經公告，
-公告內容以公告管理所發布之版本為準。`,
+（三）經校對，醫院全銜與代碼、縣市別均正確，無錯漏字。
+
+五、審查結論：通過，本案審查完成，移請公告管理辦理公告前置作業。`,
   },
 }
 
@@ -836,9 +841,8 @@ const RETURN_REASON_BY_STAGE: Record<QuotaReviewStage, string> = {
     "分組會議認為申請容額增幅較大之訓練醫院，其師資與訓練量能佐證資料不足，請補充近三年招收率及完訓率後重新送件。",
   RRC大會:
     "大會決議本案不合格醫院名單所載事由與認定基準引用條文不符，另聯合申請案之主訓機構容額分配方式須補充說明，請補正後重新送件。",
-  待公告:
-    "核定作業發現所送名冊容額總數逾該醫學會設定之容額上限，請重新調整分配後送件。",
-  已公告: "已公告案件之退回情形，請洽醫事司。",
+  醫事司審查:
+    "醫事司審查發現名冊所援引之認定基準條次與現行版本不符，另有 2 家訓練醫院全銜誤植，請更正後重新送件。",
 }
 
 /**
@@ -846,7 +850,9 @@ const RETURN_REASON_BY_STAGE: Record<QuotaReviewStage, string> = {
  * 退件案件在 returnedFrom 那一階段追加一筆「退回補正」。
  */
 export function buildReviewHistory(society: HospitalQuotaReviewSociety): StageReviewRecord[] {
-  const currentIndex = quotaReviewStages.indexOf(society.stage)
+  // 以「四個審查階段 + 終點審查通過」的完整鏈定位；審查通過者其前四關皆已完成、各留一筆
+  const chain: QuotaCaseStage[] = [...quotaReviewStages, PASSED_STAGE]
+  const currentIndex = chain.indexOf(society.stage)
   if (currentIndex < 0) return []
 
   const records: StageReviewRecord[] = quotaReviewStages
@@ -897,8 +903,7 @@ const STAGE_REVIEW_DATE: Record<QuotaReviewStage, string> = {
   醫策會初審: "115/01/20",
   分組會議: "115/02/14",
   RRC大會: "115/03/12",
-  待公告: "115/04/08",
-  已公告: "115/04/20",
+  醫事司審查: "115/03/25",
 }
 
 // ── 查詢函式 ────────────────────────────────────────────────
@@ -936,6 +941,11 @@ export function getAdvanceableSocieties(stage: QuotaReviewStage): HospitalQuotaR
   )
 }
 
+/** 已審結（審查通過）的案件，供「已審結」唯讀分頁 */
+export function getPassedSocieties(): HospitalQuotaReviewSociety[] {
+  return mockHospitalQuotaSocieties.filter((s) => s.stage === PASSED_STAGE)
+}
+
 /**
  * 推進前的統計。分成三類：
  *   審查通過 / 尚未審查 —— 可推進
@@ -957,16 +967,20 @@ export function getAdvanceCheckStatsForQuota(fromStage: string) {
   }
 }
 
-/** 將指定案件推進到下一階段（mutation，直接更新 mock） */
-export function advanceQuotaReviewSocieties(societyIds: string[], targetStage: QuotaReviewStage) {
+/** 將指定案件推進到下一階段（mutation，直接更新 mock）。目標可為終點 PASSED_STAGE（審查通過） */
+export function advanceQuotaReviewSocieties(societyIds: string[], targetStage: QuotaCaseStage) {
   mockHospitalQuotaSocieties.forEach((s) => {
     if (societyIds.includes(s.id)) s.stage = targetStage
   })
 }
 
-/** 取得某階段的下一階段；已是最終階段回 null */
-export function getNextQuotaReviewStage(stage: QuotaReviewStage): QuotaReviewStage | null {
-  const idx = quotaReviewStages.indexOf(stage)
-  if (idx >= 0 && idx < quotaReviewStages.length - 1) return quotaReviewStages[idx + 1]
+/**
+ * 取得某階段的下一步。醫事司審查的下一步是終點「審查通過」（＝交棒公告管理）；
+ * 已是終點回 null。
+ */
+export function getNextQuotaReviewStage(stage: QuotaReviewStage): QuotaCaseStage | null {
+  const chain: QuotaCaseStage[] = [...quotaReviewStages, PASSED_STAGE]
+  const idx = chain.indexOf(stage)
+  if (idx >= 0 && idx < chain.length - 1) return chain[idx + 1]
   return null
 }

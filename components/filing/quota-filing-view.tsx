@@ -1980,7 +1980,7 @@ export function QuotaFilingView({
         {isSubmitted ? (
           <Button disabled className="gap-2">
             <Send className="h-4 w-4" />
-            {stage === "待公告" ? "待公告" : stage === "已公告" ? "已公告" : "審查中"}
+            {stage === "審查通過" ? "審查通過" : "審查中"}
           </Button>
         ) : (
           <Button
