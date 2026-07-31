@@ -58,7 +58,6 @@ import {
   type AnnouncementCategory,
   type AnnouncementCaseRef,
 } from "@/lib/mock/announcements"
-import { downloadAnnouncementDocument, downloadCaseList } from "@/lib/announcement-export"
 
 const YEAR_OPTIONS = ["115 年度", "116 年度", "114 年度"]
 
@@ -258,7 +257,7 @@ function ComposeInner() {
           <Button
             variant="outline"
             className="gap-2"
-            onClick={() => downloadAnnouncementDocument(previewAnnouncement())}
+            onClick={() => toast.info("公告文稿下載由後端產出（mock 示意）")}
           >
             <Download className="h-4 w-4" />
             匯出文稿
@@ -267,7 +266,7 @@ function ComposeInner() {
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => downloadCaseList(previewAnnouncement())}
+              onClick={() => toast.info("涵蓋案件名單下載由後端產出（mock 示意）")}
             >
               <Table2 className="h-4 w-4" />
               匯出名單

@@ -45,7 +45,6 @@ import {
   unpublishAnnouncement,
   type AnnouncementStatus,
 } from "@/lib/mock/announcements"
-import { downloadAnnouncementDocument } from "@/lib/announcement-export"
 
 const STATUS_OPTIONS: AnnouncementStatus[] = ["草稿", "已排程", "已發布", "已下架"]
 
@@ -257,7 +256,7 @@ export default function AnnouncementListPage() {
                               </DropdownMenuItem>
                             </>
                           )}
-                          <DropdownMenuItem onClick={() => downloadAnnouncementDocument(a)}>
+                          <DropdownMenuItem onClick={() => toast.info("公告文稿下載由後端產出（mock 示意）")}>
                             <Download className="h-4 w-4" />
                             匯出文稿
                           </DropdownMenuItem>
