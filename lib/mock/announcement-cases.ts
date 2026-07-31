@@ -66,6 +66,28 @@ export const PENDING_CASE_STATUS_CONFIG: Record<PendingCaseStatus, { color: stri
   已公告: { color: "bg-green-100 text-green-800 border-green-200" },
 }
 
+/** 官網公告文件（公告檔案）表頭的一行文號（原始或歷次修正），比照 ref 認定合格名單表頭堆疊 */
+export interface DocNumberEntry {
+  /** 發文日期，ISO */
+  date: string
+  /** 人工輸入的公文文號字串（不自動配字尾） */
+  docNumber: string
+  /** true＝修正（表頭「…號公告修正」），false＝原始（「…號公告」） */
+  isCorrection: boolean
+}
+
+/**
+ * 公告檔案（官網公告文件），以醫學會／案件為單位。
+ * 審查通過後於「待製作」清單製作；製作完成即為可重用檔案，發系統內公告時可引用它。
+ * 文號與修正歷程掛在案件層級（非公告批次）。
+ */
+export interface OfficialDoc {
+  /** 文號堆疊：[0] 原始，其後歷次修正；長度-1 ＝「第 N 次修正」 */
+  entries: DocNumberEntry[]
+  /** 首次製作日，ISO */
+  producedDate: string
+}
+
 export interface PendingCase {
   id: string
   sourceModule: PendingSourceModule
@@ -76,7 +98,7 @@ export interface PendingCase {
   /** 供公告標題與名單表帶入用的完整案由 */
   title: string
   year: string
-  /** 審查通過（進入待公告）的日期，ISO */
+  /** 審查通過（進入待製作）的日期，ISO */
   approvedDate: string
   status: PendingCaseStatus
   /** 已被哪份公告草稿收錄 */
@@ -86,6 +108,39 @@ export interface PendingCase {
   deferReason: string | null
   /** 回到來源模組檢視審查的連結 */
   reviewHref: string
+
+  // ── 公告檔案模型（Phase A；UI 遷移完成前與上方 status/draftId 暫時並存）──
+  /** 公告檔案（官網公告文件）：null＝待製作，有值＝已製作 */
+  officialDoc: OfficialDoc | null
+  /** 引用此檔案並已發布的系統內公告 id：有值＝已公告（被公告流程引用過） */
+  publishedPostId: string | null
+}
+
+/** 案件的公告進度（新模型，狀態衍生）：已延後 ＞ 已公告 ＞ 已製作 ＞ 待製作 */
+export type CaseDocStatus = "待製作" | "已製作" | "已公告" | "已延後"
+
+export const CASE_DOC_STATUS_CONFIG: Record<CaseDocStatus, { color: string; label: string }> = {
+  待製作: { color: "bg-amber-100 text-amber-800 border-amber-200", label: "待製作" },
+  已製作: { color: "bg-blue-100 text-blue-800 border-blue-200", label: "已製作（待發布）" },
+  已公告: { color: "bg-green-100 text-green-800 border-green-200", label: "已公告" },
+  已延後: { color: "bg-gray-100 text-gray-600 border-gray-200", label: "已延後" },
+}
+
+export function getCaseDocStatus(c: PendingCase): CaseDocStatus {
+  if (c.deferReason) return "已延後"
+  if (c.publishedPostId) return "已公告"
+  if (c.officialDoc) return "已製作"
+  return "待製作"
+}
+
+/** 公告檔案的修正次數（0＝原始，未製作回 -1） */
+export function officialCorrectionCount(c: PendingCase): number {
+  return c.officialDoc ? c.officialDoc.entries.length - 1 : -1
+}
+
+/** 案件是否已公告（＝公告檔案被某篇已發布系統內公告引用過）。外加容額成果報告據此反查。 */
+export function isCaseAnnounced(c: PendingCase): boolean {
+  return c.publishedPostId != null
 }
 
 // ── 由三個來源模組衍生初始案件池 ────────────────────────────────
@@ -113,6 +168,8 @@ function buildFromSubmissions(): PendingCase[] {
           announcementId: null,
           deferReason: null,
           reviewHref: `/review/${s.societyId}?docType=${docType.id}&stage=${s.stage}`,
+          officialDoc: null,
+          publishedPostId: null,
         })
       })
   })
@@ -136,6 +193,8 @@ function buildFromQuotaFiling(): PendingCase[] {
       announcementId: null,
       deferReason: null,
       reviewHref: `/review/hospital-quota/${s.id}`,
+      officialDoc: null,
+      publishedPostId: null,
     }))
 }
 
@@ -156,6 +215,8 @@ function buildFromAdditionalQuota(): PendingCase[] {
       announcementId: null,
       deferReason: null,
       reviewHref: `/filing/additional-quota/${a.id}`,
+      officialDoc: null,
+      publishedPostId: null,
     }))
 }
 
@@ -268,4 +329,41 @@ export function restoreCases(caseIds: string[]): void {
       c.deferReason = null
     }
   })
+}
+
+// ── 公告檔案模型的動作（Phase A）──────────────────────────────
+// 製作公告檔案（待製作 → 已製作）、更正（疊文號）、發系統內公告引用檔案（已製作 → 已公告）。
+
+/** 製作公告檔案：為所選案件建立官網公告文件，文號為手動輸入字串（不自動配字尾）。 */
+export function produceOfficialDocs(caseIds: string[], date: string, docNumber: string): void {
+  pendingCases.forEach((c) => {
+    if (caseIds.includes(c.id) && !c.officialDoc) {
+      c.officialDoc = {
+        entries: [{ date, docNumber, isCorrection: false }],
+        producedDate: date,
+      }
+    }
+  })
+}
+
+/** 更正公告檔案：在該案件文件表頭疊一行修正文號（第 N 次修正）。 */
+export function addOfficialCorrection(caseId: string, date: string, docNumber: string): void {
+  const c = getPendingCase(caseId)
+  if (c?.officialDoc) {
+    c.officialDoc.entries.push({ date, docNumber, isCorrection: true })
+  }
+}
+
+/** 發系統內公告：引用所選（已製作）案件的公告檔案，回填 publishedPostId＝已公告。 */
+export function publishReferencedCases(caseIds: string[], postId: string): void {
+  pendingCases.forEach((c) => {
+    if (caseIds.includes(c.id) && c.officialDoc) {
+      c.publishedPostId = postId
+    }
+  })
+}
+
+/** 已製作但尚未發布的案件（可被系統內公告引用） */
+export function getProducedUnpublishedCases(): PendingCase[] {
+  return pendingCases.filter((c) => c.officialDoc && !c.publishedPostId && !c.deferReason)
 }
