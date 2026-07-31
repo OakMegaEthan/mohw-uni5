@@ -61,9 +61,8 @@ export interface AdditionalQuotaApplication {
   approvedQuota: number | null
   reviewComment: string
   reviewMinutes: QuotaAttachment[]
-  // 公告（已公告階段才有）
-  announcementDate: string | null
-  announcementNumber: string | null
+  // 全線一致：外加容額案件到「審查通過」為終點，公告（含文號）由公告管理獨佔，
+  // 案件身上不帶公告欄位。是否已公告改由公告管理反查（見 announcement-cases.isCaseAnnounced）。
 }
 
 // 分類原則的可維護選項。名稱以字串存放（申請案存名稱），另帶「需成果報告」開關：
@@ -149,7 +148,6 @@ function generateApplications(): AdditionalQuotaApplication[] {
       const mm = String(month).padStart(2, "0")
       const dd = String(day).padStart(2, "0")
       const reviewed = stage === "審查通過"
-      const announced = reviewed && seq % 2 === 0
 
       apps.push({
         id: `aq-${String(seq).padStart(3, "0")}`,
@@ -184,8 +182,6 @@ function generateApplications(): AdditionalQuotaApplication[] {
         reviewMinutes: reviewed
           ? [{ id: `${seq}-m1`, name: "115年度外加容額審查會議紀錄.pdf", size: "1.5 MB" }]
           : [],
-        announcementDate: announced ? `115/0${month}/28` : null,
-        announcementNumber: announced ? `衛部醫字第115${String(1670000 + seq)}號` : null,
       })
     }
   }
@@ -212,7 +208,3 @@ export function isAdditionalQuotaEditable(stage: AdditionalQuotaStage): boolean 
   return stage === "待審查"
 }
 
-/** 該案是否已由公告管理公告（全線一致後，「已公告」＝有公告日期，非案件階段）。 */
-export function isAdditionalQuotaAnnounced(a: AdditionalQuotaApplication): boolean {
-  return a.announcementDate !== null
-}

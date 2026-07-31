@@ -274,16 +274,9 @@ export default function FilingAdditionalQuotaPage() {
                   <TableCell className="text-right">{a.requestedQuota} 名</TableCell>
                   <TableCell className="text-sm text-gray-600">{a.classificationPrinciple}</TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline" className={ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].color}>
-                        {ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].label}
-                      </Badge>
-                      {a.announcementDate && (
-                        <Badge variant="outline" className="border-purple-200 bg-purple-50 text-purple-700 text-sm">
-                          已公告
-                        </Badge>
-                      )}
-                    </div>
+                    <Badge variant="outline" className={ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].color}>
+                      {ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].label}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>

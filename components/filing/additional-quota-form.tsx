@@ -55,9 +55,8 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
   const stage = application?.stage ?? "待審查"
   const contentEditable = isNew || isAdditionalQuotaEditable(stage)
   const canRegisterReview = !isNew && stage === "待審查"
-  // 全線一致後「已公告」＝有公告日期（非案件階段）；公告為跨案件彙整動作，於公告管理辦理。
-  const isAnnounced = application?.announcementDate != null
-  const isPendingAnnouncement = !isNew && stage === "審查通過" && !isAnnounced
+  // 全線一致：外加容額到「審查通過」為終點，公告（含文號）由公告管理獨佔，此頁不顯示公告狀態。
+  const isPassed = !isNew && stage === "審查通過"
 
   // ── 申請內容 ────────────────────────────────
   const [hospitalName, setHospitalName] = useState(application?.hospitalName ?? "")
@@ -475,43 +474,17 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
             </Card>
           )}
 
-          {/* 公告狀態：公告為跨案件的彙整動作，於公告管理辦理，此處僅呈現狀態 */}
-          {isPendingAnnouncement && (
-            <Card className="border-amber-200 bg-amber-50/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Megaphone className="h-5 w-5 text-amber-600" />
-                  公告
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-700">
-                  審查結果已登錄，本案待納入公告。公告作業涵蓋多間醫院，請至
-                  <Link href="/announcement-management" className="mx-1 text-blue-600 hover:underline">
+          {/* 審查通過為終點：本模組不辦理、不顯示公告；僅中性指路（wayfinding） */}
+          {isPassed && (
+            <Card className="border-gray-200 bg-gray-50/60">
+              <CardContent className="py-4">
+                <p className="text-base text-gray-700">
+                  本案已審查通過。後續公告（含公告文號）由
+                  <Link href="/announcement-management/pending" className="mx-1 text-blue-600 hover:underline">
                     公告管理
                   </Link>
-                  一併辦理。
+                  辦理，本頁不再處理公告事務。
                 </p>
-              </CardContent>
-            </Card>
-          )}
-          {isAnnounced && (
-            <Card className="border-green-200 bg-green-50/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Megaphone className="h-5 w-5 text-green-600" />
-                  公告
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">公告文號</Label>
-                  <p className="mt-1 text-sm text-gray-900">{application?.announcementNumber ?? "—"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">公告日期</Label>
-                  <p className="mt-1 text-sm text-gray-900">{application?.announcementDate ?? "—"}</p>
-                </div>
               </CardContent>
             </Card>
           )}
