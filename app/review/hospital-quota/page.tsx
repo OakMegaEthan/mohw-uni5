@@ -31,7 +31,7 @@ import {
   type HospitalQuotaReviewSociety,
   type QuotaReviewStage,
 } from "@/lib/mock/review-hospital-quota"
-import { PENDING_CASE_STATUS_CONFIG, getPendingCase } from "@/lib/mock/announcement-cases"
+import { CASE_DOC_STATUS_CONFIG, getCaseDocStatus, getPendingCase } from "@/lib/mock/announcement-cases"
 
 /**
  * 容額填報審查列表（醫策會／RRC／醫事司視角）。
@@ -254,8 +254,8 @@ export default function HospitalQuotaReviewPage() {
                     </TableCell>
                     <TableCell>
                       {pending ? (
-                        <Badge className={`text-sm ${PENDING_CASE_STATUS_CONFIG[pending.status].color}`}>
-                          {pending.status}
+                        <Badge className={`text-sm ${CASE_DOC_STATUS_CONFIG[getCaseDocStatus(pending)].color}`}>
+                          {CASE_DOC_STATUS_CONFIG[getCaseDocStatus(pending)].label}
                         </Badge>
                       ) : (
                         <Badge className="border-green-200 bg-green-100 text-sm text-green-800">

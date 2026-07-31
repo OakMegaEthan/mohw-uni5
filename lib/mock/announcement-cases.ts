@@ -57,15 +57,6 @@ export function getSourceConfig(module: PendingSourceModule) {
   return PENDING_SOURCES.find((s) => s.value === module)!
 }
 
-export type PendingCaseStatus = "待公告" | "公告編製中" | "已延後" | "已公告"
-
-export const PENDING_CASE_STATUS_CONFIG: Record<PendingCaseStatus, { color: string }> = {
-  待公告: { color: "bg-amber-100 text-amber-800 border-amber-200" },
-  公告編製中: { color: "bg-blue-100 text-blue-800 border-blue-200" },
-  已延後: { color: "bg-gray-100 text-gray-600 border-gray-200" },
-  已公告: { color: "bg-green-100 text-green-800 border-green-200" },
-}
-
 /** 官網公告文件（公告檔案）表頭的一行文號（原始或歷次修正），比照 ref 認定合格名單表頭堆疊 */
 export interface DocNumberEntry {
   /** 發文日期，ISO */
@@ -100,16 +91,9 @@ export interface PendingCase {
   year: string
   /** 審查通過（進入待製作）的日期，ISO */
   approvedDate: string
-  status: PendingCaseStatus
-  /** 已被哪份公告草稿收錄 */
-  draftId: string | null
-  /** 已由哪份公告發布 */
-  announcementId: string | null
   deferReason: string | null
   /** 回到來源模組檢視審查的連結 */
   reviewHref: string
-
-  // ── 公告檔案模型（Phase A；UI 遷移完成前與上方 status/draftId 暫時並存）──
   /** 公告檔案（官網公告文件）：null＝待製作，有值＝已製作 */
   officialDoc: OfficialDoc | null
   /** 引用此檔案並已發布的系統內公告 id：有值＝已公告（被公告流程引用過） */
@@ -163,9 +147,6 @@ function buildFromSubmissions(): PendingCase[] {
           title: `${society.name}　${docType.name}`,
           year: "115 年度",
           approvedDate: s.lastUpdated ?? s.uploadedDate ?? "2026-01-15",
-          status: "待公告",
-          draftId: null,
-          announcementId: null,
           deferReason: null,
           reviewHref: `/review/${s.societyId}?docType=${docType.id}&stage=${s.stage}`,
           officialDoc: null,
@@ -188,9 +169,6 @@ function buildFromQuotaFiling(): PendingCase[] {
       title: `${s.name}　${s.year}訓練醫院容額分配`,
       year: s.year,
       approvedDate: rocToIso(s.submittedDate) ?? "2026-01-10",
-      status: "待公告" as const,
-      draftId: null,
-      announcementId: null,
       deferReason: null,
       reviewHref: `/review/hospital-quota/${s.id}`,
       officialDoc: null,
@@ -199,9 +177,9 @@ function buildFromQuotaFiling(): PendingCase[] {
 }
 
 function buildFromAdditionalQuota(): PendingCase[] {
-  // 審查通過但尚未公告的外加容額案件 = 待公告池（已公告者已離開）
+  // 審查通過的外加容額案件皆進池；是否已公告由公告檔案是否被引用決定（見 seedInitialDocStates）
   return getAdditionalQuotaApplications()
-    .filter((a) => a.stage === "審查通過" && a.announcementDate === null)
+    .filter((a) => a.stage === "審查通過")
     .map((a) => ({
       id: `aq-case-${a.id}`,
       sourceModule: "additional-quota" as const,
@@ -210,9 +188,6 @@ function buildFromAdditionalQuota(): PendingCase[] {
       title: `${a.hospitalName}　${a.specialty}外加容額 ${a.approvedQuota ?? 0} 名`,
       year: "115 年度",
       approvedDate: rocToIso(a.incomingDate) ?? "2026-01-08",
-      status: "待公告" as const,
-      draftId: null,
-      announcementId: null,
       deferReason: null,
       reviewHref: `/filing/additional-quota/${a.id}`,
       officialDoc: null,
@@ -235,6 +210,43 @@ const pendingCases: PendingCase[] = [
   ...buildFromAdditionalQuota(),
 ]
 
+// 種入初始的公告檔案進度，讓「已製作／已公告」與外加容額成果報告有展示資料。
+// 規則為確定性（依 index／id），不依賴來源模組的公告欄位。
+function seedInitialDocStates() {
+  const produce = (c: PendingCase, date: string, docNumber: string) => {
+    c.officialDoc = { entries: [{ date, docNumber, isCorrection: false }], producedDate: date }
+  }
+  const publish = (c: PendingCase, postId: string) => {
+    c.publishedPostId = postId
+  }
+
+  // 容額填報（3 案）：1 已公告、1 已製作、1 待製作
+  const quota = pendingCases.filter((c) => c.sourceModule === "quota-filing")
+  if (quota[0]) {
+    produce(quota[0], "2026-03-05", "衛部醫字第 1151660208 號")
+    publish(quota[0], "seed-post-quota-1")
+  }
+  if (quota[1]) produce(quota[1], "2026-03-06", "衛部醫字第 1151660251 號")
+
+  // 文件填報：前 6 案已製作，其中前 3 案已發布（已公告）
+  const subs = pendingCases.filter((c) => c.sourceModule === "submissions")
+  subs.slice(0, 6).forEach((c, i) => {
+    produce(c, "2026-03-10", `衛部醫字第 11516603${String(30 + i).padStart(2, "0")} 號`)
+    if (i < 3) publish(c, "seed-post-doc-1")
+  })
+
+  // 外加容額：id 序號為偶數者已公告（含部分「支援偏鄉」，供成果報告反查）
+  const aq = pendingCases.filter((c) => c.sourceModule === "additional-quota")
+  aq.forEach((c) => {
+    const seq = Number(c.id.replace(/\D/g, "")) || 0
+    if (seq % 2 === 0) {
+      produce(c, "2026-02-28", `衛部醫字第 11516701${String((seq % 90) + 10).padStart(2, "0")} 號`)
+      publish(c, "seed-post-aq-1")
+    }
+  })
+}
+seedInitialDocStates()
+
 // ── 查詢 ────────────────────────────────────────────────────
 
 export function getPendingCases(): PendingCase[] {
@@ -253,70 +265,32 @@ export function getPendingCasesByIds(ids: string[]): PendingCase[] {
   return ids.map((id) => getPendingCase(id)).filter((c): c is PendingCase => Boolean(c))
 }
 
-/** 各來源尚待處理（待公告）的筆數，供 tab badge 使用 */
+/** 各來源尚待處理（待製作或已製作、尚未公告）的筆數，供來源 tab badge 使用 */
 export function getPendingCountBySource(): Record<PendingSourceModule, number> {
   const counts = { submissions: 0, "quota-filing": 0, "additional-quota": 0 } as Record<
     PendingSourceModule,
     number
   >
   pendingCases.forEach((c) => {
-    if (c.status === "待公告") counts[c.sourceModule] += 1
+    const s = getCaseDocStatus(c)
+    if (s === "待製作" || s === "已製作") counts[c.sourceModule] += 1
   })
   return counts
 }
 
 export function getTotalPendingCount(): number {
-  return pendingCases.filter((c) => c.status === "待公告").length
+  return pendingCases.filter((c) => {
+    const s = getCaseDocStatus(c)
+    return s === "待製作" || s === "已製作"
+  }).length
 }
 
 // ── 狀態變更 ──────────────────────────────────────────────────
 
-/** 收錄進草稿：鎖定案件，避免被另一份草稿重複收錄 */
-export function attachCasesToDraft(caseIds: string[], draftId: string): void {
-  pendingCases.forEach((c) => {
-    if (caseIds.includes(c.id) && c.status !== "已公告") {
-      c.status = "公告編製中"
-      c.draftId = draftId
-    }
-  })
-}
-
-/** 自草稿移除（或草稿刪除）：釋回待公告池 */
-export function detachCasesFromDraft(caseIds: string[]): void {
-  pendingCases.forEach((c) => {
-    if (caseIds.includes(c.id) && c.status === "公告編製中") {
-      c.status = "待公告"
-      c.draftId = null
-    }
-  })
-}
-
-/** 草稿被刪除時，釋回其收錄的全部案件 */
-export function releaseDraftCases(draftId: string): void {
-  pendingCases.forEach((c) => {
-    if (c.draftId === draftId && c.status === "公告編製中") {
-      c.status = "待公告"
-      c.draftId = null
-    }
-  })
-}
-
-/** 公告發布：回寫案件為已公告 */
-export function markCasesAnnounced(caseIds: string[], announcementId: string): void {
-  pendingCases.forEach((c) => {
-    if (caseIds.includes(c.id)) {
-      c.status = "已公告"
-      c.announcementId = announcementId
-      c.draftId = null
-    }
-  })
-}
-
-/** 延後至下批（取代舊版的「忽略」），可還原 */
+/** 延後至下批（取代舊版的「忽略」），可還原。僅未公告者可延後。 */
 export function deferCases(caseIds: string[], reason: string): void {
   pendingCases.forEach((c) => {
-    if (caseIds.includes(c.id) && c.status === "待公告") {
-      c.status = "已延後"
+    if (caseIds.includes(c.id) && !c.publishedPostId) {
       c.deferReason = reason
     }
   })
@@ -324,8 +298,7 @@ export function deferCases(caseIds: string[], reason: string): void {
 
 export function restoreCases(caseIds: string[]): void {
   pendingCases.forEach((c) => {
-    if (caseIds.includes(c.id) && c.status === "已延後") {
-      c.status = "待公告"
+    if (caseIds.includes(c.id) && c.deferReason) {
       c.deferReason = null
     }
   })
