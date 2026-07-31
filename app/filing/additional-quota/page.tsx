@@ -113,8 +113,7 @@ export default function FilingAdditionalQuotaPage() {
     return [
       { value: "all" as const, label: "全部", count: baseFiltered.length },
       { value: "待審查" as const, label: "待審查", count: count("待審查") },
-      { value: "待公告" as const, label: "待公告", count: count("待公告") },
-      { value: "已公告" as const, label: "已公告", count: count("已公告") },
+      { value: "審查通過" as const, label: "審查通過", count: count("審查通過") },
     ]
   }, [baseFiltered])
 
@@ -125,14 +124,14 @@ export default function FilingAdditionalQuotaPage() {
     )
   }, [baseFiltered, stageTab, sortAsc])
 
-  // 審查結果清單：已登錄審查結果（待公告）與已公告的案件，供公告文書準備
+  // 審查結果清單：已登錄審查結果（審查通過）的案件，供公告管理準備公告文書
   const reviewedCount = useMemo(
-    () => baseFiltered.filter((a) => a.stage === "待公告" || a.stage === "已公告").length,
+    () => baseFiltered.filter((a) => a.stage === "審查通過").length,
     [baseFiltered],
   )
 
   const handleExportApplications = () => toast.success(`已匯出 ${rows.length} 筆申請清單`)
-  const handleExportReviewed = () => toast.success(`已匯出 ${reviewedCount} 筆審查結果清單（待公告、已公告）`)
+  const handleExportReviewed = () => toast.success(`已匯出 ${reviewedCount} 筆審查結果清單（審查通過）`)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -166,7 +165,7 @@ export default function FilingAdditionalQuotaPage() {
                 <DropdownMenuItem onClick={handleExportReviewed} className="cursor-pointer">
                   <div className="flex flex-col">
                     <span>匯出審查結果清單</span>
-                    <span className="text-xs text-muted-foreground">待公告與已公告案件，供公告文書準備</span>
+                    <span className="text-xs text-muted-foreground">審查通過案件，供公告管理準備公告文書</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -275,9 +274,16 @@ export default function FilingAdditionalQuotaPage() {
                   <TableCell className="text-right">{a.requestedQuota} 名</TableCell>
                   <TableCell className="text-sm text-gray-600">{a.classificationPrinciple}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].color}>
-                      {ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].label}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="outline" className={ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].color}>
+                        {ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].label}
+                      </Badge>
+                      {a.announcementDate && (
+                        <Badge variant="outline" className="border-purple-200 bg-purple-50 text-purple-700 text-sm">
+                          已公告
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>

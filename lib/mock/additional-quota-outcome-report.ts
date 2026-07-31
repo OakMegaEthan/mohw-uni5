@@ -1,5 +1,6 @@
 import {
   ADDITIONAL_QUOTA_APPLICATIONS,
+  isAdditionalQuotaAnnounced,
   principleRequiresReport,
 } from "@/lib/mock/additional-quota"
 
@@ -53,9 +54,10 @@ function buildReports(hospitalName: string, specialty: string): AqOutcomeReportF
   ]
 }
 
-// 由外加容額申請案衍生：已公告 + 分類原則需報告
+// 由外加容額申請案衍生：已公告（有公告日期）+ 分類原則需報告。
+// 全線一致後「已公告」不再是案件階段，改以 announcementDate 判斷（見 isAdditionalQuotaAnnounced）。
 const CASES: AqOutcomeReportCase[] = ADDITIONAL_QUOTA_APPLICATIONS.filter(
-  (a) => a.stage === "已公告" && principleRequiresReport(a.classificationPrinciple),
+  (a) => isAdditionalQuotaAnnounced(a) && principleRequiresReport(a.classificationPrinciple),
 ).map((a, i) => {
   const status: OutcomeReportReviewStatus = i % 2 === 0 ? "待審查" : "已歸檔"
   const archived = status === "已歸檔"

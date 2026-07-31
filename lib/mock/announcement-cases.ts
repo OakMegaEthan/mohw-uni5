@@ -140,8 +140,9 @@ function buildFromQuotaFiling(): PendingCase[] {
 }
 
 function buildFromAdditionalQuota(): PendingCase[] {
+  // 審查通過但尚未公告的外加容額案件 = 待公告池（已公告者已離開）
   return getAdditionalQuotaApplications()
-    .filter((a) => a.stage === "待公告")
+    .filter((a) => a.stage === "審查通過" && a.announcementDate === null)
     .map((a) => ({
       id: `aq-case-${a.id}`,
       sourceModule: "additional-quota" as const,
