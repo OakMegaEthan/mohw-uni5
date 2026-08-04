@@ -196,7 +196,7 @@ function ComposeInner() {
     const id = persist()
     publishAnnouncement(id)
     // 發布即引用所選（已製作）公告檔案 → 這些案件變「已公告」
-    if (!isScheduled) publishReferencedCases(cases.map((c) => c.caseId), id)
+    if (!isScheduled) publishReferencedCases(cases.map((c) => c.caseId), id, publishDate || TODAY_ISO)
     toast.success(isScheduled ? `已排程於 ${toRocDate(publishDate)} 上架` : "系統內公告已發布", {
       description: cases.length ? `已引用 ${cases.length} 份公告檔案，對應案件轉為已公告` : undefined,
     })

@@ -1,27 +1,21 @@
 "use client"
 
-// 待公告案件工作台。
+// 公告文件製作工作台。
 //
-// 三條審查主線審查通過後，案件落到這裡等醫事司辦理公告。依客戶確認的「製作→發布」模型，
-// 每案有兩條獨立的下一步（見 docs/business-logic.md）：
-//   1) 製作公告檔案（官網公告文件，per 醫學會，文號手動輸入）→ 已製作，可重用
-//   2) 發系統內公告（引用已製作的檔案發布）→ 檔案被引用即「已公告」
-// 「去官網公告」＝把已製作檔案的 PDF 拿去官網（系統外，不追蹤）。
-// 一次審查會議後可能同時湧入上百筆，故是可篩選、可批次的工作台，非通知鈴鐺。
+// 依客戶確認的 IA（見 docs/announcement-module-plan.md）：以「使用者作業階段」引導，不把
+// 待製作／已製作／已公告混在同一張表。兩層結構：
+//   來源 tab（文件/容額/外加，格式不同不併批）× 階段分頁（待製作 → 已製作·待發布 → 已公告）
+// 每階段只有一個明確的下一步：
+//   待製作     → 製作公告檔案（輸入文號、套版預覽）
+//   已製作·待發布 → 帶入「新增公告」發系統內公告；且可下載檔案去官網公告
+//   已公告     → 已完成系統內公告；檔案仍可下載（去官網），唯讀
+// 「是否已發布系統內公告」由所在階段直接表達，不再是會混淆的欄位。
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import {
-  CalendarClock,
-  ExternalLink,
-  FilePlus2,
-  FileText,
-  Inbox,
-  RotateCcw,
-  Search,
-  Send,
-} from "lucide-react"
+import { toast } from "sonner"
+import { Download, ExternalLink, FilePlus2, FileText, Inbox, Search, Send } from "lucide-react"
 
 import { PageContainer, PageHeader } from "@/components/layout/page-container"
 import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs"
@@ -40,43 +34,44 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
 import {
-  CASE_DOC_STATUS_CONFIG,
   PENDING_SOURCES,
-  deferCases,
   getCaseDocStatus,
   getPendingCasesBySource,
   getPendingCountBySource,
   getTotalPendingCount,
   officialCorrectionCount,
   produceOfficialDocs,
-  restoreCases,
   type CaseDocStatus,
   type PendingCase,
   type PendingSourceModule,
 } from "@/lib/mock/announcement-cases"
 import { TODAY_ISO, toRocDate } from "@/lib/mock/announcements"
 
-const STATUS_FILTERS: Array<{ value: CaseDocStatus | "all"; label: string }> = [
-  { value: "all", label: "全部" },
+const STAGES: Array<{ value: CaseDocStatus; label: string }> = [
   { value: "待製作", label: "待製作" },
-  { value: "已製作", label: "已製作（待發布）" },
+  { value: "已製作", label: "已製作·待發布" },
   { value: "已公告", label: "已公告" },
-  { value: "已延後", label: "已延後" },
 ]
+
+/** 各來源的「次要欄」（科別為主體欄後的第二欄） */
+function secondaryLabel(source: PendingSourceModule): string {
+  return source === "submissions" ? "文件類型" : source === "quota-filing" ? "年度" : "訓練醫院"
+}
+function secondaryValue(c: PendingCase): string {
+  return c.sourceModule === "additional-quota" ? c.subject : c.detail
+}
 
 export default function PendingCasesPage() {
   const router = useRouter()
   const [source, setSource] = useState<PendingSourceModule>("submissions")
+  const [stage, setStage] = useState<CaseDocStatus>("待製作")
   const [keyword, setKeyword] = useState("")
-  const [statusFilter, setStatusFilter] = useState<CaseDocStatus | "all">("all")
+  const [specialtyFilter, setSpecialtyFilter] = useState("all")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [produceOpen, setProduceOpen] = useState(false)
   const [produceDate, setProduceDate] = useState(TODAY_ISO)
   const [produceDocNumber, setProduceDocNumber] = useState("")
-  const [deferOpen, setDeferOpen] = useState(false)
-  const [deferReason, setDeferReason] = useState("")
   const [tick, forceUpdate] = useState(0)
 
   const sourceConfig = PENDING_SOURCES.find((s) => s.value === source)!
@@ -85,43 +80,47 @@ export default function PendingCasesPage() {
 
   const allCases = useMemo(() => getPendingCasesBySource(source), [source, tick])
 
+  // 本來源各階段筆數（供階段分頁 badge）
+  const stageCounts = useMemo(() => {
+    const c = { 待製作: 0, 已製作: 0, 已公告: 0 } as Record<CaseDocStatus, number>
+    allCases.forEach((x) => (c[getCaseDocStatus(x)] += 1))
+    return c
+  }, [allCases])
+
+  const specialtyOptions = useMemo(
+    () => [...new Set(allCases.map((c) => c.specialty))].sort(),
+    [allCases],
+  )
+
   const rows = useMemo(() => {
     return allCases
-      .filter((c) => (statusFilter === "all" ? true : getCaseDocStatus(c) === statusFilter))
+      .filter((c) => getCaseDocStatus(c) === stage)
+      .filter((c) => (specialtyFilter === "all" ? true : c.specialty === specialtyFilter))
       .filter((c) =>
         keyword.trim() === ""
           ? true
-          : `${c.subject}${c.detail}`.toLowerCase().includes(keyword.trim().toLowerCase()),
+          : `${c.specialty}${secondaryValue(c)}`.toLowerCase().includes(keyword.trim().toLowerCase()),
       )
       .sort((a, b) => a.approvedDate.localeCompare(b.approvedDate))
-  }, [allCases, statusFilter, keyword])
+  }, [allCases, stage, specialtyFilter, keyword])
 
-  const stats = useMemo(() => {
-    const by = (s: CaseDocStatus) => allCases.filter((c) => getCaseDocStatus(c) === s).length
-    return { 待製作: by("待製作"), 已製作: by("已製作"), 已公告: by("已公告"), 已延後: by("已延後") }
-  }, [allCases])
-
-  // 已公告不可再選；其餘（待製作／已製作／已延後）可選
-  const selectableRows = rows.filter((c) => getCaseDocStatus(c) !== "已公告")
-  const selectableIds = selectableRows.map((c) => c.id)
+  // 待製作與已製作可勾選（批次製作／帶入新增公告）；已公告唯讀
+  const selectable = stage !== "已公告"
+  const selectableIds = selectable ? rows.map((c) => c.id) : []
   const selected = selectedIds.filter((id) => selectableIds.includes(id))
   const allSelected = selectableIds.length > 0 && selected.length === selectableIds.length
 
-  const selectedCases = useMemo(
-    () => allCases.filter((c) => selected.includes(c.id)),
-    [allCases, selected],
-  )
-  // 各批次動作的實際適用對象（依狀態）
-  const toProduce = selectedCases.filter((c) => getCaseDocStatus(c) === "待製作")
-  const toPublish = selectedCases.filter((c) => getCaseDocStatus(c) === "已製作")
-  const toDefer = selectedCases.filter((c) => getCaseDocStatus(c) === "待製作" || getCaseDocStatus(c) === "已製作")
-  const toRestore = selectedCases.filter((c) => getCaseDocStatus(c) === "已延後")
+  const selectedCases = useMemo(() => rows.filter((c) => selected.includes(c.id)), [rows, selected])
 
   const switchSource = (next: PendingSourceModule) => {
     setSource(next)
     setSelectedIds([])
-    setStatusFilter("all")
+    setSpecialtyFilter("all")
     setKeyword("")
+  }
+  const switchStage = (next: CaseDocStatus) => {
+    setStage(next)
+    setSelectedIds([])
   }
 
   const toggle = (id: string) =>
@@ -130,39 +129,27 @@ export default function PendingCasesPage() {
 
   const handleProduce = () => {
     if (!produceDocNumber.trim()) return
-    produceOfficialDocs(toProduce.map((c) => c.id), produceDate, produceDocNumber.trim())
+    produceOfficialDocs(selected, produceDate, produceDocNumber.trim())
     setProduceOpen(false)
     setProduceDocNumber("")
     setSelectedIds([])
     forceUpdate((n) => n + 1)
+    toast.success(`已製作 ${selected.length} 份公告檔案`)
   }
 
-  const handlePublish = () => {
-    router.push(
-      `/announcement-management/compose?cases=${toPublish.map((c) => c.id).join(",")}&source=${source}`,
-    )
+  const handleCompose = () => {
+    router.push(`/announcement-management/compose?cases=${selected.join(",")}&source=${source}`)
   }
 
-  const handleDefer = () => {
-    deferCases(toDefer.map((c) => c.id), deferReason.trim() || "未填寫原因")
-    setDeferOpen(false)
-    setDeferReason("")
-    setSelectedIds([])
-    forceUpdate((n) => n + 1)
-  }
-
-  const handleRestore = () => {
-    restoreCases(toRestore.map((c) => c.id))
-    setSelectedIds([])
-    forceUpdate((n) => n + 1)
-  }
+  const handleDownload = (c: PendingCase) =>
+    toast.info(`${c.specialty} 公告檔案下載由後端產出（mock 示意）`)
 
   return (
     <PageContainer>
       <PageHeader title="公告管理" description="製作公告檔案、發系統內公告，並準備官網公告文書" />
       <AnnouncementModuleTabs pendingCount={totalPending} />
 
-      {/* 來源切換：三條審查主線的公告文書格式不同，不跨來源併批 */}
+      {/* 第一層：來源（格式不同，不併批） */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {PENDING_SOURCES.map((s) => {
           const active = s.value === source
@@ -191,12 +178,27 @@ export default function PendingCasesPage() {
         })}
       </div>
 
-      {/* 本來源概況 */}
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="待製作" value={stats.待製作} tone="amber" />
-        <StatCard label="已製作（待發布）" value={stats.已製作} tone="blue" />
-        <StatCard label="已公告" value={stats.已公告} tone="green" />
-        <StatCard label="已延後" value={stats.已延後} tone="gray" />
+      {/* 第二層：作業階段 */}
+      <div className="mb-4 flex items-center gap-6 border-b border-gray-200">
+        {STAGES.map((st) => {
+          const active = st.value === stage
+          return (
+            <button
+              key={st.value}
+              onClick={() => switchStage(st.value)}
+              className={`relative -mb-px flex items-center gap-2 border-b-2 px-1 pb-3 text-base font-medium transition-colors ${
+                active
+                  ? "border-[#2d3a8c] text-[#2d3a8c]"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {st.label}
+              <Badge variant="secondary" className="text-sm">
+                {stageCounts[st.value]}
+              </Badge>
+            </button>
+          )
+        })}
       </div>
 
       {/* 篩選 */}
@@ -206,18 +208,19 @@ export default function PendingCasesPage() {
           <Input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder={`搜尋${sourceConfig.subjectLabel}或${sourceConfig.detailLabel}`}
+            placeholder={`搜尋科別或${secondaryLabel(source)}`}
             className="h-10 w-72 pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as CaseDocStatus | "all")}>
+        <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
           <SelectTrigger className="h-10 w-44">
-            <SelectValue />
+            <SelectValue placeholder="科別" />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_FILTERS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>
-                {s.label}
+            <SelectItem value="all">全部科別</SelectItem>
+            {specialtyOptions.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
               </SelectItem>
             ))}
           </SelectContent>
@@ -225,11 +228,11 @@ export default function PendingCasesPage() {
         <span className="ml-auto text-base text-gray-500">共 {rows.length} 筆</span>
       </div>
 
-      {/* 批次動作列 */}
+      {/* 批次動作列（依階段給單一明確動作） */}
       {selected.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-[#2d3a8c]/30 bg-[#2d3a8c]/5 px-4 py-3">
           <span className="text-base font-medium text-[#2d3a8c]">已選取 {selected.length} 筆</span>
-          {toProduce.length > 0 && (
+          {stage === "待製作" && (
             <Button
               onClick={() => {
                 setProduceDate(TODAY_ISO)
@@ -239,25 +242,13 @@ export default function PendingCasesPage() {
               className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73]"
             >
               <FilePlus2 className="h-4 w-4" />
-              製作公告檔案（{toProduce.length}）
+              製作公告檔案（{selected.length}）
             </Button>
           )}
-          {toPublish.length > 0 && (
-            <Button onClick={handlePublish} variant="outline" className="gap-2">
+          {stage === "已製作" && (
+            <Button onClick={handleCompose} className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73]">
               <Send className="h-4 w-4" />
-              發系統內公告（{toPublish.length}）
-            </Button>
-          )}
-          {toRestore.length > 0 && (
-            <Button onClick={handleRestore} variant="outline" className="gap-2">
-              <RotateCcw className="h-4 w-4" />
-              還原（{toRestore.length}）
-            </Button>
-          )}
-          {toDefer.length > 0 && (
-            <Button variant="outline" className="gap-2" onClick={() => setDeferOpen(true)}>
-              <CalendarClock className="h-4 w-4" />
-              延後（{toDefer.length}）
+              帶入新增公告（{selected.length}）
             </Button>
           )}
           <Button variant="ghost" onClick={() => setSelectedIds([])}>
@@ -266,83 +257,85 @@ export default function PendingCasesPage() {
         </div>
       )}
 
-      {/* 案件表格 */}
+      {/* 表格：欄位依階段調整 */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={toggleAll}
-                  disabled={selectableIds.length === 0}
-                  aria-label="全選"
-                />
-              </TableHead>
-              <TableHead>{sourceConfig.subjectLabel}</TableHead>
-              <TableHead>{sourceConfig.detailLabel}</TableHead>
+              {selectable && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleAll}
+                    disabled={selectableIds.length === 0}
+                    aria-label="全選"
+                  />
+                </TableHead>
+              )}
+              <TableHead>科別</TableHead>
+              <TableHead>{secondaryLabel(source)}</TableHead>
               <TableHead className="w-32">審查通過日</TableHead>
-              <TableHead className="w-48">官網公告文件</TableHead>
-              <TableHead className="w-32">系統內公告</TableHead>
-              <TableHead className="w-28 text-right">操作</TableHead>
+              {stage !== "待製作" && <TableHead className="w-56">公告文號</TableHead>}
+              {stage === "已公告" && <TableHead className="w-36">系統內公告日期</TableHead>}
+              <TableHead className="w-56 text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-16 text-center">
+                <TableCell colSpan={8} className="py-16 text-center">
                   <Inbox className="mx-auto mb-3 h-10 w-10 text-gray-300" />
-                  <p className="text-base text-gray-500">目前沒有符合條件的案件</p>
+                  <p className="text-base text-gray-500">此階段目前沒有案件</p>
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((c) => {
-                const st = getCaseDocStatus(c)
-                const selectable = st !== "已公告"
                 const corr = officialCorrectionCount(c)
+                const lastEntry = c.officialDoc?.entries[c.officialDoc.entries.length - 1]
                 return (
                   <TableRow key={c.id} className="h-14">
-                    <TableCell>
-                      <Checkbox
-                        checked={selected.includes(c.id)}
-                        onCheckedChange={() => toggle(c.id)}
-                        disabled={!selectable}
-                        aria-label={`選取 ${c.subject}`}
-                      />
-                    </TableCell>
-                    <TableCell className="text-base font-medium text-gray-900">{c.subject}</TableCell>
-                    <TableCell className="text-base text-gray-700">{c.detail}</TableCell>
+                    {selectable && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.includes(c.id)}
+                          onCheckedChange={() => toggle(c.id)}
+                          aria-label={`選取 ${c.specialty}`}
+                        />
+                      </TableCell>
+                    )}
+                    <TableCell className="text-base font-medium text-gray-900">{c.specialty}</TableCell>
+                    <TableCell className="text-base text-gray-700">{secondaryValue(c)}</TableCell>
                     <TableCell className="text-base text-gray-600">{toRocDate(c.approvedDate)}</TableCell>
-                    <TableCell>
-                      {c.officialDoc ? (
-                        <div className="flex flex-col gap-0.5">
-                          <Badge className="w-fit border-green-200 bg-green-100 text-sm text-green-800">
-                            已製作{corr > 0 ? `（第 ${corr} 次修正）` : ""}
+                    {stage !== "待製作" && (
+                      <TableCell className="text-base text-gray-700">
+                        {lastEntry?.docNumber}
+                        {corr > 0 && (
+                          <Badge className="ml-1.5 border-blue-200 bg-blue-50 text-sm text-blue-700">
+                            第 {corr} 次修正
                           </Badge>
-                          <span className="text-sm text-gray-500">
-                            {c.officialDoc.entries[c.officialDoc.entries.length - 1].docNumber}
-                          </span>
-                        </div>
-                      ) : c.deferReason ? (
-                        <Badge className="border-gray-200 bg-gray-100 text-sm text-gray-500">已延後</Badge>
-                      ) : (
-                        <Badge className="border-amber-200 bg-amber-100 text-sm text-amber-800">未製作</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {c.publishedPostId ? (
-                        <Badge className="border-green-200 bg-green-100 text-sm text-green-800">已發布</Badge>
-                      ) : (
-                        <Badge className="border-gray-200 bg-gray-100 text-sm text-gray-500">未發布</Badge>
-                      )}
-                    </TableCell>
+                        )}
+                      </TableCell>
+                    )}
+                    {stage === "已公告" && (
+                      <TableCell className="text-base text-gray-600">
+                        {toRocDate(c.publishedDate)}
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">
-                      <Button asChild variant="outline" size="sm" className="gap-1">
-                        <Link href={c.reviewHref}>
-                          <ExternalLink className="h-4 w-4" />
-                          檢視審查
-                        </Link>
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        {stage !== "待製作" && (
+                          <Button variant="outline" size="sm" className="gap-1" onClick={() => handleDownload(c)}>
+                            <Download className="h-4 w-4" />
+                            下載
+                          </Button>
+                        )}
+                        <Button asChild variant="outline" size="sm" className="gap-1">
+                          <Link href={c.reviewHref}>
+                            <ExternalLink className="h-4 w-4" />
+                            檢視審查
+                          </Link>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -352,13 +345,13 @@ export default function PendingCasesPage() {
         </Table>
       </div>
 
-      {/* 製作公告檔案：輸入發文日期＋文號（手動），預覽套版後製作 */}
+      {/* 製作公告檔案：輸入發文日期＋文號（手動），套版預覽後製作 */}
       <Dialog open={produceOpen} onOpenChange={setProduceOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>製作公告檔案</DialogTitle>
             <DialogDescription className="text-base">
-              為選取的 {toProduce.length} 筆案件各產生一份官網公告文件（{sourceConfig.subjectLabel}為單位）。
+              為選取的 {selected.length} 筆案件各產生一份官網公告文件（以科別為單位）。
               產出／下載為後端作業，此處僅套版預覽。
             </DialogDescription>
           </DialogHeader>
@@ -390,12 +383,11 @@ export default function PendingCasesPage() {
               </div>
             </div>
 
-            {/* 套版預覽（比照 ref 認定合格名單表頭） */}
             <div className="rounded-lg border border-gray-200 bg-white p-5">
               <p className="mb-2 text-sm text-gray-500">預覽（每筆案件各一份）</p>
               <p className="text-center text-lg font-bold text-gray-900">
-                衛生福利部 {toProduce[0]?.year ?? "115 年度"}
-                {toProduce[0]?.subject ?? "○○醫學會"} 訓練醫院認定合格名單及訓練容量
+                衛生福利部 {selectedCases[0]?.year ?? "115 年度"}
+                {selectedCases[0]?.specialty ?? "○○科"} 訓練醫院認定合格名單及訓練容量
               </p>
               <p className="mt-1 text-right text-base text-gray-700">
                 {toRocDate(produceDate)}　{produceDocNumber || "（未填文號）"} 號公告
@@ -406,11 +398,11 @@ export default function PendingCasesPage() {
             </div>
 
             <div className="max-h-32 overflow-y-auto rounded-lg border border-gray-200">
-              {toProduce.map((c) => (
+              {selectedCases.map((c) => (
                 <div key={c.id} className="flex items-center gap-2 border-b px-3 py-2 last:border-b-0">
                   <FileText className="h-4 w-4 text-blue-600" />
                   <span className="text-base text-gray-800">
-                    {c.subject}　{c.detail}
+                    {c.specialty}　{secondaryValue(c)}
                   </span>
                 </div>
               ))}
@@ -425,66 +417,11 @@ export default function PendingCasesPage() {
               disabled={!produceDocNumber.trim()}
               className="bg-[#2d3a8c] hover:bg-[#252f73]"
             >
-              製作 {toProduce.length} 份
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 延後 */}
-      <Dialog open={deferOpen} onOpenChange={setDeferOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>延後至下批</DialogTitle>
-            <DialogDescription className="text-base">
-              選取的 {toDefer.length} 筆案件本批不辦理，仍留在工作台，可隨時還原。
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="defer-reason" className="text-base">
-              延後原因
-            </Label>
-            <Textarea
-              id="defer-reason"
-              value={deferReason}
-              onChange={(e) => setDeferReason(e.target.value)}
-              rows={3}
-              placeholder="例：待醫學會補正容額數字後再併入下批"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeferOpen(false)}>
-              取消
-            </Button>
-            <Button onClick={handleDefer} className="bg-[#2d3a8c] hover:bg-[#252f73]">
-              確認延後
+              製作 {selected.length} 份
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageContainer>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number
-  tone: "amber" | "blue" | "green" | "gray"
-}) {
-  const toneClass = {
-    amber: "text-amber-600",
-    blue: "text-blue-600",
-    green: "text-green-600",
-    gray: "text-gray-500",
-  }[tone]
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-      <p className={`text-base ${toneClass}`}>{label}</p>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-    </div>
   )
 }
