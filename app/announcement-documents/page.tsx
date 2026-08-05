@@ -4,15 +4,18 @@
 // 站內公告是另一個模組（/announcement-management），對象是「一篇公告」，引用本模組產出的檔案。
 // 兩者曾以頁內 tab 併為一個「公告管理」模組，因對象不同、層級過深而拆開（見 announcement-module-plan.md 八節）。
 //
-// 依客戶確認的 IA：以「使用者作業階段」引導，不把待製作／已製作／已公告混在同一張表。兩層結構：
-//   來源 tab（文件/容額/外加，格式不同不併批）× 階段分頁（待製作 → 已製作·待發布 → 已公告）
-// 每階段只有一個明確的下一步：
-//   待製作     → 製作公告檔案（輸入文號、套版預覽）
-//   已製作·待發布 → 帶入「新增站內公告」；且可下載檔案去官網公告
-//   已公告     → 已完成站內公告；檔案仍可下載（去官網），唯讀
+// 依客戶確認的 IA：以「本模組的作業階段」引導。兩層結構：
+//   來源 tab（文件/容額/外加，格式不同不併批）× 階段分頁（待製作 → 已製作）
+// 每階段一個明確的下一步：
+//   待製作 → 製作公告檔案（輸入文號、套版預覽）
+//   已製作 → 帶入「新增站內公告」；且可下載檔案去官網公告
 //
-// 「已公告」階段是站內公告模組的狀態，刻意保留在此：拆成兩個模組後沒有 tab 可跳過去看，
-// 本工作台必須自己回答「這案還缺哪一步」。勿當成未清乾淨的耦合移除。
+// 「是否已發站內公告」不再獨立成一個分頁（2026-08-05 調整）：那是站內公告模組的狀態，
+// 拿來切分本模組的作業階段會讓層級變深。改以表格的「系統內公告」欄表達——有日期＝已公告，
+// 無＝尚未發布。本工作台仍需呈現它：拆成兩個模組後沒有 tab 可跳過去對照，使用者要能在此
+// 自答「這案還缺哪一步」。勿當成未清乾淨的耦合移除。
+//
+// 已公告的案件不可再被勾選帶入站內公告（會覆蓋既有的 publishedPostId），故其列不給勾選框。
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -43,17 +46,23 @@ import {
   getPendingCountBySource,
   officialCorrectionCount,
   produceOfficialDocs,
-  type CaseDocStatus,
   type PendingCase,
   type PendingSourceModule,
 } from "@/lib/mock/announcement-cases"
 import { TODAY_ISO, toRocDate } from "@/lib/mock/announcements"
 
-const STAGES: Array<{ value: CaseDocStatus; label: string }> = [
+/** 工作台的作業階段。已製作涵蓋資料層的「已製作」與「已公告」——是否已發站內公告改為欄位。 */
+type WorkbenchStage = "待製作" | "已製作"
+
+const STAGES: Array<{ value: WorkbenchStage; label: string }> = [
   { value: "待製作", label: "待製作" },
-  { value: "已製作", label: "已製作·待發布" },
-  { value: "已公告", label: "已公告" },
+  { value: "已製作", label: "已製作" },
 ]
+
+/** 案件屬於哪個作業階段（資料層的已公告併入已製作） */
+function toWorkbenchStage(c: PendingCase): WorkbenchStage {
+  return getCaseDocStatus(c) === "待製作" ? "待製作" : "已製作"
+}
 
 /** 各來源的「次要欄」（科別為主體欄後的第二欄） */
 function secondaryLabel(source: PendingSourceModule): string {
@@ -66,7 +75,7 @@ function secondaryValue(c: PendingCase): string {
 export default function AnnouncementDocumentsPage() {
   const router = useRouter()
   const [source, setSource] = useState<PendingSourceModule>("submissions")
-  const [stage, setStage] = useState<CaseDocStatus>("待製作")
+  const [stage, setStage] = useState<WorkbenchStage>("待製作")
   const [keyword, setKeyword] = useState("")
   const [specialtyFilter, setSpecialtyFilter] = useState("all")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -79,10 +88,10 @@ export default function AnnouncementDocumentsPage() {
 
   const allCases = useMemo(() => getPendingCasesBySource(source), [source, tick])
 
-  // 本來源各階段筆數（供階段分頁 badge）
+  // 本來源各階段筆數（供階段分頁 badge）。已製作含已公告，與該分頁的列數一致。
   const stageCounts = useMemo(() => {
-    const c = { 待製作: 0, 已製作: 0, 已公告: 0 } as Record<CaseDocStatus, number>
-    allCases.forEach((x) => (c[getCaseDocStatus(x)] += 1))
+    const c = { 待製作: 0, 已製作: 0 } as Record<WorkbenchStage, number>
+    allCases.forEach((x) => (c[toWorkbenchStage(x)] += 1))
     return c
   }, [allCases])
 
@@ -93,7 +102,7 @@ export default function AnnouncementDocumentsPage() {
 
   const rows = useMemo(() => {
     return allCases
-      .filter((c) => getCaseDocStatus(c) === stage)
+      .filter((c) => toWorkbenchStage(c) === stage)
       .filter((c) => (specialtyFilter === "all" ? true : c.specialty === specialtyFilter))
       .filter((c) =>
         keyword.trim() === ""
@@ -103,9 +112,9 @@ export default function AnnouncementDocumentsPage() {
       .sort((a, b) => a.approvedDate.localeCompare(b.approvedDate))
   }, [allCases, stage, specialtyFilter, keyword])
 
-  // 待製作與已製作可勾選（批次製作／帶入站內公告）；已公告唯讀
-  const selectable = stage !== "已公告"
-  const selectableIds = selectable ? rows.map((c) => c.id) : []
+  // 待製作全部可勾（批次製作）；已製作分頁只有「尚未發站內公告」的可勾（帶入站內公告）
+  const isSelectable = (c: PendingCase) => stage === "待製作" || !c.publishedPostId
+  const selectableIds = rows.filter(isSelectable).map((c) => c.id)
   const selected = selectedIds.filter((id) => selectableIds.includes(id))
   const allSelected = selectableIds.length > 0 && selected.length === selectableIds.length
 
@@ -117,7 +126,7 @@ export default function AnnouncementDocumentsPage() {
     setSpecialtyFilter("all")
     setKeyword("")
   }
-  const switchStage = (next: CaseDocStatus) => {
+  const switchStage = (next: WorkbenchStage) => {
     setStage(next)
     setSelectedIds([])
   }
@@ -263,21 +272,19 @@ export default function AnnouncementDocumentsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              {selectable && (
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={toggleAll}
-                    disabled={selectableIds.length === 0}
-                    aria-label="全選"
-                  />
-                </TableHead>
-              )}
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={toggleAll}
+                  disabled={selectableIds.length === 0}
+                  aria-label="全選"
+                />
+              </TableHead>
               <TableHead>科別</TableHead>
               <TableHead>{secondaryLabel(source)}</TableHead>
               <TableHead className="w-32">審查通過日</TableHead>
-              {stage !== "待製作" && <TableHead className="w-56">公告文號</TableHead>}
-              {stage === "已公告" && <TableHead className="w-36">系統內公告日期</TableHead>}
+              {stage === "已製作" && <TableHead className="w-56">公告文號</TableHead>}
+              {stage === "已製作" && <TableHead className="w-36">系統內公告</TableHead>}
               <TableHead className="w-56 text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -295,19 +302,19 @@ export default function AnnouncementDocumentsPage() {
                 const lastEntry = c.officialDoc?.entries[c.officialDoc.entries.length - 1]
                 return (
                   <TableRow key={c.id} className="h-14">
-                    {selectable && (
-                      <TableCell>
+                    <TableCell>
+                      {isSelectable(c) && (
                         <Checkbox
                           checked={selected.includes(c.id)}
                           onCheckedChange={() => toggle(c.id)}
                           aria-label={`選取 ${c.specialty}`}
                         />
-                      </TableCell>
-                    )}
+                      )}
+                    </TableCell>
                     <TableCell className="text-base font-medium text-gray-900">{c.specialty}</TableCell>
                     <TableCell className="text-base text-gray-700">{secondaryValue(c)}</TableCell>
                     <TableCell className="text-base text-gray-600">{toRocDate(c.approvedDate)}</TableCell>
-                    {stage !== "待製作" && (
+                    {stage === "已製作" && (
                       <TableCell className="text-base text-gray-700">
                         {lastEntry?.docNumber}
                         {corr > 0 && (
@@ -317,14 +324,20 @@ export default function AnnouncementDocumentsPage() {
                         )}
                       </TableCell>
                     )}
-                    {stage === "已公告" && (
-                      <TableCell className="text-base text-gray-600">
-                        {toRocDate(c.publishedDate)}
+                    {stage === "已製作" && (
+                      <TableCell className="text-base">
+                        {c.publishedDate ? (
+                          <span className="text-gray-600">{toRocDate(c.publishedDate)}</span>
+                        ) : (
+                          <Badge className="border-amber-200 bg-amber-100 text-sm text-amber-800">
+                            待發布
+                          </Badge>
+                        )}
                       </TableCell>
                     )}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {stage !== "待製作" && (
+                        {stage === "已製作" && (
                           <Button variant="outline" size="sm" className="gap-1" onClick={() => handleDownload(c)}>
                             <Download className="h-4 w-4" />
                             下載
