@@ -286,6 +286,16 @@ export function getPendingCountBySource(): Record<PendingSourceModule, number> {
   return counts
 }
 
+/**
+ * 各階段的案件筆數，供首頁兩個公告模組入口的 badge 使用：
+ * 「公告文件製作」看 待製作、「站內公告管理」看 已製作（待發布）。
+ */
+export function getCaseDocStatusCounts(): Record<CaseDocStatus, number> {
+  const counts = { 待製作: 0, 已製作: 0, 已公告: 0 } as Record<CaseDocStatus, number>
+  pendingCases.forEach((c) => (counts[getCaseDocStatus(c)] += 1))
+  return counts
+}
+
 export function getTotalPendingCount(): number {
   return pendingCases.filter((c) => {
     const s = getCaseDocStatus(c)

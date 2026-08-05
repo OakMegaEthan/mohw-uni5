@@ -1,7 +1,9 @@
 "use client"
 
-// 公告清單。舊版把「待公告案件」塞在頁首的鈴鐺 Popover 裡（放不下、無法篩選、
-// 數量為 0 時整個入口消失），已改為獨立的待公告工作台，本頁專責管理已建立的公告。
+// 站內公告管理（獨立模組）。本模組的對象是「一篇站內公告」——發布後出現在前台 /announcements
+// 公告欄。一篇公告可引用多份「官網公告文件」，那些檔案由另一個模組 /announcement-documents
+// 製作（對象是案件）。兩者曾以頁內 tab 併為一個「公告管理」模組，因對象不同而拆開
+// （見 docs/announcement-module-plan.md 八節）。本頁只做兩件事：新增公告、檢視／編輯既有公告。
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
@@ -10,7 +12,6 @@ import { toast } from "sonner"
 import { Download, Eye, FileText, MoreHorizontal, Pin, Plus, Search } from "lucide-react"
 
 import { PageContainer, PageHeader } from "@/components/layout/page-container"
-import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +34,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { getTotalPendingCount } from "@/lib/mock/announcement-cases"
 import {
   ANNOUNCEMENT_CATEGORIES,
   ANNOUNCEMENT_STATUS_CONFIG,
@@ -48,7 +48,7 @@ import {
 
 const STATUS_OPTIONS: AnnouncementStatus[] = ["草稿", "已排程", "已發布", "已下架"]
 
-export default function AnnouncementListPage() {
+export default function SiteAnnouncementListPage() {
   const router = useRouter()
   const [keyword, setKeyword] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
@@ -58,7 +58,6 @@ export default function AnnouncementListPage() {
   const [tick, forceUpdate] = useState(0)
 
   const announcements = useMemo(() => getAnnouncementList(), [tick])
-  const pendingCount = useMemo(() => getTotalPendingCount(), [tick])
   const yearOptions = useMemo(
     () => [...new Set(announcements.map((a) => a.year))].sort().reverse(),
     [announcements],
@@ -103,7 +102,10 @@ export default function AnnouncementListPage() {
 
   return (
     <PageContainer>
-      <PageHeader title="公告管理" description="彙整審查完成的案件、編製公告文稿並對外發布">
+      <PageHeader
+        title="站內公告管理"
+        description="編製並發布站內公告（前台公告欄），可引用已製作的官網公告文件"
+      >
         <Button asChild className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73]">
           <Link href="/announcement-management/compose">
             <Plus className="h-4 w-4" />
@@ -111,7 +113,6 @@ export default function AnnouncementListPage() {
           </Link>
         </Button>
       </PageHeader>
-      <AnnouncementModuleTabs pendingCount={pendingCount} />
 
       {/* 篩選工具列（舊版把三個篩選塞進 grid-cols-3 又沒給下拉寬度，三欄長短不一） */}
       <div className="mb-4 flex flex-wrap items-center gap-2">

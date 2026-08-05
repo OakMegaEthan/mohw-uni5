@@ -235,11 +235,11 @@ function ComposeInner() {
   return (
     <PageContainer>
       <Link
-        href="/announcement-management/pending"
+        href="/announcement-management"
         className="mb-4 inline-flex items-center gap-1 text-base text-blue-600 hover:text-blue-800"
       >
         <ArrowLeft className="h-4 w-4" />
-        返回待公告案件
+        返回站內公告管理
       </Link>
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -281,7 +281,7 @@ function ComposeInner() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">一、涵蓋案件（{cases.length}）</CardTitle>
             <Button asChild variant="outline" size="sm" className="gap-1">
-              <Link href="/announcement-management/pending">
+              <Link href="/announcement-documents">
                 <Plus className="h-4 w-4" />
                 自工作台加選
               </Link>
@@ -624,7 +624,7 @@ function ComposeInner() {
             <p className="mr-auto text-base text-amber-700">標題與內容為必填</p>
           )}
           <Button asChild variant="outline">
-            <Link href="/announcement-management/pending">取消</Link>
+            <Link href="/announcement-management">取消</Link>
           </Button>
           <Button variant="outline" onClick={handleSaveDraft}>
             儲存草稿

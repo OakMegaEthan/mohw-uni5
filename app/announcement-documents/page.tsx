@@ -1,15 +1,18 @@
 "use client"
 
-// 公告文件製作工作台。
+// 公告文件製作（獨立模組）。本模組的對象是「案件」，產出「官網公告文件」（文號掛案件層級）。
+// 站內公告是另一個模組（/announcement-management），對象是「一篇公告」，引用本模組產出的檔案。
+// 兩者曾以頁內 tab 併為一個「公告管理」模組，因對象不同、層級過深而拆開（見 announcement-module-plan.md 八節）。
 //
-// 依客戶確認的 IA（見 docs/announcement-module-plan.md）：以「使用者作業階段」引導，不把
-// 待製作／已製作／已公告混在同一張表。兩層結構：
+// 依客戶確認的 IA：以「使用者作業階段」引導，不把待製作／已製作／已公告混在同一張表。兩層結構：
 //   來源 tab（文件/容額/外加，格式不同不併批）× 階段分頁（待製作 → 已製作·待發布 → 已公告）
 // 每階段只有一個明確的下一步：
 //   待製作     → 製作公告檔案（輸入文號、套版預覽）
-//   已製作·待發布 → 帶入「新增公告」發系統內公告；且可下載檔案去官網公告
-//   已公告     → 已完成系統內公告；檔案仍可下載（去官網），唯讀
-// 「是否已發布系統內公告」由所在階段直接表達，不再是會混淆的欄位。
+//   已製作·待發布 → 帶入「新增站內公告」；且可下載檔案去官網公告
+//   已公告     → 已完成站內公告；檔案仍可下載（去官網），唯讀
+//
+// 「已公告」階段是站內公告模組的狀態，刻意保留在此：拆成兩個模組後沒有 tab 可跳過去看，
+// 本工作台必須自己回答「這案還缺哪一步」。勿當成未清乾淨的耦合移除。
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -18,7 +21,6 @@ import { toast } from "sonner"
 import { Download, ExternalLink, FilePlus2, FileText, Inbox, Search, Send } from "lucide-react"
 
 import { PageContainer, PageHeader } from "@/components/layout/page-container"
-import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -39,7 +41,6 @@ import {
   getCaseDocStatus,
   getPendingCasesBySource,
   getPendingCountBySource,
-  getTotalPendingCount,
   officialCorrectionCount,
   produceOfficialDocs,
   type CaseDocStatus,
@@ -62,7 +63,7 @@ function secondaryValue(c: PendingCase): string {
   return c.sourceModule === "additional-quota" ? c.subject : c.detail
 }
 
-export default function PendingCasesPage() {
+export default function AnnouncementDocumentsPage() {
   const router = useRouter()
   const [source, setSource] = useState<PendingSourceModule>("submissions")
   const [stage, setStage] = useState<CaseDocStatus>("待製作")
@@ -74,9 +75,7 @@ export default function PendingCasesPage() {
   const [produceDocNumber, setProduceDocNumber] = useState("")
   const [tick, forceUpdate] = useState(0)
 
-  const sourceConfig = PENDING_SOURCES.find((s) => s.value === source)!
   const counts = useMemo(() => getPendingCountBySource(), [tick])
-  const totalPending = useMemo(() => getTotalPendingCount(), [tick])
 
   const allCases = useMemo(() => getPendingCasesBySource(source), [source, tick])
 
@@ -104,7 +103,7 @@ export default function PendingCasesPage() {
       .sort((a, b) => a.approvedDate.localeCompare(b.approvedDate))
   }, [allCases, stage, specialtyFilter, keyword])
 
-  // 待製作與已製作可勾選（批次製作／帶入新增公告）；已公告唯讀
+  // 待製作與已製作可勾選（批次製作／帶入站內公告）；已公告唯讀
   const selectable = stage !== "已公告"
   const selectableIds = selectable ? rows.map((c) => c.id) : []
   const selected = selectedIds.filter((id) => selectableIds.includes(id))
@@ -146,8 +145,10 @@ export default function PendingCasesPage() {
 
   return (
     <PageContainer>
-      <PageHeader title="公告管理" description="製作公告檔案、發系統內公告，並準備官網公告文書" />
-      <AnnouncementModuleTabs pendingCount={totalPending} />
+      <PageHeader
+        title="公告文件製作"
+        description="為審查通過的案件製作官網公告文件（每案一份、文號人工輸入），完成後可帶入站內公告"
+      />
 
       {/* 第一層：來源（格式不同，不併批） */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -248,7 +249,7 @@ export default function PendingCasesPage() {
           {stage === "已製作" && (
             <Button onClick={handleCompose} className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73]">
               <Send className="h-4 w-4" />
-              帶入新增公告（{selected.length}）
+              帶入站內公告（{selected.length}）
             </Button>
           )}
           <Button variant="ghost" onClick={() => setSelectedIds([])}>
