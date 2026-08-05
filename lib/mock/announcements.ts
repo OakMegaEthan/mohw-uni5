@@ -63,12 +63,18 @@ export interface AnnouncementAttachment {
 }
 
 /** 公告涵蓋的案件（快照，公告發布後不隨案件端異動） */
+/**
+ * 站內公告所引用的一份「官網公告文件」。以案件為單位（文件由 /announcement-documents 製作）。
+ * 加入時取快照：公告發布後，案件端再更正文號不會改動已發布公告的記載。
+ */
 export interface AnnouncementCaseRef {
   caseId: string
   sourceModule: PendingSourceModule
   subject: string
   detail: string
   approvedDate: string
+  /** 加入當下該公告文件的文號（未製作即無）；供清單辨識引用的是哪一份 */
+  docNumber?: string
 }
 
 export interface AnnouncementHistoryEntry {
