@@ -169,8 +169,14 @@ function ComposeInner() {
   const mixedDetails = useMemo(() => [...new Set(cases.map((c) => c.detail))], [cases])
 
   const isScheduled = Boolean(publishDate && publishDate > TODAY_ISO)
-  // 系統內公告本身不需文號（文號在各案件的公告檔案上）；標題與內容為必填即可發布
-  const canPublishNow = title.trim().length > 0 && content.trim().length > 0
+  // 文號的歸屬依公告型態而不同（決策 #1「沒有文號不得發布」在新模型下的落點）：
+  //   引用型（有引用公告文件）→ 文號在各文件上，製作文件時已強制輸入，本頁不再要一個
+  //   自建型（無引用文件，如作業時程公告）→ 公告本身就是公文，其文號為必填
+  const isSelfIssued = cases.length === 0
+  const canPublishNow =
+    title.trim().length > 0 &&
+    content.trim().length > 0 &&
+    (!isSelfIssued || docNumber.trim().length > 0)
 
   const previewAnnouncement = (): Announcement => ({
     id: draftId ?? "preview",
@@ -481,22 +487,42 @@ function ComposeInner() {
             <CardTitle className="text-lg">三、公文資訊與發布設定</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="doc-number" className="text-base">
-                公文文號 *
-              </Label>
-              <Input
-                id="doc-number"
-                value={docNumber}
-                onChange={(e) => setDocNumber(e.target.value)}
-                className="h-11"
-                placeholder="例：衛部醫字第 1151660321 號"
-              />
-              <p className="flex items-start gap-1.5 text-sm text-gray-500">
-                <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                文號由公文系統核發，本系統僅記錄不做驗證。<span className="font-medium">沒有文號不得發布。</span>
-              </p>
-            </div>
+            {isSelfIssued ? (
+              <div className="space-y-2">
+                <Label htmlFor="doc-number" className="text-base">
+                  公文文號 *
+                </Label>
+                <Input
+                  id="doc-number"
+                  value={docNumber}
+                  onChange={(e) => setDocNumber(e.target.value)}
+                  className="h-11"
+                  placeholder="例：衛部醫字第 1151660321 號"
+                />
+                <p className="flex items-start gap-1.5 text-sm text-gray-500">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  本份為醫事司自建公告，公告本身即公文。文號由公文系統核發，本系統僅記錄不做驗證。
+                  <span className="font-medium">沒有文號不得發布。</span>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-base">公文文號</Label>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <ul className="space-y-1">
+                    {cases.map((c) => (
+                      <li key={c.caseId} className="text-base text-gray-800">
+                        {c.subject}　{c.docNumber ?? "（未製作）"}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <p className="flex items-start gap-1.5 text-sm text-gray-500">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  文號掛在各份官網公告文件上（製作文件時輸入），本份公告不另設文號。
+                </p>
+              </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
@@ -640,7 +666,9 @@ function ComposeInner() {
               <h2 className="text-xl font-bold text-gray-900">{title || "（未填標題）"}</h2>
               <div className="mt-2 flex flex-wrap gap-4 text-base text-gray-600">
                 <span>發文日期：{toRocDate(issueDate || null)}</span>
-                <span>發文字號：{docNumber || "（未填）"}</span>
+                <span>
+                  發文字號：{isSelfIssued ? docNumber || "（未填）" : `見引用之 ${cases.length} 份公告文件`}
+                </span>
                 {effectiveDate && <span>生效日期：{toRocDate(effectiveDate)}</span>}
               </div>
               <div className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-gray-800">
@@ -665,7 +693,9 @@ function ComposeInner() {
         {/* 操作 */}
         <div className="flex flex-wrap items-center justify-end gap-3 pb-4">
           {!canPublishNow && (
-            <p className="mr-auto text-base text-amber-700">標題與內容為必填</p>
+            <p className="mr-auto text-base text-amber-700">
+              {isSelfIssued ? "標題、內容與公文文號為必填" : "標題與內容為必填"}
+            </p>
           )}
           <Button asChild variant="outline">
             <Link href="/announcement-management">取消</Link>

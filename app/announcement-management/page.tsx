@@ -217,7 +217,12 @@ export default function SiteAnnouncementListPage() {
                   </TableCell>
                   <TableCell className="text-base text-gray-600">{toRocDate(a.issueDate)}</TableCell>
                   <TableCell className="text-base text-gray-600">
-                    {a.docNumber || <span className="text-gray-400">未填</span>}
+                    {a.docNumber ||
+                      (a.cases.length > 0 ? (
+                        <span className="text-gray-500">見引用文件（{a.cases.length}）</span>
+                      ) : (
+                        <span className="text-gray-400">未填</span>
+                      ))}
                   </TableCell>
                   <TableCell className="text-right text-base text-gray-600">
                     {a.cases.length || "—"}
