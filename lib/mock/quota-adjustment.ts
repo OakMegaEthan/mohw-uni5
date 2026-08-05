@@ -38,17 +38,30 @@ export const ADJUSTMENT_RETURNED_BUCKET = {
   color: "bg-orange-100 text-orange-800 border-orange-200",
 }
 
-/** 微調的一列＝一家訓練醫院。base 為基準（原公告）容額，adjusted 為醫學會填的調整後容額。 */
+/**
+ * 微調的一列＝一家訓練醫院。base 為基準容額，adjusted 為醫學會填的調整後容額。
+ *
+ * 聯合申請的合作機構（isSubRow）也會帶進來呈現，但**容額掛在主訓機構**、合作機構沒有
+ * 自己的容額（比照容額填報）。故合作機構列唯讀、不參與守恆計算，quota 一律 0、UI 顯示「—」。
+ */
 export interface QuotaAdjustmentRow {
   hospitalCode: string
   hospitalName: string
   county: string
-  /** 原公告容額，自容額填報帶入，不可編輯 */
+  /** 基準容額（原公告疊加已通過的微調），自容額填報帶入，不可編輯 */
   baseQuota: number
   /** 調整後容額，醫學會填 */
   adjustedQuota: number
   /** 微調原因（選填）。兒科來文有此欄、婦產科沒有 */
   reason: string
+  /** 聯合申請＝joint（主訓機構或合作機構），單獨申請＝single */
+  applicationType: "single" | "joint"
+  /** true＝聯合申請的合作機構：唯讀、無容額、不計入守恆 */
+  isSubRow: boolean
+  /** 聯合申請的組合識別碼，主訓與其合作機構相同 */
+  groupId: string | null
+  /** 合併認定機構（名稱本身即「A及其B」，視為一家） */
+  isMerged: boolean
 }
 
 export interface QuotaAdjustmentAttachment {
@@ -91,25 +104,57 @@ export interface BaselineHospital {
   code: string
   name: string
   county: string
+  /** 合作機構為 0（容額掛主訓機構） */
   quota: number
+  applicationType: "single" | "joint"
+  isSubRow: boolean
+  groupId: string | null
+  isMerged: boolean
 }
 
 /**
- * 該醫學會可微調的訓練醫院基準名單。
- * 取自容額填報的醫院列，排除聯合申請的 sub-row（容額為 null、由主訓機構統籌）。
+ * 該醫學會可微調的訓練醫院名單（原公告狀態）。
+ * 取自容額填報送過的醫院——微調只能在已認定合格的機構之間搬動，不能憑空新增醫院。
+ * **保留聯合申請的合作機構**（isSubRow）供呈現，其容額為 0、掛在主訓機構上。
  * mock 以容額填報的 currentQuota 當作「原公告容額」。
  */
 export function getBaselineHospitals(societyId: string): BaselineHospital[] {
   const detail = getHospitalQuotaDetail(societyId)
   if (!detail) return []
-  return detail.hospitals
-    .filter((h) => !h.isSubRow && h.currentQuota != null)
-    .map((h) => ({
-      code: h.code,
-      name: h.name,
-      county: h.county ?? "",
-      quota: h.currentQuota as number,
-    }))
+  return detail.hospitals.map((h) => ({
+    code: h.code,
+    name: h.name,
+    county: h.county ?? "",
+    quota: h.currentQuota ?? 0,
+    applicationType: h.applicationType,
+    isSubRow: h.isSubRow,
+    groupId: h.groupId,
+    isMerged: h.mergedHospitalCodes.length > 0,
+  }))
+}
+
+/**
+ * **有效基準容額**：原公告疊加該醫學會該年度所有「已通過」的微調。
+ *
+ * 基準有時間性——第 1 次微調通過後，第 2 次的基準必須是調整後的容額，不能還是原公告。
+ * 未審結的案件不疊加（可能被退件），且新增時本來就擋住並行（hasOpenAdjustment）。
+ */
+export function getEffectiveBaseline(societyId: string, year: string): BaselineHospital[] {
+  const base = getBaselineHospitals(societyId)
+  const applied = cases.filter(
+    (c) => c.societyId === societyId && c.year === year && c.stage === "審查通過",
+  )
+  if (applied.length === 0) return base
+
+  const byCode = new Map(base.map((h) => [h.code, { ...h }]))
+  applied.forEach((c) =>
+    c.rows.forEach((r) => {
+      if (r.isSubRow) return
+      const h = byCode.get(r.hospitalCode)
+      if (h) h.quota = r.adjustedQuota
+    }),
+  )
+  return [...byCode.values()]
 }
 
 // ── 守恆計算 ────────────────────────────────────────────────
@@ -125,8 +170,9 @@ export interface AdjustmentBalance {
   changedCount: number
 }
 
+/** 合作機構沒有自己的容額，一律回 0（不計入守恆） */
 export function rowDelta(r: QuotaAdjustmentRow): number {
-  return r.adjustedQuota - r.baseQuota
+  return r.isSubRow ? 0 : r.adjustedQuota - r.baseQuota
 }
 
 export function getBalance(rows: QuotaAdjustmentRow[]): AdjustmentBalance {
@@ -152,23 +198,62 @@ export function isBalanced(rows: QuotaAdjustmentRow[]): boolean {
 
 const SOCIETY = (id: string) => allSocieties.find((s) => s.id === id)!
 
-/** 依基準名單造出微調列：deltas 指定「第幾家醫院調整多少」，其餘不動 */
+/** 基準醫院 → 微調列（尚未調整） */
+export function toAdjustmentRow(h: BaselineHospital): QuotaAdjustmentRow {
+  return {
+    hospitalCode: h.code,
+    hospitalName: h.name,
+    county: h.county,
+    baseQuota: h.quota,
+    adjustedQuota: h.quota,
+    reason: "",
+    applicationType: h.applicationType,
+    isSubRow: h.isSubRow,
+    groupId: h.groupId,
+    isMerged: h.isMerged,
+  }
+}
+
+/**
+ * 選取一批主訓機構後要納入的完整列（含其聯合申請的合作機構）。
+ * 合作機構隨主訓機構自動帶入——它沒有自己的容額，但要讓審查者看到這個容額涵蓋哪些機構。
+ */
+export function expandSelection(
+  baseline: BaselineHospital[],
+  selectedCodes: string[],
+): QuotaAdjustmentRow[] {
+  const selected = new Set(selectedCodes)
+  const groupsInPlay = new Set(
+    baseline.filter((h) => selected.has(h.code) && h.groupId).map((h) => h.groupId as string),
+  )
+  return baseline
+    .filter((h) => selected.has(h.code) || (h.isSubRow && h.groupId && groupsInPlay.has(h.groupId)))
+    .map(toAdjustmentRow)
+}
+
+/** 可被選取的機構＝主訓機構或單獨申請者（合作機構沒有自己的容額，不可單獨選） */
+export function isSelectableHospital(h: BaselineHospital): boolean {
+  return !h.isSubRow
+}
+
+/** 依基準名單造出微調列：deltas 指定「第幾家可選機構調整多少」，並帶入其合作機構 */
 function buildRows(
   societyId: string,
   deltas: Array<{ index: number; delta: number; reason?: string }>,
 ): QuotaAdjustmentRow[] {
   const base = getBaselineHospitals(societyId)
-  const byIndex = new Map(deltas.map((d) => [d.index, d]))
-  return base.map((h, i) => {
-    const d = byIndex.get(i)
-    return {
-      hospitalCode: h.code,
-      hospitalName: h.name,
-      county: h.county,
-      baseQuota: h.quota,
-      adjustedQuota: h.quota + (d?.delta ?? 0),
-      reason: d?.reason ?? "",
-    }
+  const selectable = base.filter(isSelectableHospital)
+  const picked = deltas.map((d) => selectable[d.index]?.code).filter(Boolean) as string[]
+  const rows = expandSelection(base, picked)
+  const deltaByCode = new Map(
+    deltas.map((d) => [selectable[d.index]?.code, d]).filter(([c]) => c) as Array<
+      [string, { index: number; delta: number; reason?: string }]
+    >,
+  )
+  return rows.map((r) => {
+    const d = deltaByCode.get(r.hospitalCode)
+    if (!d || r.isSubRow) return r
+    return { ...r, adjustedQuota: r.baseQuota + d.delta, reason: d.reason ?? "" }
   })
 }
 
@@ -246,6 +331,53 @@ const cases: QuotaAdjustmentCase[] = [
 
 export function getQuotaAdjustmentCases(): QuotaAdjustmentCase[] {
   return cases
+}
+
+/**
+ * 該醫學會該年度是否有尚未審結的微調案（待送件／醫事司審查／退件補正中）。
+ * 有的話不得新增下一件——否則兩件都以同一基準各自平衡，合併後可能讓某醫院容額變負數。
+ */
+export function hasOpenAdjustment(societyId: string, year: string): boolean {
+  return cases.some(
+    (c) => c.societyId === societyId && c.year === year && c.stage !== "審查通過",
+  )
+}
+
+/** 該醫學會該年度的下一個微調次數 */
+export function nextRound(societyId: string, year: string): number {
+  return cases.filter((c) => c.societyId === societyId && c.year === year).length + 1
+}
+
+/** 尚可發起微調的醫學會（該年度沒有進行中的案件，且容額填報有醫院可調） */
+export function getAvailableSocieties(year: string): Array<{ id: string; name: string; specialty: string }> {
+  return allSocieties.filter(
+    (s) =>
+      !hasOpenAdjustment(s.id, year) &&
+      getBaselineHospitals(s.id).some(isSelectableHospital),
+  )
+}
+
+/** 建立新的微調案件（待送件） */
+export function createAdjustment(societyId: string, year: string): QuotaAdjustmentCase {
+  const society = allSocieties.find((s) => s.id === societyId)!
+  const created: QuotaAdjustmentCase = {
+    id: `adj-${societyId}-${Date.now()}`,
+    societyId,
+    societyName: society.name,
+    specialty: society.specialty,
+    year,
+    round: nextRound(societyId, year),
+    stage: "待送件",
+    returnedFrom: null,
+    submittedDate: null,
+    approvedDate: null,
+    rows: [],
+    attachments: [],
+    reviewComment: "",
+    history: [],
+  }
+  cases.push(created)
+  return created
 }
 
 export function getQuotaAdjustmentCase(id: string): QuotaAdjustmentCase | undefined {
