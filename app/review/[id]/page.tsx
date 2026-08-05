@@ -162,6 +162,8 @@ export default function ReviewDetailPage({
   const isRRCReviewStage = stage === "rrc-meeting"
   const isGroupReviewStage = stage === "group-meeting"
   const showGroupReviewFiles = hasTwoStageReview && isRRCReviewStage
+  // 審查通過＝審查作業終點：詳情頁為真唯讀（不 render 任何變更狀態的控制 UI）
+  const isPassed = stage === "passed"
 
   const [expandedSections, setExpandedSections] = useState<string[]>(
     currentYearData.map((s) => s.id)
@@ -271,7 +273,7 @@ export default function ReviewDetailPage({
                     stage === "pending-review" ? "bg-blue-100 text-blue-800" :
                     stage === "group-meeting" ? "bg-purple-100 text-purple-800" :
                     stage === "rrc-meeting" ? "bg-pink-100 text-pink-800" :
-                    stage === "pending-announcement" ? "bg-amber-100 text-amber-800" :
+                    stage === "ministry-review" ? "bg-amber-100 text-amber-800" :
                     "bg-green-100 text-green-800"
                   }`}>
                     {stageInfo?.label || stage}
@@ -287,18 +289,20 @@ export default function ReviewDetailPage({
                 <p className="text-base text-gray-500 mb-1">審查結果</p>
                 <Badge
                   className={`${
-                    reviewResult === "approved"
+                    isPassed || reviewResult === "approved"
                       ? "bg-green-100 text-green-700"
                       : reviewResult === "needs-revision"
                         ? "bg-orange-100 text-orange-700"
                         : "bg-gray-100 text-gray-700"
                   }`}
                 >
-                  {reviewResult === "approved"
-                    ? "通過"
-                    : reviewResult === "needs-revision"
-                      ? "需補件"
-                      : "待審查"}
+                  {isPassed
+                    ? "審查通過"
+                    : reviewResult === "approved"
+                      ? "通過"
+                      : reviewResult === "needs-revision"
+                        ? "需補件"
+                        : "待審查"}
                 </Badge>
               </div>
               <DropdownMenu>
@@ -374,15 +378,32 @@ export default function ReviewDetailPage({
             </div>
           </div>
         )}
-        {stage === "pending-announcement" && (
+        {stage === "ministry-review" && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
                 <FileText className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <h3 className="font-medium text-amber-900">待公告階段</h3>
-                <p className="text-base text-amber-700">此案件已通過所有審查，等待正式公告。</p>
+                <h3 className="font-medium text-amber-900">醫事司審查階段</h3>
+                <p className="text-base text-amber-700">
+                  RRC 大會已通過，由醫事司就格式、法規引用及文字做最後把關；如有可修正處可退件，否則審查通過。
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {stage === "passed" && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-green-900">審查通過</h3>
+                <p className="text-base text-green-700">
+                  此案件已審查通過、離開審查作業區，交由公告管理辦理公告前置作業；此處僅供檢視。
+                </p>
               </div>
             </div>
           </div>
@@ -509,9 +530,18 @@ export default function ReviewDetailPage({
             </Tabs>
           </div>
 
-          {/* Right Sidebar - Review Actions */}
+          {/* Right Sidebar - Review Actions（審查通過為真唯讀：不 render 任何變更狀態的控制） */}
           <div className="space-y-4">
+            {isPassed && (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                <p className="text-base font-medium text-green-900">審查通過</p>
+                <p className="mt-1 text-sm text-green-700">
+                  本案已完成醫事司審查、離開審查作業區，交由公告管理辦理公告前置作業。此頁僅供檢視，無審查操作。
+                </p>
+              </div>
+            )}
             {/* Review Result Selection */}
+            {!isPassed && (
             <div className="bg-white rounded-lg border shadow-sm p-4">
               <Label className="text-sm font-medium mb-3 block">審查結果 <span className="text-destructive">*</span></Label>
               <Select value={reviewResult} onValueChange={handleResultChange}>
@@ -531,6 +561,7 @@ export default function ReviewDetailPage({
                 選擇審查結果，文件會在批次推進時統一進入下一階段。
               </p>
             </div>
+            )}
 
             {/* Group Review Files (only shown in RRC review stage for two-stage documents) */}
             {showGroupReviewFiles && (
@@ -562,6 +593,7 @@ export default function ReviewDetailPage({
             )}
 
             {/* Review Comment */}
+            {!isPassed && (
             <div className="bg-white rounded-lg border shadow-sm p-4">
               <Label htmlFor="review-comment" className="text-sm font-medium">
                 審查評語
@@ -584,8 +616,10 @@ export default function ReviewDetailPage({
                 儲存評語
               </Button>
             </div>
+            )}
 
             {/* Meeting Minutes Upload */}
+            {!isPassed && (
             <div className="bg-white rounded-lg border shadow-sm p-4">
               <Label className="text-sm font-medium">
                 {isRRCReviewStage ? "RRC 大會會議記錄" : isGroupReviewStage ? "分組會議記錄" : "會議記錄檔案"}
@@ -647,6 +681,7 @@ export default function ReviewDetailPage({
                 </p>
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>

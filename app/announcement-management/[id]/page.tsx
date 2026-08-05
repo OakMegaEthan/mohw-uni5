@@ -34,7 +34,6 @@ import {
   toRocDate,
   unpublishAnnouncement,
 } from "@/lib/mock/announcements"
-import { downloadAnnouncementDocument, downloadCaseList } from "@/lib/announcement-export"
 
 export default function AnnouncementDetailPage() {
   const params = useParams<{ id: string }>()
@@ -104,12 +103,12 @@ export default function AnnouncementDetailPage() {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => downloadAnnouncementDocument(a)}>
+          <Button variant="outline" className="gap-2" onClick={() => toast.info("公告文稿下載由後端產出（mock 示意）")}>
             <Download className="h-4 w-4" />
             匯出文稿
           </Button>
           {a.cases.length > 0 && (
-            <Button variant="outline" className="gap-2" onClick={() => downloadCaseList(a)}>
+            <Button variant="outline" className="gap-2" onClick={() => toast.info("涵蓋案件名單下載由後端產出（mock 示意）")}>
               <Table2 className="h-4 w-4" />
               匯出名單
             </Button>

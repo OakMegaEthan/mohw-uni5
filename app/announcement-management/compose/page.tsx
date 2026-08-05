@@ -38,10 +38,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  attachCasesToDraft,
+  publishReferencedCases,
   getPendingCasesByIds,
   getSourceConfig,
-  markCasesAnnounced,
   PENDING_SOURCES,
   type PendingCase,
 } from "@/lib/mock/announcement-cases"
@@ -59,7 +58,6 @@ import {
   type AnnouncementCategory,
   type AnnouncementCaseRef,
 } from "@/lib/mock/announcements"
-import { downloadAnnouncementDocument, downloadCaseList } from "@/lib/announcement-export"
 
 const YEAR_OPTIONS = ["115 年度", "116 年度", "114 年度"]
 
@@ -126,7 +124,8 @@ function ComposeInner() {
   const mixedDetails = useMemo(() => [...new Set(cases.map((c) => c.detail))], [cases])
 
   const isScheduled = Boolean(publishDate && publishDate > TODAY_ISO)
-  const canPublishNow = docNumber.trim().length > 0 && title.trim().length > 0 && content.trim().length > 0
+  // 系統內公告本身不需文號（文號在各案件的公告檔案上）；標題與內容為必填即可發布
+  const canPublishNow = title.trim().length > 0 && content.trim().length > 0
 
   const previewAnnouncement = (): Announcement => ({
     id: draftId ?? "preview",
@@ -166,16 +165,14 @@ function ComposeInner() {
     correctionOf: existing?.correctionOf ?? null,
   })
 
-  /** 儲存草稿並鎖定案件；回傳草稿 id */
+  /** 儲存系統內公告草稿；回傳草稿 id */
   const persist = (): string => {
     if (draftId) {
       updateAnnouncement(draftId, collectInput())
-      attachCasesToDraft(cases.map((c) => c.caseId), draftId)
       return draftId
     }
     const draft = createDraft(collectInput())
     setDraftId(draft.id)
-    attachCasesToDraft(cases.map((c) => c.caseId), draft.id)
     return draft.id
   }
 
@@ -186,23 +183,22 @@ function ComposeInner() {
     }
     const id = persist()
     toast.success("草稿已儲存", {
-      description: cases.length
-        ? `涵蓋 ${cases.length} 筆案件，狀態已轉為「公告編製中」`
-        : "可稍後回來繼續編輯",
+      description: cases.length ? `引用 ${cases.length} 份公告檔案` : "可稍後回來繼續編輯",
     })
     router.push(`/announcement-management/${id}`)
   }
 
   const handlePublish = () => {
     if (!canPublishNow) {
-      toast.error("尚不能發布", { description: "標題、內容與公文文號皆為必填" })
+      toast.error("尚不能發布", { description: "標題與內容為必填" })
       return
     }
     const id = persist()
     publishAnnouncement(id)
-    if (!isScheduled) markCasesAnnounced(cases.map((c) => c.caseId), id)
-    toast.success(isScheduled ? `已排程於 ${toRocDate(publishDate)} 上架` : "公告已發布", {
-      description: cases.length ? `${cases.length} 筆案件已回寫公告資訊` : undefined,
+    // 發布即引用所選（已製作）公告檔案 → 這些案件變「已公告」
+    if (!isScheduled) publishReferencedCases(cases.map((c) => c.caseId), id, publishDate || TODAY_ISO)
+    toast.success(isScheduled ? `已排程於 ${toRocDate(publishDate)} 上架` : "系統內公告已發布", {
+      description: cases.length ? `已引用 ${cases.length} 份公告檔案，對應案件轉為已公告` : undefined,
     })
     router.push(`/announcement-management/${id}`)
   }
@@ -261,7 +257,7 @@ function ComposeInner() {
           <Button
             variant="outline"
             className="gap-2"
-            onClick={() => downloadAnnouncementDocument(previewAnnouncement())}
+            onClick={() => toast.info("公告文稿下載由後端產出（mock 示意）")}
           >
             <Download className="h-4 w-4" />
             匯出文稿
@@ -270,7 +266,7 @@ function ComposeInner() {
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => downloadCaseList(previewAnnouncement())}
+              onClick={() => toast.info("涵蓋案件名單下載由後端產出（mock 示意）")}
             >
               <Table2 className="h-4 w-4" />
               匯出名單
@@ -625,9 +621,7 @@ function ComposeInner() {
         {/* 操作 */}
         <div className="flex flex-wrap items-center justify-end gap-3 pb-4">
           {!canPublishNow && (
-            <p className="mr-auto text-base text-amber-700">
-              {docNumber.trim() ? "標題與內容為必填" : "填入公文文號後才能發布"}
-            </p>
+            <p className="mr-auto text-base text-amber-700">標題與內容為必填</p>
           )}
           <Button asChild variant="outline">
             <Link href="/announcement-management/pending">取消</Link>

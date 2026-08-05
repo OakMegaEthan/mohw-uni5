@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { ChevronRight, ArrowRight, AlertCircle, Undo2 } from "lucide-react"
+import { ChevronRight, ArrowRight, AlertCircle, CheckCircle2, Undo2 } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,17 +18,20 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
+  PASSED_BUCKET,
   RETURNED_BUCKET,
   advanceQuotaReviewSocieties,
   getAdvanceCheckStatsForQuota,
   getHospitalQuotaSocieties,
   getHospitalQuotaStageConfig,
   getNextQuotaReviewStage,
+  getPassedSocieties,
   getQuotaReviewStageUnit,
   quotaReviewStages,
   type HospitalQuotaReviewSociety,
   type QuotaReviewStage,
 } from "@/lib/mock/review-hospital-quota"
+import { CASE_DOC_STATUS_CONFIG, getCaseDocStatus, getPendingCase } from "@/lib/mock/announcement-cases"
 
 /**
  * 容額填報審查列表（醫策會／RRC／醫事司視角）。
@@ -48,8 +51,12 @@ export default function HospitalQuotaReviewPage() {
   const inStage = (stage: QuotaReviewStage) =>
     societies.filter((s) => s.stage === stage && s.returnedFrom === null)
   const returnedSocieties = societies.filter((s) => s.returnedFrom !== null)
+  const passedSocieties = getPassedSocieties()
 
-  const activeStage = activeTab === RETURNED_BUCKET.value ? null : (activeTab as QuotaReviewStage)
+  const activeStage =
+    activeTab === RETURNED_BUCKET.value || activeTab === PASSED_BUCKET.value
+      ? null
+      : (activeTab as QuotaReviewStage)
   const nextStage = activeStage ? getNextQuotaReviewStage(activeStage) : null
   const advanceStats = useMemo(
     () => (activeStage ? getAdvanceCheckStatsForQuota(activeStage) : null),
@@ -217,13 +224,79 @@ export default function HospitalQuotaReviewPage() {
     </Card>
   )
 
+  // 已審結（審查通過）：唯讀歸檔。案件已交棒公告管理，此處可回查審查歷程與文件，
+  // 並顯示其公告端狀態（待公告／公告編製中／已公告）。
+  const renderPassedTable = () => (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">#</TableHead>
+              <TableHead>醫學會名稱</TableHead>
+              <TableHead className="w-28">年度</TableHead>
+              <TableHead className="w-40">公告狀態</TableHead>
+              <TableHead className="w-36 text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {passedSocieties.length > 0 ? (
+              passedSocieties.map((society, index) => {
+                const pending = getPendingCase(`quota-${society.id}`)
+                return (
+                  <TableRow key={society.id}>
+                    <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                    <TableCell className="font-medium">{society.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-sm">
+                        {society.year}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {pending ? (
+                        <Badge className={`text-sm ${CASE_DOC_STATUS_CONFIG[getCaseDocStatus(pending)].color}`}>
+                          {CASE_DOC_STATUS_CONFIG[getCaseDocStatus(pending)].label}
+                        </Badge>
+                      ) : (
+                        <Badge className="border-green-200 bg-green-100 text-sm text-green-800">
+                          已公告
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild size="sm" variant="outline">
+                        <Link
+                          href={`/review/hospital-quota/${society.id}`}
+                          className="flex items-center gap-2"
+                        >
+                          檢視審查
+                          <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="py-12 text-center text-base text-gray-500">
+                  目前沒有已審結的案件
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">容額填報審查</h1>
           <p className="mt-1 text-base text-gray-500">
-            審查 25 個醫學會提交的訓練醫院容額分配，依階段推進至公告
+            審查 25 個醫學會提交的訓練醫院容額分配；醫事司審查後點「審查通過」，案件即交棒公告管理
           </p>
         </div>
 
@@ -245,6 +318,16 @@ export default function HospitalQuotaReviewPage() {
               {RETURNED_BUCKET.label}
               <Badge variant="secondary" className="ml-1">
                 {returnedSocieties.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger
+              value={PASSED_BUCKET.value}
+              className="flex items-center gap-2 px-5 text-base"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              {PASSED_BUCKET.label}
+              <Badge variant="secondary" className="ml-1">
+                {passedSocieties.length}
               </Badge>
             </TabsTrigger>
           </TabsList>
@@ -275,7 +358,7 @@ export default function HospitalQuotaReviewPage() {
                       disabled={(advanceStats?.societies.length ?? 0) === 0}
                     >
                       <ArrowRight className="h-4 w-4" />
-                      推進至{nextForTab}
+                      {nextForTab === "審查通過" ? "審查通過（送公告）" : `推進至${nextForTab}`}
                     </Button>
                   )}
                 </div>
@@ -292,6 +375,20 @@ export default function HospitalQuotaReviewPage() {
               </p>
             </div>
             {renderReturnedTable()}
+          </TabsContent>
+
+          <TabsContent value={PASSED_BUCKET.value}>
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+              <p className="text-base text-green-800">
+                以下案件已審查通過、離開審查作業區，交由公告管理辦理公告前置作業。此處唯讀，
+                可回查當初的審查歷程與文件；辦理公告請至
+                <Link href="/announcement-management/pending" className="font-medium underline">
+                  公告管理
+                </Link>
+                。
+              </p>
+            </div>
+            {renderPassedTable()}
           </TabsContent>
         </Tabs>
 

@@ -72,7 +72,8 @@ export default function HospitalQuotaDetailPage({
   } = detail
 
   const isReturned = society.returnedFrom !== null
-  const isAnnounced = society.stage === "已公告"
+  // 審查通過＝審查作業終點：案件已交棒公告管理，於審查端唯讀（列於已審結）
+  const isPassed = society.stage === "審查通過"
 
   // 聯合申請組合的色帶，與填報端同一套配色
   const groupColors: Record<string, string> = {}
@@ -146,11 +147,11 @@ export default function HospitalQuotaDetailPage({
           </div>
         )}
 
-        {/* 已公告：唯讀 */}
-        {isAnnounced && (
+        {/* 審查通過（已審結）：唯讀 */}
+        {isPassed && (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
             <p className="text-base text-green-800">
-              本案已公告，內容為最終核定結果，僅供檢視。
+              本案已審查通過，交由公告管理辦理公告前置作業；審查內容為最終核定結果，僅供檢視。
             </p>
           </div>
         )}
@@ -536,8 +537,8 @@ export default function HospitalQuotaDetailPage({
           )
         })()}
 
-        {/* 審查操作區：已公告為最終結果，不再提供審查操作 */}
-        {!isAnnounced && (
+        {/* 審查操作區：審查通過為終點，不再提供審查操作 */}
+        {!isPassed && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">審查操作</CardTitle>

@@ -6,12 +6,14 @@
 //
 // 唯一鍵為 id（申請項目 uid）：同一醫院可在不同分科各自申請，故不以醫院為鍵。
 
-export type AdditionalQuotaStage = "待審查" | "待公告" | "已公告"
+// 全線一致（見 docs/business-logic.md「公告管理」）：外加容額案件審查終點為「審查通過」，
+// 由醫事司登錄審查結果那一刻達成。公告本身移至公告管理辦理，故案件階段不含待公告／已公告；
+// 「是否已公告」改由 announcementDate 是否有值判斷（見 isAdditionalQuotaAnnounced）。
+export type AdditionalQuotaStage = "待審查" | "審查通過"
 
 export const ADDITIONAL_QUOTA_STAGE_CONFIG: Record<AdditionalQuotaStage, { color: string; label: string }> = {
   待審查: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "待審查" },
-  待公告: { color: "bg-amber-100 text-amber-700 border-amber-200", label: "待公告" },
-  已公告: { color: "bg-green-100 text-green-700 border-green-200", label: "已公告" },
+  審查通過: { color: "bg-green-100 text-green-700 border-green-200", label: "審查通過" },
 }
 
 export interface QuotaAttachment {
@@ -59,9 +61,8 @@ export interface AdditionalQuotaApplication {
   approvedQuota: number | null
   reviewComment: string
   reviewMinutes: QuotaAttachment[]
-  // 公告（已公告階段才有）
-  announcementDate: string | null
-  announcementNumber: string | null
+  // 全線一致：外加容額案件到「審查通過」為終點，公告（含文號）由公告管理獨佔，
+  // 案件身上不帶公告欄位。是否已公告改由公告管理反查（見 announcement-cases.isCaseAnnounced）。
 }
 
 // 分類原則的可維護選項。名稱以字串存放（申請案存名稱），另帶「需成果報告」開關：
@@ -124,7 +125,6 @@ function buildPreviousPeriod(specialty: string, quota: number): PreviousPeriod {
 // 讓列表的表格、篩選與排序有足夠資料展示
 function generateApplications(): AdditionalQuotaApplication[] {
   const principles = DEFAULT_CLASSIFICATION_PRINCIPLES
-  const stages: AdditionalQuotaStage[] = ["待審查", "待公告", "已公告"]
   const apps: AdditionalQuotaApplication[] = []
   let seq = 0
 
@@ -135,7 +135,8 @@ function generateApplications(): AdditionalQuotaApplication[] {
       seq++
       const hospitalName = HOSPITALS[h]
       const specialty = SPECIALTIES[(h + s) % SPECIALTIES.length]
-      const stage = stages[seq % 3]
+      // 約 1/3 待審查、2/3 審查通過；審查通過者半數已由公告管理公告（有 announcementDate）
+      const stage: AdditionalQuotaStage = seq % 3 === 0 ? "待審查" : "審查通過"
       const requested = 2 + (seq % 4)
       const approvedBase = 8 + (seq % 6)
       const limit = approvedBase + 6 + (seq % 4)
@@ -146,8 +147,7 @@ function generateApplications(): AdditionalQuotaApplication[] {
       const day = 5 + (seq % 20)
       const mm = String(month).padStart(2, "0")
       const dd = String(day).padStart(2, "0")
-      const reviewed = stage !== "待審查"
-      const announced = stage === "已公告"
+      const reviewed = stage === "審查通過"
 
       apps.push({
         id: `aq-${String(seq).padStart(3, "0")}`,
@@ -182,8 +182,6 @@ function generateApplications(): AdditionalQuotaApplication[] {
         reviewMinutes: reviewed
           ? [{ id: `${seq}-m1`, name: "115年度外加容額審查會議紀錄.pdf", size: "1.5 MB" }]
           : [],
-        announcementDate: announced ? `115/0${month}/28` : null,
-        announcementNumber: announced ? `衛部醫字第115${String(1670000 + seq)}號` : null,
       })
     }
   }
@@ -205,7 +203,8 @@ export function getSpecialtyOptions(): string[] {
   return [...new Set(SPECIALTIES)]
 }
 
-/** 待審查階段可編輯申請內容；待公告與已公告僅供檢視。 */
+/** 待審查階段可編輯申請內容；審查通過後僅供檢視。 */
 export function isAdditionalQuotaEditable(stage: AdditionalQuotaStage): boolean {
   return stage === "待審查"
 }
+

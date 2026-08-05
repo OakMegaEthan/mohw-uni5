@@ -1,7 +1,14 @@
 import {
-  ADDITIONAL_QUOTA_APPLICATIONS,
+  getAdditionalQuotaApplication,
   principleRequiresReport,
 } from "@/lib/mock/additional-quota"
+import { getPendingCasesBySource, isCaseAnnounced } from "@/lib/mock/announcement-cases"
+
+/** 民國日期字串：西元 ISO → 民國 yyy/mm/dd */
+function isoToRoc(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  return m ? `${Number(m[1]) - 1911}/${m[2]}/${m[3]}` : iso
+}
 
 // 外加容額成果報告的 mock 來源（醫事司＋醫策會共用的獨立模組）。
 //
@@ -53,23 +60,29 @@ function buildReports(hospitalName: string, specialty: string): AqOutcomeReportF
   ]
 }
 
-// 由外加容額申請案衍生：已公告 + 分類原則需報告
-const CASES: AqOutcomeReportCase[] = ADDITIONAL_QUOTA_APPLICATIONS.filter(
-  (a) => a.stage === "已公告" && principleRequiresReport(a.classificationPrinciple),
-).map((a, i) => {
-  const status: OutcomeReportReviewStatus = i % 2 === 0 ? "待審查" : "已歸檔"
-  const archived = status === "已歸檔"
-  return {
-    applicationId: a.id,
-    hospitalName: a.hospitalName,
-    specialty: a.specialty,
-    classificationPrinciple: a.classificationPrinciple,
-    announcementDate: a.announcementDate ?? "—",
-    ministryDocNumber: a.ministryDocNumber,
-    announcementNumber: a.announcementNumber ?? "—",
-    approvedQuota: a.approvedQuota ?? 0,
-    status,
-    reports: buildReports(a.hospitalName, a.specialty),
+// 反查公告管理：外加容額案件的公告檔案被引用發布過（isCaseAnnounced）＝已公告；
+// 再交叉申請案的分類原則是否需報告。公告文號／日期取自案件的公告檔案（officialDoc），
+// 不再讀申請案身上的公告欄位（全線一致，公告資料由公告管理獨佔）。
+const CASES: AqOutcomeReportCase[] = getPendingCasesBySource("additional-quota")
+  .filter(isCaseAnnounced)
+  .map((c) => ({ c, app: getAdditionalQuotaApplication(c.id.replace("aq-case-", "")) }))
+  .filter(({ app }) => app && principleRequiresReport(app.classificationPrinciple))
+  .map(({ c, app }, i) => {
+    const a = app!
+    const firstEntry = c.officialDoc!.entries[0]
+    const status: OutcomeReportReviewStatus = i % 2 === 0 ? "待審查" : "已歸檔"
+    const archived = status === "已歸檔"
+    return {
+      applicationId: a.id,
+      hospitalName: a.hospitalName,
+      specialty: a.specialty,
+      classificationPrinciple: a.classificationPrinciple,
+      announcementDate: isoToRoc(firstEntry.date),
+      ministryDocNumber: a.ministryDocNumber,
+      announcementNumber: firstEntry.docNumber,
+      approvedQuota: a.approvedQuota ?? 0,
+      status,
+      reports: buildReports(a.hospitalName, a.specialty),
     mohwComment: archived
       ? `${a.hospitalName}${a.specialty}外加容額執行一年，訓練成效符合預期，成果報告內容完整，同意歸檔備查。`
       : "",

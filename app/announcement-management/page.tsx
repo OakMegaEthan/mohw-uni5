@@ -33,7 +33,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { getTotalPendingCount, releaseDraftCases } from "@/lib/mock/announcement-cases"
+import { getTotalPendingCount } from "@/lib/mock/announcement-cases"
 import {
   ANNOUNCEMENT_CATEGORIES,
   ANNOUNCEMENT_STATUS_CONFIG,
@@ -45,7 +45,6 @@ import {
   unpublishAnnouncement,
   type AnnouncementStatus,
 } from "@/lib/mock/announcements"
-import { downloadAnnouncementDocument } from "@/lib/announcement-export"
 
 const STATUS_OPTIONS: AnnouncementStatus[] = ["草稿", "已排程", "已發布", "已下架"]
 
@@ -96,11 +95,10 @@ export default function AnnouncementListPage() {
 
   const handleDelete = () => {
     if (!deleteTarget) return
-    releaseDraftCases(deleteTarget)
     deleteDraft(deleteTarget)
     setDeleteTarget(null)
     forceUpdate((n) => n + 1)
-    toast.success("草稿已刪除", { description: "其收錄的案件已釋回待公告池" })
+    toast.success("草稿已刪除")
   }
 
   return (
@@ -258,7 +256,7 @@ export default function AnnouncementListPage() {
                               </DropdownMenuItem>
                             </>
                           )}
-                          <DropdownMenuItem onClick={() => downloadAnnouncementDocument(a)}>
+                          <DropdownMenuItem onClick={() => toast.info("公告文稿下載由後端產出（mock 示意）")}>
                             <Download className="h-4 w-4" />
                             匯出文稿
                           </DropdownMenuItem>
@@ -289,7 +287,7 @@ export default function AnnouncementListPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>刪除公告草稿？</AlertDialogTitle>
             <AlertDialogDescription className="text-base">
-              草稿刪除後無法復原，其收錄的案件會釋回待公告池，可重新彙整。
+              草稿刪除後無法復原。（不影響已製作的公告檔案）
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

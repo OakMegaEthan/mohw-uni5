@@ -160,7 +160,7 @@ export function QuotaFilingView({
   // 由階段推導既有的唯讀／退件旗標，沿用元件內既有的 disabled={isSubmitted} plumbing：
   //   退件（returnedFrom 有值）→ 可編輯、顯示退件橫幅
   //   待送件 → 可編輯
-  //   其餘審查/待公告/已公告階段 → 唯讀
+  //   其餘審查階段／審查通過 → 唯讀
   const isReturned = returnedFrom !== null
   const isSubmitted = !isQuotaFilingEditable(stage, isReturned)
 
@@ -1980,7 +1980,7 @@ export function QuotaFilingView({
         {isSubmitted ? (
           <Button disabled className="gap-2">
             <Send className="h-4 w-4" />
-            {stage === "待公告" ? "待公告" : stage === "已公告" ? "已公告" : "審查中"}
+            {stage === "審查通過" ? "審查通過" : "審查中"}
           </Button>
         ) : (
           <Button
