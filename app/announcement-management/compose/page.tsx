@@ -4,9 +4,12 @@
 //   來源案件 → 公告內容（可插入自動生成的名單表）→ 附件（自案件帶入＋自行上傳）→ 預覽
 //
 // 三種進入方式：
-//   ?cases=id1,id2&source=xxx  自待公告工作台彙整
+//   ?cases=id1,id2&source=xxx  自公告文件製作工作台帶入（捷徑）
 //   ?id=a-100                  編輯既有草稿
-//   （無參數）                  醫事司自建公告（作業時程、說明會通知等）
+//   （無參數）                  自本頁「加選公告文件」挑選，或醫事司自建公告（作業時程、說明會等）
+//
+// 本頁可獨立完成整份公告：不必先去工作台，直接於「一、引用的公告文件」挑選已製作、
+// 尚未被其他公告引用的文件。工作台的「帶入」只是同一件事的捷徑。
 //
 // 公文文號為人工輸入字串，沒有文號不得發布（客戶確認）。案件在「儲存草稿」時才鎖定為
 // 公告編製中，避免使用者只是點進來看看就把案件鎖住。
@@ -32,6 +35,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -40,6 +51,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   publishReferencedCases,
   getPendingCasesByIds,
+  getProducedUnpublishedCases,
   getSourceConfig,
   PENDING_SOURCES,
   type PendingCase,
@@ -108,6 +120,39 @@ function ComposeInner() {
     existing?.attachments.map((f) => ({ ...f })) ?? [],
   )
 
+  // 加選公告文件：候選＝已製作且尚未被任何已發布公告引用者，扣除本份已引用的
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerSelected, setPickerSelected] = useState<string[]>([])
+  const [pickerSource, setPickerSource] = useState<string>("all")
+  const [pickerKeyword, setPickerKeyword] = useState("")
+
+  const pickerCandidates = useMemo(() => {
+    const referenced = new Set(cases.map((c) => c.caseId))
+    const q = pickerKeyword.trim().toLowerCase()
+    return getProducedUnpublishedCases()
+      .filter((c) => !referenced.has(c.id))
+      .filter((c) => (pickerSource === "all" ? true : c.sourceModule === pickerSource))
+      .filter((c) =>
+        q === ""
+          ? true
+          : `${c.specialty}${c.subject}${c.detail}${lastDocNumber(c) ?? ""}`.toLowerCase().includes(q),
+      )
+  }, [cases, pickerSource, pickerKeyword])
+
+  const openPicker = () => {
+    setPickerSelected([])
+    setPickerSource("all")
+    setPickerKeyword("")
+    setPickerOpen(true)
+  }
+
+  const confirmPicker = () => {
+    const added = getPendingCasesByIds(pickerSelected).map(toCaseRef)
+    setCases((prev) => [...prev, ...added])
+    setPickerOpen(false)
+    toast.success(`已加入 ${added.length} 份公告文件`)
+  }
+
   // 來源案件既有的檔案，可勾選帶入（快照：帶入後案件端再異動不影響已發布公告）
   const caseAttachmentCandidates = useMemo(
     () =>
@@ -124,8 +169,14 @@ function ComposeInner() {
   const mixedDetails = useMemo(() => [...new Set(cases.map((c) => c.detail))], [cases])
 
   const isScheduled = Boolean(publishDate && publishDate > TODAY_ISO)
-  // 系統內公告本身不需文號（文號在各案件的公告檔案上）；標題與內容為必填即可發布
-  const canPublishNow = title.trim().length > 0 && content.trim().length > 0
+  // 文號的歸屬依公告型態而不同（決策 #1「沒有文號不得發布」在新模型下的落點）：
+  //   引用型（有引用公告文件）→ 文號在各文件上，製作文件時已強制輸入，本頁不再要一個
+  //   自建型（無引用文件，如作業時程公告）→ 公告本身就是公文，其文號為必填
+  const isSelfIssued = cases.length === 0
+  const canPublishNow =
+    title.trim().length > 0 &&
+    content.trim().length > 0 &&
+    (!isSelfIssued || docNumber.trim().length > 0)
 
   const previewAnnouncement = (): Announcement => ({
     id: draftId ?? "preview",
@@ -235,11 +286,11 @@ function ComposeInner() {
   return (
     <PageContainer>
       <Link
-        href="/announcement-management/pending"
+        href="/announcement-management"
         className="mb-4 inline-flex items-center gap-1 text-base text-blue-600 hover:text-blue-800"
       >
         <ArrowLeft className="h-4 w-4" />
-        返回待公告案件
+        返回站內公告管理
       </Link>
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -249,8 +300,8 @@ function ComposeInner() {
           </h1>
           <p className="mt-1 text-base text-gray-600">
             {cases.length > 0
-              ? `本份公告彙整 ${cases.length} 筆審查完成案件`
-              : "醫事司自建公告（未彙整案件）"}
+              ? `本份公告引用 ${cases.length} 份已製作的官網公告文件`
+              : "醫事司自建公告（未引用公告文件）"}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -279,18 +330,17 @@ function ComposeInner() {
         {/* 一、來源案件 */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">一、涵蓋案件（{cases.length}）</CardTitle>
-            <Button asChild variant="outline" size="sm" className="gap-1">
-              <Link href="/announcement-management/pending">
-                <Plus className="h-4 w-4" />
-                自工作台加選
-              </Link>
+            <CardTitle className="text-lg">一、引用的公告文件（{cases.length}）</CardTitle>
+            <Button variant="outline" size="sm" className="gap-1" onClick={openPicker}>
+              <Plus className="h-4 w-4" />
+              加選公告文件
             </Button>
           </CardHeader>
           <CardContent>
             {cases.length === 0 ? (
               <p className="py-4 text-base text-gray-500">
-                未彙整案件。此份為醫事司自建公告（例如作業時程、說明會通知）。
+                尚未引用任何公告文件。可按右上「加選公告文件」挑選已製作的文件，
+                或直接發布為醫事司自建公告（例如作業時程、說明會通知）。
               </p>
             ) : (
               <div className="space-y-3">
@@ -310,7 +360,7 @@ function ComposeInner() {
                         <TableHead>來源</TableHead>
                         <TableHead>主體</TableHead>
                         <TableHead>項目</TableHead>
-                        <TableHead className="w-36">審查通過日</TableHead>
+                        <TableHead className="w-56">公告文號</TableHead>
                         <TableHead className="w-20 text-right">移除</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -327,7 +377,7 @@ function ComposeInner() {
                           </TableCell>
                           <TableCell className="text-base text-gray-700">{c.detail}</TableCell>
                           <TableCell className="text-base text-gray-600">
-                            {toRocDate(c.approvedDate)}
+                            {c.docNumber ?? "—"}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
@@ -437,22 +487,42 @@ function ComposeInner() {
             <CardTitle className="text-lg">三、公文資訊與發布設定</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="doc-number" className="text-base">
-                公文文號 *
-              </Label>
-              <Input
-                id="doc-number"
-                value={docNumber}
-                onChange={(e) => setDocNumber(e.target.value)}
-                className="h-11"
-                placeholder="例：衛部醫字第 1151660321 號"
-              />
-              <p className="flex items-start gap-1.5 text-sm text-gray-500">
-                <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                文號由公文系統核發，本系統僅記錄不做驗證。<span className="font-medium">沒有文號不得發布。</span>
-              </p>
-            </div>
+            {isSelfIssued ? (
+              <div className="space-y-2">
+                <Label htmlFor="doc-number" className="text-base">
+                  公文文號 *
+                </Label>
+                <Input
+                  id="doc-number"
+                  value={docNumber}
+                  onChange={(e) => setDocNumber(e.target.value)}
+                  className="h-11"
+                  placeholder="例：衛部醫字第 1151660321 號"
+                />
+                <p className="flex items-start gap-1.5 text-sm text-gray-500">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  本份為醫事司自建公告，公告本身即公文。文號由公文系統核發，本系統僅記錄不做驗證。
+                  <span className="font-medium">沒有文號不得發布。</span>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-base">公文文號</Label>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <ul className="space-y-1">
+                    {cases.map((c) => (
+                      <li key={c.caseId} className="text-base text-gray-800">
+                        {c.subject}　{c.docNumber ?? "（未製作）"}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <p className="flex items-start gap-1.5 text-sm text-gray-500">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  文號掛在各份官網公告文件上（製作文件時輸入），本份公告不另設文號。
+                </p>
+              </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
@@ -596,7 +666,9 @@ function ComposeInner() {
               <h2 className="text-xl font-bold text-gray-900">{title || "（未填標題）"}</h2>
               <div className="mt-2 flex flex-wrap gap-4 text-base text-gray-600">
                 <span>發文日期：{toRocDate(issueDate || null)}</span>
-                <span>發文字號：{docNumber || "（未填）"}</span>
+                <span>
+                  發文字號：{isSelfIssued ? docNumber || "（未填）" : `見引用之 ${cases.length} 份公告文件`}
+                </span>
                 {effectiveDate && <span>生效日期：{toRocDate(effectiveDate)}</span>}
               </div>
               <div className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-gray-800">
@@ -621,10 +693,12 @@ function ComposeInner() {
         {/* 操作 */}
         <div className="flex flex-wrap items-center justify-end gap-3 pb-4">
           {!canPublishNow && (
-            <p className="mr-auto text-base text-amber-700">標題與內容為必填</p>
+            <p className="mr-auto text-base text-amber-700">
+              {isSelfIssued ? "標題、內容與公文文號為必填" : "標題與內容為必填"}
+            </p>
           )}
           <Button asChild variant="outline">
-            <Link href="/announcement-management/pending">取消</Link>
+            <Link href="/announcement-management">取消</Link>
           </Button>
           <Button variant="outline" onClick={handleSaveDraft}>
             儲存草稿
@@ -638,8 +712,114 @@ function ComposeInner() {
           </Button>
         </div>
       </div>
+
+      {/* 加選公告文件：候選為已製作、尚未被其他公告引用者。讓本頁不必經由工作台即可組稿。 */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>加選公告文件</DialogTitle>
+            <DialogDescription className="text-base">
+              以下為已製作、尚未被其他站內公告引用的官網公告文件。發布本公告後，選取的文件對應案件將轉為「已公告」。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={pickerSource} onValueChange={setPickerSource}>
+              <SelectTrigger className="h-10 w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部來源</SelectItem>
+                {PENDING_SOURCES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              value={pickerKeyword}
+              onChange={(e) => setPickerKeyword(e.target.value)}
+              placeholder="搜尋科別、主體或文號"
+              className="h-10 w-64"
+            />
+            <span className="ml-auto text-base text-gray-500">
+              已選 {pickerSelected.length} / 共 {pickerCandidates.length} 份
+            </span>
+          </div>
+
+          <div className="max-h-80 overflow-auto rounded-lg border border-gray-200">
+            {pickerCandidates.length === 0 ? (
+              <p className="py-12 text-center text-base text-gray-500">
+                沒有可加選的公告文件。請先至「公告文件製作」製作，或調整篩選條件。
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12" />
+                    <TableHead>科別</TableHead>
+                    <TableHead className="w-32">來源</TableHead>
+                    <TableHead className="w-56">公告文號</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pickerCandidates.map((c) => {
+                    const checked = pickerSelected.includes(c.id)
+                    return (
+                      <TableRow
+                        key={c.id}
+                        className="h-14 cursor-pointer"
+                        onClick={() =>
+                          setPickerSelected((prev) =>
+                            checked ? prev.filter((id) => id !== c.id) : [...prev, c.id],
+                          )
+                        }
+                      >
+                        <TableCell>
+                          <Checkbox checked={checked} aria-label={`選取 ${c.specialty}`} />
+                        </TableCell>
+                        <TableCell className="text-base font-medium text-gray-900">
+                          {c.specialty}
+                          <p className="text-sm font-normal text-gray-500">{c.subject}</p>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-sm">
+                            {getSourceConfig(c.sourceModule).label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-base text-gray-700">
+                          {lastDocNumber(c) ?? "—"}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPickerOpen(false)}>
+              取消
+            </Button>
+            <Button
+              onClick={confirmPicker}
+              disabled={pickerSelected.length === 0}
+              className="bg-[#2d3a8c] hover:bg-[#252f73]"
+            >
+              加入 {pickerSelected.length} 份
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   )
+}
+
+/** 公告文件表頭最新一行的文號（含歷次更正後的最後一筆） */
+function lastDocNumber(c: PendingCase): string | undefined {
+  return c.officialDoc?.entries[c.officialDoc.entries.length - 1]?.docNumber
 }
 
 function toCaseRef(c: PendingCase): AnnouncementCaseRef {
@@ -649,6 +829,7 @@ function toCaseRef(c: PendingCase): AnnouncementCaseRef {
     subject: c.subject,
     detail: c.detail,
     approvedDate: c.approvedDate,
+    docNumber: lastDocNumber(c),
   }
 }
 

@@ -197,7 +197,11 @@ export default function AnnouncementDetailPage() {
           </CardHeader>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="公文文號" value={a.docNumber || "未填"} highlight={!a.docNumber} />
+              <Field
+                label="公文文號"
+                value={a.docNumber || (a.cases.length > 0 ? `見引用之 ${a.cases.length} 份公告文件` : "未填")}
+                highlight={!a.docNumber && a.cases.length === 0}
+              />
               <Field label="發文日期" value={toRocDate(a.issueDate)} />
               <Field label="上架日期" value={toRocDate(a.publishDate)} />
               <Field label="生效／施行日期" value={toRocDate(a.effectiveDate)} />

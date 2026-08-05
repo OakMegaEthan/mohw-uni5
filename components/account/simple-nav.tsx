@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Users, FileText, Megaphone, ShieldCheck } from "lucide-react"
+import { Users, FileText, FilePlus2, Megaphone, ShieldCheck } from "lucide-react"
 
 const navItems = [
   {
@@ -22,7 +22,12 @@ const navItems = [
     icon: ShieldCheck,
   },
   {
-    title: "公告管理",
+    title: "公告文件製作",
+    href: "/announcement-documents",
+    icon: FilePlus2,
+  },
+  {
+    title: "站內公告管理",
     href: "/announcement-management",
     icon: Megaphone,
   },

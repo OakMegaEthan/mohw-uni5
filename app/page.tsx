@@ -1,8 +1,13 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Megaphone, ClipboardCheck, ArrowRight, Globe, BarChart3, Calculator, FileEdit, Settings } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { getCaseDocStatusCounts } from "@/lib/mock/announcement-cases"
+import { Users, ClipboardCheck, ArrowRight, Globe, BarChart3, Calculator, FileEdit, Settings } from "lucide-react"
 
 export default function HomePage() {
+  // 兩個公告模組各自的待辦件數（載入時的快照即可；mock 為 module singleton）
+  const docCounts = getCaseDocStatusCounts()
+
   const reviewDescription = [
     "\u5BE9\u67E5\u91AB\u5B78\u6703\u63D0\u4EA4\u7684",
     "\u586B\u5831\u6587\u4EF6\u8207\u5BB9\u984D\u7533\u8ACB",
@@ -52,7 +57,18 @@ export default function HomePage() {
         { name: "大綱規範管理", href: "/admin/outline-management", description: "管理填報文件的大綱結構與版本" },
         { name: "使用者管理", href: "/account/users", description: "檢視與管理系統使用者" },
         { name: "角色模板管理", href: "/account/role-templates", description: "管理權限角色模板" },
-        { name: "公告管理", href: "/announcement-management", description: "管理公告的新增、編輯、發布與下架" },
+        {
+          name: "公告文件製作",
+          href: "/announcement-documents",
+          description: "為審查通過的案件製作官網公告文件",
+          badge: docCounts["待製作"],
+        },
+        {
+          name: "站內公告管理",
+          href: "/announcement-management",
+          description: "編製並發布站內公告，可引用已製作的公告文件",
+          badge: docCounts["已製作"],
+        },
       ],
     },
     {
@@ -76,13 +92,6 @@ export default function HomePage() {
           description: "\u5354\u52A9\u5206\u7D44\u5BE9\u67E5\u8207 RRC \u5927\u6703\u9032\u884C\u5BB9\u984D\u5206\u914D\u8A0E\u8AD6",
         },
       ],
-    },
-    {
-      title: "\u516C\u544A\u7BA1\u7406",
-      description: "\u7BA1\u7406\u7CFB\u7D71\u516C\u544A\u7684\u65B0\u589E\u3001\u7DE8\u8F2F\u3001\u767C\u5E03\u8207\u4E0B\u67B6",
-      icon: Megaphone,
-      color: "bg-orange-500",
-      pages: [{ name: "\u516C\u544A\u7BA1\u7406", href: "/announcement-management", description: "\u7BA1\u7406\u516C\u544A\u7684\u65B0\u589E\u3001\u7DE8\u8F2F\u3001\u767C\u5E03\u8207\u4E0B\u67B6" }],
     },
     {
       title: "\u516C\u544A\u6B04",
@@ -121,8 +130,13 @@ export default function HomePage() {
                       <Link key={page.href} href={page.href}>
                         <div className="group flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200">
                           <div>
-                            <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                            <div className="flex items-center gap-2 font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                               {page.name}
+                              {"badge" in page && Number(page.badge) > 0 && (
+                                <Badge className="border-amber-200 bg-amber-100 text-amber-800">
+                                  {page.badge}
+                                </Badge>
+                              )}
                             </div>
                             <div className="text-sm text-gray-500">{page.description}</div>
                           </div>

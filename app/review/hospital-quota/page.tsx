@@ -382,7 +382,7 @@ export default function HospitalQuotaReviewPage() {
               <p className="text-base text-green-800">
                 以下案件已審查通過、離開審查作業區，交由公告管理辦理公告前置作業。此處唯讀，
                 可回查當初的審查歷程與文件；辦理公告請至
-                <Link href="/announcement-management/pending" className="font-medium underline">
+                <Link href="/announcement-documents" className="font-medium underline">
                   公告管理
                 </Link>
                 。

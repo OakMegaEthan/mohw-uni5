@@ -480,7 +480,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
               <CardContent className="py-4">
                 <p className="text-base text-gray-700">
                   本案已審查通過。後續公告（含公告文號）由
-                  <Link href="/announcement-management/pending" className="mx-1 text-blue-600 hover:underline">
+                  <Link href="/announcement-documents" className="mx-1 text-blue-600 hover:underline">
                     公告管理
                   </Link>
                   辦理，本頁不再處理公告事務。
