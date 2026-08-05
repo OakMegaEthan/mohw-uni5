@@ -4,18 +4,24 @@ import { use, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ArrowLeft, Building2, Landmark, ClipboardCheck } from "lucide-react"
+import { ArrowLeft, ClipboardCheck } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { MultiFileUpload, type UploadedFile } from "@/components/filing/multi-file-upload"
-import { AQ_OUTCOME_STATUS_CONFIG, getAqOutcomeReportCase } from "@/lib/mock/additional-quota-outcome-report"
+import {
+  AQ_OUTCOME_STATUS_CONFIG,
+  getAqOutcomeReportCase,
+  REVIEWER_UNIT_LABELS,
+  type ReviewerUnit,
+} from "@/lib/mock/additional-quota-outcome-report"
 
 /**
- * 外加容額成果報告詳情。醫事司與醫策會平行審查，各留評論；無「不通過／退回」，
+ * 外加容額成果報告詳情。醫事司或醫策會擇一單位審查、留下評論；無「不通過／退回」，
  * 審查完成即歸檔備查。路由參數 societyId 實為外加容額申請案 id。
  */
 export default function AdditionalQuotaOutcomeReportDetailPage({
@@ -28,8 +34,8 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
   const reportCase = getAqOutcomeReportCase(applicationId)
 
   const [reports, setReports] = useState<UploadedFile[]>(reportCase?.reports ?? [])
-  const [mohwComment, setMohwComment] = useState(reportCase?.mohwComment ?? "")
-  const [jctComment, setJctComment] = useState(reportCase?.jctComment ?? "")
+  const [reviewerUnit, setReviewerUnit] = useState<ReviewerUnit | null>(reportCase?.reviewerUnit ?? null)
+  const [comment, setComment] = useState(reportCase?.comment ?? "")
 
   if (!reportCase) {
     return (
@@ -120,54 +126,51 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
             </CardContent>
           </Card>
 
-          {/* 醫事司與醫策會平行審查評論。mock 不分權限，兩區皆可填。 */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="border-blue-200 bg-blue-50/40">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Landmark className="h-5 w-5 text-blue-600" />
-                  醫事司審查評論
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isArchived ? (
+          {/* 審查評論由醫事司或醫策會擇一單位填寫，故僅一組輸入，另選填寫單位。 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">審查評論</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isArchived ? (
+                <>
+                  <div>
+                    <Label className="mb-2 block text-sm text-muted-foreground">審查單位</Label>
+                    <Badge variant="outline">
+                      {reviewerUnit ? REVIEWER_UNIT_LABELS[reviewerUnit] : "未填寫"}
+                    </Badge>
+                  </div>
                   <p className="whitespace-pre-wrap rounded-lg border bg-white p-3 text-sm text-gray-900">
-                    {mohwComment || "無評論"}
+                    {comment || "無評論"}
                   </p>
-                ) : (
+                </>
+              ) : (
+                <>
+                  <div>
+                    <Label className="mb-2 block text-sm text-muted-foreground">審查單位</Label>
+                    <RadioGroup
+                      value={reviewerUnit ?? undefined}
+                      onValueChange={(v) => setReviewerUnit(v as ReviewerUnit)}
+                      className="flex gap-6"
+                    >
+                      {(Object.keys(REVIEWER_UNIT_LABELS) as ReviewerUnit[]).map((unit) => (
+                        <label key={unit} className="flex items-center gap-2 text-sm text-gray-900">
+                          <RadioGroupItem value={unit} />
+                          {REVIEWER_UNIT_LABELS[unit]}
+                        </label>
+                      ))}
+                    </RadioGroup>
+                  </div>
                   <Textarea
-                    value={mohwComment}
-                    onChange={(e) => setMohwComment(e.target.value)}
-                    placeholder="醫事司就成果報告之審查評論..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="就成果報告之審查評論..."
                     className="min-h-32 bg-white"
                   />
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 bg-slate-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Building2 className="h-5 w-5 text-slate-500" />
-                  醫策會審查評論
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isArchived ? (
-                  <p className="whitespace-pre-wrap rounded-lg border bg-white p-3 text-sm text-gray-900">
-                    {jctComment || "無評論"}
-                  </p>
-                ) : (
-                  <Textarea
-                    value={jctComment}
-                    onChange={(e) => setJctComment(e.target.value)}
-                    placeholder="醫策會就成果報告之審查評論..."
-                    className="min-h-32 bg-white"
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-3">
@@ -179,7 +182,11 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
               <Button variant="outline" onClick={handleSave}>
                 儲存
               </Button>
-              <Button className="bg-[#2d3a8c] text-white hover:bg-[#252f73]" onClick={handleArchive}>
+              <Button
+                className="bg-[#2d3a8c] text-white hover:bg-[#252f73]"
+                onClick={handleArchive}
+                disabled={!reviewerUnit || !comment.trim()}
+              >
                 完成審查並歸檔
               </Button>
             </>

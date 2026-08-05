@@ -13,8 +13,8 @@ function isoToRoc(iso: string): string {
 // 外加容額成果報告的 mock 來源（醫事司＋醫策會共用的獨立模組）。
 //
 // 訓練醫院於外加容額案件公告執行滿一年後，系統外發函給醫事司與醫策會。兩單位系統外
-// 平行協調分工、分工審查，各自留下評論後儲存歸檔。無「不通過／退回」狀態；審查完成
-// 即歸檔，作為該院日後再申請外加容額時的審查依據。
+// 協調分工，實際由其中一方擇一負責審查、留下評論後儲存歸檔（非兩者皆填）。無
+// 「不通過／退回」狀態；審查完成即歸檔，作為該院日後再申請外加容額時的審查依據。
 //
 // 適用案件：分類原則「需成果報告」開啟、且已公告的外加容額案件。
 // （公告滿一年的時點於實際系統判斷；mock 以已公告 + 需報告近似之。）
@@ -47,10 +47,17 @@ export interface AqOutcomeReportCase {
   status: OutcomeReportReviewStatus
   // 訓練醫院提交的成果報告（系統外發函，於系統登錄）
   reports: AqOutcomeReportFile[]
-  // 醫事司與醫策會各自的審查評論（平行、皆可填）
-  mohwComment: string
-  jctComment: string
+  // 審查評論：醫事司或醫策會擇一單位填寫（非兩者皆填），故評論與填寫單位一對一
+  reviewerUnit: ReviewerUnit | null
+  comment: string
   archivedDate: string | null
+}
+
+export type ReviewerUnit = "MOHW" | "JCT"
+
+export const REVIEWER_UNIT_LABELS: Record<ReviewerUnit, string> = {
+  MOHW: "醫事司",
+  JCT: "醫策會",
 }
 
 function buildReports(hospitalName: string, specialty: string): AqOutcomeReportFile[] {
@@ -83,15 +90,15 @@ const CASES: AqOutcomeReportCase[] = getPendingCasesBySource("additional-quota")
       approvedQuota: a.approvedQuota ?? 0,
       status,
       reports: buildReports(a.hospitalName, a.specialty),
-    mohwComment: archived
-      ? `${a.hospitalName}${a.specialty}外加容額執行一年，訓練成效符合預期，成果報告內容完整，同意歸檔備查。`
-      : "",
-    jctComment: archived
-      ? `經醫策會就訓練品質面向審視，${a.specialty}核心課程與師資配置達標，建議留存供後續申請參酌。`
-      : "",
-    archivedDate: archived ? "116/03/15" : null,
-  }
-})
+      reviewerUnit: archived ? (i % 4 === 1 ? "JCT" : "MOHW") : null,
+      comment: !archived
+        ? ""
+        : i % 4 === 1
+          ? `經醫策會就訓練品質面向審視，${a.specialty}核心課程與師資配置達標，建議留存供後續申請參酌。`
+          : `${a.hospitalName}${a.specialty}外加容額執行一年，訓練成效符合預期，成果報告內容完整，同意歸檔備查。`,
+      archivedDate: archived ? "116/03/15" : null,
+    }
+  })
 
 export function getAqOutcomeReportCases(): AqOutcomeReportCase[] {
   return CASES
