@@ -86,9 +86,24 @@ export interface OfficialDoc {
   producedDate: string
 }
 
+/**
+ * 案件類型。外加容額與容額微調共用「外加/微調容額」來源 tab，但公告文件內容不同
+ * （外加＝某院某分科增 N 名；微調＝某醫學會容額調整對照表），故需可區分。
+ */
+export type PendingCaseKind = "additional" | "adjustment" | "document" | "quota"
+
+export const CASE_KIND_CONFIG: Record<PendingCaseKind, { label: string; color: string }> = {
+  additional: { label: "外加容額", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  adjustment: { label: "容額微調", color: "bg-teal-100 text-teal-700 border-teal-200" },
+  document: { label: "文件填報", color: "bg-gray-100 text-gray-700 border-gray-200" },
+  quota: { label: "容額填報", color: "bg-gray-100 text-gray-700 border-gray-200" },
+}
+
 export interface PendingCase {
   id: string
   sourceModule: PendingSourceModule
+  /** 案件類型；同一來源 tab 內可能混有多種（外加 vs 微調） */
+  caseKind: PendingCaseKind
   /** 案件主體：醫學會名稱或醫院名稱 */
   subject: string
   /** 科別（工作台主體欄以此呈現）：醫學會來源＝該會專科，外加容額＝申請分科 */
@@ -150,6 +165,7 @@ function buildFromSubmissions(): PendingCase[] {
         cases.push({
           id: `sub-${docType.id}-${s.societyId}`,
           sourceModule: "submissions",
+          caseKind: "document",
           subject: society.name,
           specialty: SPECIALTY_BY_SOCIETY_ID.get(s.societyId) ?? society.name,
           detail: docType.name,
@@ -173,6 +189,7 @@ function buildFromQuotaFiling(): PendingCase[] {
     .map((s) => ({
       id: `quota-${s.id}`,
       sourceModule: "quota-filing" as const,
+      caseKind: "quota" as const,
       subject: s.name,
       specialty: SPECIALTY_BY_SOCIETY_ID.get(s.id) ?? s.name,
       detail: s.year,
@@ -193,6 +210,7 @@ function buildFromAdditionalQuota(): PendingCase[] {
     .map((a) => ({
       id: `aq-case-${a.id}`,
       sourceModule: "additional-quota" as const,
+      caseKind: "additional" as const,
       subject: a.hospitalName,
       specialty: a.specialty,
       detail: a.specialty,
@@ -215,6 +233,7 @@ function buildFromQuotaAdjustment(): PendingCase[] {
       return {
         id: `adj-case-${c.id}`,
         sourceModule: "additional-quota" as const,
+        caseKind: "adjustment" as const,
         subject: c.societyName,
         specialty: c.specialty,
         detail: `第 ${c.round} 次微調`,

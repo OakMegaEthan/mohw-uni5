@@ -40,6 +40,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
+  CASE_KIND_CONFIG,
   PENDING_SOURCES,
   getCaseDocStatus,
   getPendingCasesBySource,
@@ -47,6 +48,7 @@ import {
   officialCorrectionCount,
   produceOfficialDocs,
   type PendingCase,
+  type PendingCaseKind,
   type PendingSourceModule,
 } from "@/lib/mock/announcement-cases"
 import { TODAY_ISO, toRocDate } from "@/lib/mock/announcements"
@@ -75,12 +77,18 @@ function secondaryValue(c: PendingCase): string {
   return c.sourceModule === "additional-quota" ? c.subject : c.detail
 }
 
+/** 外加/微調容額 tab 混了兩種案件類型，需要欄位與篩選；其餘來源只有一種、不必顯示 */
+function hasMixedKinds(source: PendingSourceModule): boolean {
+  return source === "additional-quota"
+}
+
 export default function AnnouncementDocumentsPage() {
   const router = useRouter()
   const [source, setSource] = useState<PendingSourceModule>("submissions")
   const [stage, setStage] = useState<WorkbenchStage>("待製作")
   const [keyword, setKeyword] = useState("")
   const [specialtyFilter, setSpecialtyFilter] = useState("all")
+  const [kindFilter, setKindFilter] = useState<PendingCaseKind | "all">("all")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [produceOpen, setProduceOpen] = useState(false)
   const [produceDate, setProduceDate] = useState(TODAY_ISO)
@@ -107,13 +115,14 @@ export default function AnnouncementDocumentsPage() {
     return allCases
       .filter((c) => toWorkbenchStage(c) === stage)
       .filter((c) => (specialtyFilter === "all" ? true : c.specialty === specialtyFilter))
+      .filter((c) => (kindFilter === "all" ? true : c.caseKind === kindFilter))
       .filter((c) =>
         keyword.trim() === ""
           ? true
           : `${c.specialty}${secondaryValue(c)}`.toLowerCase().includes(keyword.trim().toLowerCase()),
       )
       .sort((a, b) => a.approvedDate.localeCompare(b.approvedDate))
-  }, [allCases, stage, specialtyFilter, keyword])
+  }, [allCases, stage, specialtyFilter, kindFilter, keyword])
 
   // 待製作全部可勾（批次製作）；已製作分頁只有「尚未發站內公告」的可勾（帶入站內公告）
   const isSelectable = (c: PendingCase) => stage === "待製作" || !c.publishedPostId
@@ -123,10 +132,32 @@ export default function AnnouncementDocumentsPage() {
 
   const selectedCases = useMemo(() => rows.filter((c) => selected.includes(c.id)), [rows, selected])
 
+  // 公告文件內容依案件類型而異：外加＝某院某分科增 N 名；微調＝某醫學會容額調整對照表
+  const selectedKinds = useMemo(
+    () => [...new Set(selectedCases.map((c) => c.caseKind))],
+    [selectedCases],
+  )
+  const mixedKindsSelected = selectedKinds.length > 1
+  const previewKind = selectedKinds[0] ?? "quota"
+  const firstCase = selectedCases[0]
+  const previewTitle =
+    previewKind === "adjustment"
+      ? `衛生福利部 ${firstCase?.year ?? "115 年度"}${firstCase?.specialty ?? "○○科"} 專科醫師訓練醫院訓練容量微調`
+      : previewKind === "additional"
+        ? `衛生福利部 ${firstCase?.year ?? "115 年度"}${firstCase?.specialty ?? "○○科"} 專科醫師訓練醫院外加訓練容額`
+        : `衛生福利部 ${firstCase?.year ?? "115 年度"}${firstCase?.specialty ?? "○○科"} 訓練醫院認定合格名單及訓練容量`
+  const previewBody =
+    previewKind === "adjustment"
+      ? "醫院名稱／所在地／原公告容額／調整後容額／增減 對照表（由系統帶入微調結果）"
+      : previewKind === "additional"
+        ? "醫院名稱／所在地／分類原則／核定外加容額 表（由系統帶入審查結果）"
+        : "醫院名稱／所在地／訓練容量／資格效期 名單表（由系統帶入審查結果）"
+
   const switchSource = (next: PendingSourceModule) => {
     setSource(next)
     setSelectedIds([])
     setSpecialtyFilter("all")
+    setKindFilter("all")
     setKeyword("")
   }
   const switchStage = (next: WorkbenchStage) => {
@@ -238,6 +269,21 @@ export default function AnnouncementDocumentsPage() {
             ))}
           </SelectContent>
         </Select>
+        {hasMixedKinds(source) && (
+          <Select
+            value={kindFilter}
+            onValueChange={(v) => setKindFilter(v as PendingCaseKind | "all")}
+          >
+            <SelectTrigger className="h-10 w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部類型</SelectItem>
+              <SelectItem value="additional">{CASE_KIND_CONFIG.additional.label}</SelectItem>
+              <SelectItem value="adjustment">{CASE_KIND_CONFIG.adjustment.label}</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <span className="ml-auto text-base text-gray-500">共 {rows.length} 筆</span>
       </div>
 
@@ -284,6 +330,7 @@ export default function AnnouncementDocumentsPage() {
                 />
               </TableHead>
               <TableHead>科別</TableHead>
+              {hasMixedKinds(source) && <TableHead className="w-28">類型</TableHead>}
               <TableHead>{secondaryLabel(source)}</TableHead>
               <TableHead className="w-32">審查通過日</TableHead>
               {stage === "已製作" && <TableHead className="w-56">公告文號</TableHead>}
@@ -315,6 +362,13 @@ export default function AnnouncementDocumentsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-base font-medium text-gray-900">{c.specialty}</TableCell>
+                    {hasMixedKinds(source) && (
+                      <TableCell>
+                        <Badge variant="outline" className={CASE_KIND_CONFIG[c.caseKind].color}>
+                          {CASE_KIND_CONFIG[c.caseKind].label}
+                        </Badge>
+                      </TableCell>
+                    )}
                     <TableCell className="text-base text-gray-700">{secondaryValue(c)}</TableCell>
                     <TableCell className="text-base text-gray-600">{toRocDate(c.approvedDate)}</TableCell>
                     {stage === "已製作" && (
@@ -402,16 +456,18 @@ export default function AnnouncementDocumentsPage() {
 
             <div className="rounded-lg border border-gray-200 bg-white p-5">
               <p className="mb-2 text-sm text-gray-500">預覽（每筆案件各一份）</p>
-              <p className="text-center text-lg font-bold text-gray-900">
-                衛生福利部 {selectedCases[0]?.year ?? "115 年度"}
-                {selectedCases[0]?.specialty ?? "○○科"} 訓練醫院認定合格名單及訓練容量
-              </p>
+              <p className="text-center text-lg font-bold text-gray-900">{previewTitle}</p>
               <p className="mt-1 text-right text-base text-gray-700">
                 {toRocDate(produceDate)}　{produceDocNumber || "（未填文號）"} 號公告
               </p>
               <div className="mt-3 rounded border border-dashed border-gray-300 bg-gray-50 py-6 text-center text-sm text-gray-400">
-                醫院名稱／所在地／訓練容量／資格效期 名單表（由系統帶入審查結果）
+                {previewBody}
               </div>
+              {mixedKindsSelected && (
+                <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  本次同時選了外加容額與容額微調，兩者公告文件格式不同，將各自依類型套版。
+                </p>
+              )}
             </div>
 
             <div className="max-h-32 overflow-y-auto rounded-lg border border-gray-200">
