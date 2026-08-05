@@ -2,7 +2,7 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getCaseDocStatusCounts } from "@/lib/mock/announcement-cases"
-import { Users, ClipboardCheck, ArrowRight, Globe, BarChart3, Calculator, FileEdit, Settings } from "lucide-react"
+import { Users, ClipboardCheck, ArrowRight, Globe, FileEdit, Settings } from "lucide-react"
 
 export default function HomePage() {
   // 兩個公告模組各自的待辦件數（載入時的快照即可；mock 為 module singleton）
@@ -68,28 +68,6 @@ export default function HomePage() {
           href: "/announcement-management",
           description: "編製並發布站內公告，可引用已製作的公告文件",
           badge: docCounts["已製作"],
-        },
-      ],
-    },
-    {
-      title: "\u7D71\u8A08\u5C08\u5340",
-      description: "\u6AA2\u8996\u7CFB\u7D71\u7D71\u8A08\u6578\u64DA\u8207\u532F\u51FA\u5831\u8868",
-      icon: BarChart3,
-      color: "bg-indigo-500",
-      pages: [
-        { name: "\u7D71\u8A08\u5100\u8868\u677F", href: "/statistics", description: "\u6AA2\u8996\u6574\u9AD4\u7D71\u8A08\u6578\u64DA\u8207\u8996\u89BA\u5316\u5716\u8868" },
-      ],
-    },
-    {
-      title: "\u5DE5\u5177\u5C08\u5340",
-      description: "\u63D0\u4F9B\u5BE9\u67E5\u4F5C\u696D\u6240\u9700\u7684\u8F14\u52A9\u5DE5\u5177",
-      icon: Calculator,
-      color: "bg-teal-500",
-      pages: [
-        {
-          name: "\u5BB9\u984D\u5206\u914D\u8A66\u7B97",
-          href: "/tools/quota-calculator",
-          description: "\u5354\u52A9\u5206\u7D44\u5BE9\u67E5\u8207 RRC \u5927\u6703\u9032\u884C\u5BB9\u984D\u5206\u914D\u8A0E\u8AD6",
         },
       ],
     },
