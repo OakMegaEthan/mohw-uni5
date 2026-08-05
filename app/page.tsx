@@ -33,6 +33,7 @@ export default function HomePage() {
       pages: [
         { name: "文件填報", href: "/filing", description: "管理年度文件填報作業" },
         { name: "容額填報", href: "/filing/quota-filing", description: "管理訓練醫院名單與容額分配" },
+        { name: "容額微調", href: "/filing/quota-adjustment", description: "在既有訓練醫院之間調整容額，總數不變" },
         { name: "外加容額管理", href: "/filing/additional-quota", description: "登錄、審查外加容額申請並辦理公告" },
         { name: "外加容額成果報告", href: "/filing/outcome-report", description: "醫事司與醫策會審查訓練醫院外加容額成果報告" },
       ],

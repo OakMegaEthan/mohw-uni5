@@ -76,6 +76,11 @@ export function GlobalNav() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/filing/quota-adjustment" className="cursor-pointer">
+                      容額微調
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/filing/additional-quota" className="cursor-pointer">
                       外加容額管理
                     </Link>
