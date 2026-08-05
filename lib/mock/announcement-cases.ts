@@ -48,8 +48,9 @@ export const PENDING_SOURCES: Array<{
     detailLabel: "年度",
   },
   {
+    // 外加容額與容額微調同屬一個文件分類（07-31 決策 #2），共用此來源 tab
     value: "additional-quota",
-    label: "外加容額",
+    label: "外加/微調容額",
     category: "additional-quota",
     subjectLabel: "訓練醫院",
     detailLabel: "申請分科",
