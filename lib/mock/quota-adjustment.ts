@@ -196,6 +196,19 @@ export function isBalanced(rows: QuotaAdjustmentRow[]): boolean {
 
 // ── mock 案件 ──────────────────────────────────────────────
 
+/**
+ * 填報端的「目前登入醫學會」。
+ *
+ * 實際系統由登入身分決定；mock 無登入，固定為台灣內科醫學會。**填報端一律以此視角呈現**
+ * ——醫學會使用者只有自己一個科，不該在新增時再選一次醫學會。醫事司視角在審查專區，
+ * 那裡才會看到全部醫學會的案件。
+ */
+export const CURRENT_SOCIETY_ID = "2"
+
+export function getCurrentSociety() {
+  return allSocieties.find((s) => s.id === CURRENT_SOCIETY_ID)!
+}
+
 const SOCIETY = (id: string) => allSocieties.find((s) => s.id === id)!
 
 /** 基準醫院 → 微調列（尚未調整） */
@@ -309,6 +322,7 @@ const cases: QuotaAdjustmentCase[] = [
     reviewComment: "",
     history: [{ at: "115/06/01", by: "台灣婦產科醫學會", action: "送出容額微調申請" }],
   },
+  // 內科＝目前登入醫學會：兩件已通過，供列表展示多次微調的歷程與基準疊加
   {
     id: "adj-002-1",
     societyId: "2",
@@ -316,14 +330,42 @@ const cases: QuotaAdjustmentCase[] = [
     specialty: SOCIETY("2").specialty,
     year: "115 年度",
     round: 1,
-    stage: "待送件",
+    stage: "審查通過",
     returnedFrom: null,
-    submittedDate: null,
-    approvedDate: null,
-    rows: buildRows("2", []),
-    attachments: [],
-    reviewComment: "",
-    history: [],
+    submittedDate: "115/03/12",
+    approvedDate: "115/03/26",
+    rows: buildRows("2", [
+      { index: 0, delta: 1, reason: "配合實際招收情況調增" },
+      { index: 6, delta: -1, reason: "釋出容額" },
+    ]),
+    attachments: [{ id: "adj2-1", name: "訓練容量修正對照表.pdf", size: "0.5 MB" }],
+    reviewComment: "增減相抵為 0，總容額維持不變，同意備查並辦理公告。",
+    history: [
+      { at: "115/03/12", by: SOCIETY("2").name, action: "送出容額微調申請" },
+      { at: "115/03/26", by: "醫事司", action: "審查通過" },
+    ],
+  },
+  {
+    id: "adj-002-2",
+    societyId: "2",
+    societyName: SOCIETY("2").name,
+    specialty: SOCIETY("2").specialty,
+    year: "115 年度",
+    round: 2,
+    stage: "審查通過",
+    returnedFrom: null,
+    submittedDate: "115/05/08",
+    approvedDate: "115/05/21",
+    rows: buildRows("2", [
+      { index: 1, delta: 1, reason: "招收住院醫師" },
+      { index: 2, delta: -1, reason: "本年度未招收，釋出容額" },
+    ]),
+    attachments: [{ id: "adj2-2", name: "訓練容量修正對照表_第2次.pdf", size: "0.5 MB" }],
+    reviewComment: "與第 1 次微調結果一併核計，總容額未變動，同意備查。",
+    history: [
+      { at: "115/05/08", by: SOCIETY("2").name, action: "送出容額微調申請" },
+      { at: "115/05/21", by: "醫事司", action: "審查通過" },
+    ],
   },
 ]
 
@@ -348,13 +390,9 @@ export function nextRound(societyId: string, year: string): number {
   return cases.filter((c) => c.societyId === societyId && c.year === year).length + 1
 }
 
-/** 尚可發起微調的醫學會（該年度沒有進行中的案件，且容額填報有醫院可調） */
-export function getAvailableSocieties(year: string): Array<{ id: string; name: string; specialty: string }> {
-  return allSocieties.filter(
-    (s) =>
-      !hasOpenAdjustment(s.id, year) &&
-      getBaselineHospitals(s.id).some(isSelectableHospital),
-  )
+/** 填報端：目前登入醫學會自己的微調案件 */
+export function getMyAdjustmentCases(): QuotaAdjustmentCase[] {
+  return cases.filter((c) => c.societyId === CURRENT_SOCIETY_ID)
 }
 
 /** 建立新的微調案件（待送件） */

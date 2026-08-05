@@ -2,23 +2,24 @@
 
 // 容額微調列表（醫學會端）。一個醫學會同年度可能有多次微調，故案件是一等物件、需要列表。
 //
-// mock 說明：實際系統會依登入的醫學會過濾，此處列出全部醫學會的案件以便展示各種狀態，
-// 與外加容額列表的處理一致。
+// **醫學會視角**：只呈現本會的案件，故不列醫學會與科別欄——那是醫事司才需要區分的維度。
+// 首欄為「第 N 次」，依年度與次數降冪，最新一次在最上方。
+// 醫事司視角在審查專區（/review/quota-adjustment），那裡才會看到全部醫學會的案件。
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowDown, ArrowLeft, ArrowUp, ChevronRight, Inbox, Plus, Search } from "lucide-react"
+import { ArrowLeft, ChevronRight, Inbox, Plus } from "lucide-react"
 
 import { PageContainer, PageHeader } from "@/components/layout/page-container"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   ADJUSTMENT_RETURNED_BUCKET,
   QUOTA_ADJUSTMENT_STAGE_CONFIG,
   getBalance,
-  getQuotaAdjustmentCases,
+  getCurrentSociety,
+  getMyAdjustmentCases,
   type QuotaAdjustmentCase,
 } from "@/lib/mock/quota-adjustment"
 
@@ -41,8 +42,8 @@ function matchesTab(c: QuotaAdjustmentCase, tab: Tab): boolean {
 
 export default function QuotaAdjustmentListPage() {
   const [tab, setTab] = useState<Tab>("all")
-  const [keyword, setKeyword] = useState("")
-  const cases = getQuotaAdjustmentCases()
+  const society = getCurrentSociety()
+  const cases = getMyAdjustmentCases()
 
   const counts = useMemo(() => {
     const c = {} as Record<Tab, number>
@@ -50,15 +51,14 @@ export default function QuotaAdjustmentListPage() {
     return c
   }, [cases])
 
-  const rows = useMemo(() => {
-    const q = keyword.trim().toLowerCase()
-    return cases
-      .filter((c) => matchesTab(c, tab))
-      .filter((c) =>
-        q === "" ? true : `${c.societyName}${c.specialty}`.toLowerCase().includes(q),
-      )
-      .sort((a, b) => (b.submittedDate ?? "9").localeCompare(a.submittedDate ?? "9"))
-  }, [cases, tab, keyword])
+  // 降冪：最新一次在最上方
+  const rows = useMemo(
+    () =>
+      cases
+        .filter((c) => matchesTab(c, tab))
+        .sort((a, b) => b.year.localeCompare(a.year) || b.round - a.round),
+    [cases, tab],
+  )
 
   return (
     <PageContainer>
@@ -72,7 +72,7 @@ export default function QuotaAdjustmentListPage() {
 
       <PageHeader
         title="容額微調"
-        description="在既有訓練醫院之間調整訓練容額。總容額不變——有醫院調增，就要有醫院調減"
+        description={`${society.name}　在既有訓練醫院之間調整訓練容額。總容額不變——有醫院調增，就要有醫院調減`}
       >
         <Button asChild className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73]">
           <Link href="/filing/quota-adjustment/new">
@@ -101,38 +101,24 @@ export default function QuotaAdjustmentListPage() {
         ))}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜尋醫學會或科別"
-            className="h-10 w-72 pl-9"
-          />
-        </div>
-        <span className="ml-auto text-base text-gray-500">共 {rows.length} 筆</span>
-      </div>
-
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>醫學會</TableHead>
-              <TableHead className="w-24">科別</TableHead>
-              <TableHead className="w-28">年度</TableHead>
-              <TableHead className="w-20 text-center">次數</TableHead>
-              <TableHead className="w-24 text-right">異動家數</TableHead>
-              <TableHead className="w-40 text-center">調增／調減</TableHead>
+              <TableHead className="w-28">次數</TableHead>
+              <TableHead className="w-32">年度</TableHead>
+              <TableHead className="w-28 text-right">異動家數</TableHead>
               <TableHead className="w-32">送出日期</TableHead>
+              <TableHead className="w-32">審結日期</TableHead>
               <TableHead className="w-32">狀態</TableHead>
+              <TableHead>審查意見</TableHead>
               <TableHead className="w-28 text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-16 text-center">
+                <TableCell colSpan={8} className="py-16 text-center">
                   <Inbox className="mx-auto mb-3 h-10 w-10 text-gray-300" />
                   <p className="text-base text-gray-500">此分頁目前沒有案件</p>
                 </TableCell>
@@ -144,32 +130,17 @@ export default function QuotaAdjustmentListPage() {
                 return (
                   <TableRow key={c.id} className="h-14">
                     <TableCell className="text-base font-medium text-gray-900">
-                      {c.societyName}
-                    </TableCell>
-                    <TableCell className="text-base text-gray-700">{c.specialty}</TableCell>
-                    <TableCell className="text-base text-gray-600">{c.year}</TableCell>
-                    <TableCell className="text-center text-base text-gray-600">
                       第 {c.round} 次
                     </TableCell>
+                    <TableCell className="text-base text-gray-700">{c.year}</TableCell>
                     <TableCell className="text-right text-base text-gray-700">
                       {b.changedCount > 0 ? `${b.changedCount} 家` : "—"}
                     </TableCell>
-                    <TableCell>
-                      {b.changedCount === 0 ? (
-                        <p className="text-center text-base text-gray-400">—</p>
-                      ) : (
-                        <div className="flex items-center justify-center gap-3 text-base font-medium">
-                          <span className="flex items-center gap-0.5 text-blue-700">
-                            <ArrowUp className="h-4 w-4" />＋{b.increased}
-                          </span>
-                          <span className="flex items-center gap-0.5 text-orange-700">
-                            <ArrowDown className="h-4 w-4" />－{b.decreased}
-                          </span>
-                        </div>
-                      )}
-                    </TableCell>
                     <TableCell className="text-base text-gray-600">
                       {c.submittedDate ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-base text-gray-600">
+                      {c.approvedDate ?? "—"}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap items-center gap-1">
@@ -185,6 +156,9 @@ export default function QuotaAdjustmentListPage() {
                           </Badge>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="max-w-md text-base text-gray-600">
+                      {c.reviewComment || <span className="text-gray-400">—</span>}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="outline" size="sm" className="gap-1">

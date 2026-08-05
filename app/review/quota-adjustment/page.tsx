@@ -5,12 +5,13 @@
 // 微調的審查鏈只有醫事司一段：醫學會送出後直接進此頁，不經醫策會初審／分組會議／RRC 大會。
 // 終點是「審查通過」，比照其他三線交棒公告管理（見 docs/business-logic.md）。
 //
-// 醫事司審查時最重視的是「哪間醫院減、哪間醫院增」，故列表層級就直接把調增／調減攤開，
-// 不必進詳情才看得到；總容額守恆已於醫學會送出前擋掉，此處只呈現結果供覆核。
+// 醫事司視角：跨醫學會，故列表以科別辨識案件（醫學會名稱與科別一對一，科別較短且足以識別）。
+// 同一科可能有多次微調，故「次數」是必要欄位。
+// 增減的細節在詳情頁的異動對照表，列表層級不重複攤開。
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowDown, ArrowUp, ChevronRight, Inbox, Search } from "lucide-react"
+import { ChevronRight, Inbox, Search } from "lucide-react"
 
 import { PageContainer, PageHeader } from "@/components/layout/page-container"
 import { Badge } from "@/components/ui/badge"
@@ -61,9 +62,7 @@ export default function QuotaAdjustmentReviewPage() {
     const q = keyword.trim().toLowerCase()
     return cases
       .filter((c) => bucketOf(c) === bucket)
-      .filter((c) =>
-        q === "" ? true : `${c.societyName}${c.specialty}`.toLowerCase().includes(q),
-      )
+      .filter((c) => (q === "" ? true : c.specialty.toLowerCase().includes(q)))
       .sort((a, b) => (a.submittedDate ?? "").localeCompare(b.submittedDate ?? ""))
   }, [cases, bucket, keyword])
 
@@ -99,7 +98,7 @@ export default function QuotaAdjustmentReviewPage() {
           <Input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜尋醫學會或科別"
+            placeholder="搜尋科別"
             className="h-10 w-72 pl-9"
           />
         </div>
@@ -110,12 +109,10 @@ export default function QuotaAdjustmentReviewPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>醫學會</TableHead>
-              <TableHead className="w-24">科別</TableHead>
+              <TableHead>科別</TableHead>
               <TableHead className="w-28">年度</TableHead>
-              <TableHead className="w-20 text-center">次數</TableHead>
-              <TableHead className="w-24 text-right">異動家數</TableHead>
-              <TableHead className="w-40 text-center">調增／調減</TableHead>
+              <TableHead className="w-24 text-center">次數</TableHead>
+              <TableHead className="w-28 text-right">異動家數</TableHead>
               <TableHead className="w-32">送出日期</TableHead>
               <TableHead className="w-28">狀態</TableHead>
               <TableHead className="w-28 text-right">操作</TableHead>
@@ -124,7 +121,7 @@ export default function QuotaAdjustmentReviewPage() {
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-16 text-center">
+                <TableCell colSpan={7} className="py-16 text-center">
                   <Inbox className="mx-auto mb-3 h-10 w-10 text-gray-300" />
                   <p className="text-base text-gray-500">此分頁目前沒有案件</p>
                 </TableCell>
@@ -135,26 +132,14 @@ export default function QuotaAdjustmentReviewPage() {
                 return (
                   <TableRow key={c.id} className="h-14">
                     <TableCell className="text-base font-medium text-gray-900">
-                      {c.societyName}
+                      {c.specialty}
                     </TableCell>
-                    <TableCell className="text-base text-gray-700">{c.specialty}</TableCell>
                     <TableCell className="text-base text-gray-600">{c.year}</TableCell>
                     <TableCell className="text-center text-base text-gray-600">
                       第 {c.round} 次
                     </TableCell>
                     <TableCell className="text-right text-base text-gray-700">
                       {b.changedCount} 家
-                    </TableCell>
-                    <TableCell>
-                      {/* 醫事司最重視的資訊，列表層級就攤開 */}
-                      <div className="flex items-center justify-center gap-3 text-base font-medium">
-                        <span className="flex items-center gap-0.5 text-blue-700">
-                          <ArrowUp className="h-4 w-4" />＋{b.increased}
-                        </span>
-                        <span className="flex items-center gap-0.5 text-orange-700">
-                          <ArrowDown className="h-4 w-4" />－{b.decreased}
-                        </span>
-                      </div>
                     </TableCell>
                     <TableCell className="text-base text-gray-600">
                       {c.submittedDate ?? "—"}
