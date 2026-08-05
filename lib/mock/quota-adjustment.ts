@@ -74,6 +74,7 @@ export interface QuotaAdjustmentCase {
   stage: QuotaAdjustmentStage
   /** 有值＝退件補正中，值為退回自哪個階段 */
   returnedFrom: "醫事司審查" | null
+  /** 民國日期字串 yyy/mm/dd（與全站顯示格式一致） */
   submittedDate: string | null
   approvedDate: string | null
   /** 只含有異動的醫院（調整後 ≠ 原公告者由畫面篩選，資料層保留醫學會挑選的全部列） */
@@ -184,8 +185,8 @@ const cases: QuotaAdjustmentCase[] = [
     round: 1,
     stage: "審查通過",
     returnedFrom: null,
-    submittedDate: "2026-06-04",
-    approvedDate: "2026-06-18",
+    submittedDate: "115/06/04",
+    approvedDate: "115/06/18",
     rows: buildRows("4", [
       { index: 0, delta: -1, reason: "釋出容額" },
       { index: 1, delta: 1, reason: "招收住院醫師" },
@@ -209,7 +210,7 @@ const cases: QuotaAdjustmentCase[] = [
     round: 1,
     stage: "醫事司審查",
     returnedFrom: null,
-    submittedDate: "2026-06-01",
+    submittedDate: "115/06/01",
     approvedDate: null,
     rows: buildRows("5", [
       { index: 0, delta: 1, reason: "配合實際招收情況調增" },

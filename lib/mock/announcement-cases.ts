@@ -1,9 +1,11 @@
 // 待公告案件池：三條審查主線的終點都回到醫事司，由公告管理模組彙整成公告。
 //
 // 案件不是自己長出來的，而是從既有三個模組「衍生」而來（見 docs/announcement-module-plan.md）：
-//   文件填報審查 /review/submissions      案件粒度＝文件類型 × 醫學會（最多 6 × 25）
-//   容額填報審查 /review/hospital-quota   案件粒度＝醫學會
-//   外加容額     /filing/additional-quota 案件粒度＝申請項目 uid（院 × 分科）
+//   文件填報審查 /review/submissions        案件粒度＝文件類型 × 醫學會（最多 6 × 25）
+//   容額填報審查 /review/hospital-quota     案件粒度＝醫學會
+//   外加容額     /filing/additional-quota   案件粒度＝申請項目 uid（院 × 分科）
+//   容額微調     /review/quota-adjustment   案件粒度＝醫學會 × 年度 × 第 N 次
+// 後兩者同屬「外加/微調容額」這個來源 tab（07-31 決策 #2）。
 //
 // 公告端採「製作→發布」模型（見 docs/business-logic.md）。每案的公告進度：
 //   待製作（無公告檔案）→ 已製作（官網公告文件已產出、有文號）→ 已公告（檔案被已發布的系統內公告引用）
@@ -16,6 +18,7 @@ import {
 } from "@/lib/mock/review-submissions"
 import { mockHospitalQuotaSocieties } from "@/lib/mock/review-hospital-quota"
 import { getAdditionalQuotaApplications } from "@/lib/mock/additional-quota"
+import { getBalance, getQuotaAdjustmentCases } from "@/lib/mock/quota-adjustment"
 import { allSocieties } from "@/lib/data/societies"
 
 /** 醫學會 id → 專科，供工作台「科別」欄帶出（#1：醫學會欄改科別） */
@@ -52,7 +55,7 @@ export const PENDING_SOURCES: Array<{
     value: "additional-quota",
     label: "外加/微調容額",
     category: "additional-quota",
-    subjectLabel: "訓練醫院",
+    subjectLabel: "申請單位",
     detailLabel: "申請分科",
   },
 ]
@@ -203,6 +206,29 @@ function buildFromAdditionalQuota(): PendingCase[] {
     }))
 }
 
+function buildFromQuotaAdjustment(): PendingCase[] {
+  // 容額微調與外加容額共用來源 tab；主體為醫學會（微調是會內既有醫院之間搬動容額）
+  return getQuotaAdjustmentCases()
+    .filter((c) => c.stage === "審查通過" && c.returnedFrom === null)
+    .map((c) => {
+      const b = getBalance(c.rows)
+      return {
+        id: `adj-case-${c.id}`,
+        sourceModule: "additional-quota" as const,
+        subject: c.societyName,
+        specialty: c.specialty,
+        detail: `第 ${c.round} 次微調`,
+        title: `${c.societyName}　${c.year}訓練容額第 ${c.round} 次微調（${b.changedCount} 家異動）`,
+        year: c.year,
+        approvedDate: rocToIso(c.approvedDate) ?? "2026-06-18",
+        reviewHref: `/review/quota-adjustment/${c.id}`,
+        officialDoc: null,
+        publishedPostId: null,
+        publishedDate: null,
+      }
+    })
+}
+
 /** 民國 "115/01/05" → 西元 "2026-01-05"；格式不符時回 null */
 function rocToIso(value: string | null): string | null {
   if (!value) return null
@@ -216,6 +242,7 @@ const pendingCases: PendingCase[] = [
   ...buildFromSubmissions(),
   ...buildFromQuotaFiling(),
   ...buildFromAdditionalQuota(),
+  ...buildFromQuotaAdjustment(),
 ]
 
 // 種入初始的公告檔案進度，讓「已製作／已公告」與外加容額成果報告有展示資料。

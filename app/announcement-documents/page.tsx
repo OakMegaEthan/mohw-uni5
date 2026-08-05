@@ -64,9 +64,12 @@ function toWorkbenchStage(c: PendingCase): WorkbenchStage {
   return getCaseDocStatus(c) === "待製作" ? "待製作" : "已製作"
 }
 
-/** 各來源的「次要欄」（科別為主體欄後的第二欄） */
+/**
+ * 各來源的「次要欄」（科別為主體欄後的第二欄）。
+ * 外加/微調容額的主體不只一種——外加是訓練醫院、微調是醫學會，故用中性的「申請單位」。
+ */
 function secondaryLabel(source: PendingSourceModule): string {
-  return source === "submissions" ? "文件類型" : source === "quota-filing" ? "年度" : "訓練醫院"
+  return source === "submissions" ? "文件類型" : source === "quota-filing" ? "年度" : "申請單位"
 }
 function secondaryValue(c: PendingCase): string {
   return c.sourceModule === "additional-quota" ? c.subject : c.detail
