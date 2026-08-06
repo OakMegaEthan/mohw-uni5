@@ -26,6 +26,7 @@ import {
   Edit3,
   Send,
   ChevronLeft,
+  ChevronRight,
   Upload,
   Download,
   Plus,
@@ -64,16 +65,17 @@ import {
 } from "@/components/filing/review-feedback-banner"
 import { FILING_DOCUMENTS, getFilingStatusLabel } from "@/lib/mock/filing-documents"
 import { toast } from "sonner"
-import { MultiFileUpload, type UploadedFile } from "@/components/filing/multi-file-upload"
 import {
-  MOCK_OUTCOME_REPORT_RETURN,
-  OUTCOME_REPORT_SUB_CONFIG,
   QUOTA_FILING_STAGES,
   QUOTA_FILING_STAGE_UNIT,
   isQuotaFilingEditable,
-  type OutcomeReportSubStatus,
   type QuotaFilingStage,
 } from "@/lib/mock/quota-filing-stage"
+import {
+  MOCK_OUTCOME_REPORT_RETURN,
+  OUTCOME_REPORT_SUB_CONFIG,
+  type OutcomeReportSubStatus,
+} from "@/lib/mock/quota-outcome-report"
 
 // 容額填報檢視（由醫學會填報）。原為 app/filing 的容額 tab，拆分為獨立路由後移至此。
 // 階段感知與退件處理見後續重構；此檔為拆分階段的忠實搬移。
@@ -134,28 +136,15 @@ export function QuotaFilingView({
   const availableHospitals = AVAILABLE_HOSPITALS
   const isInternalMedicine = variant === "internal-medicine"
 
-  // 容額成果報告：與審查階段時間解耦，待送件起全程可上傳（醫學會對各申請醫院的評估結果，
-  // 為容額申請的前置依據，直接送醫事司歸檔）。故一律顯示，不以階段 gate。
-  const showOutcomeReport = true
-  const reportEditable = reportStatus === "待上傳" || reportStatus === "退回補件"
-  const [reportFiles, setReportFiles] = useState<UploadedFile[]>(
-    reportStatus === "待上傳"
-      ? []
-      : [
-          { id: "or-1", name: "容額成果報告_審查細節.pdf", size: "2.6 MB" },
-          { id: "or-2", name: "容額成果報告_附件_訓練醫院明細.xlsx", size: "1.1 MB" },
-        ],
-  )
-  const handleUploadReport = () =>
-    setReportFiles((prev) => [
-      ...prev,
-      { id: `or-${Date.now()}`, name: `容額成果報告_附件${prev.length + 1}.pdf`, size: "1.8 MB" },
-    ])
-  const handleRemoveReport = (id: string) => setReportFiles((prev) => prev.filter((f) => f.id !== id))
-  const handleSubmitReport = () => {
-    if (reportFiles.length === 0) return
-    toast.success("容額成果報告已送出，待醫事司確認")
-  }
+  // 容額成果報告：與審查階段時間解耦，待送件起全程可上傳。實際的上傳／送出在子頁面
+  // /filing/quota-filing/outcome-report，本頁只留一列帶狀態的入口（原本整塊佔掉第一屏，
+  // 把容額填報自己的內容擠到下面）。
+  const outcomeReportHref = (() => {
+    const p = new URLSearchParams({ stage, report: reportStatus })
+    if (variant) p.set("variant", variant)
+    if (returnedFrom) p.set("returnedFrom", returnedFrom)
+    return `/filing/quota-filing/outcome-report?${p.toString()}`
+  })()
 
   // 由階段推導既有的唯讀／退件旗標，沿用元件內既有的 disabled={isSubmitted} plumbing：
   //   退件（returnedFrom 有值）→ 可編輯、顯示退件橫幅
@@ -561,79 +550,34 @@ export function QuotaFilingView({
         </div>
       )}
 
-      {/* 容額成果報告：全程（待送件起）可上傳，不以審查階段 gate。醫學會對各申請醫院的評估結果，直接送醫事司確認歸檔 */}
-      {showOutcomeReport && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50/40 px-6 py-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-lg font-bold text-foreground">容額成果報告</h3>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* 原型：無實際送件流程，提供各子狀態的檢視入口 */}
-              {(Object.keys(OUTCOME_REPORT_SUB_CONFIG) as OutcomeReportSubStatus[]).map((s) => {
-                const params = new URLSearchParams({ stage, report: s })
-                if (variant) params.set("variant", variant)
-                const active = s === reportStatus
-                return (
-                  <Link
-                    key={s}
-                    href={`/filing/quota-filing?${params.toString()}`}
-                    className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
-                      active
-                        ? OUTCOME_REPORT_SUB_CONFIG[s].color
-                        : "border-transparent text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {OUTCOME_REPORT_SUB_CONFIG[s].label}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            請上傳容額成果報告（醫學會對各申請醫院的評估結果，為容額申請的前置依據），送出後由醫事司確認歸檔留存。
-            此作業與審查階段獨立，不影響審查與公告進度。
-          </p>
-
-          {/* 退回補件意見：醫事司於容額成果報告審查頁填寫的單則意見，直接內嵌呈現。
-              有別於案件層級的退件（附審查會議紀錄全文，另以 ReviewFeedbackBanner 呈現）。 */}
-          {reportStatus === "退回補件" && (
-            <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
-              <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-sm font-medium text-orange-800">
-                  {MOCK_OUTCOME_REPORT_RETURN.reviewer}退回補件
-                </span>
-                <span className="text-sm text-orange-700">
-                  退回日期：{MOCK_OUTCOME_REPORT_RETURN.returnedDate}
-                </span>
-              </div>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-orange-800">
-                {MOCK_OUTCOME_REPORT_RETURN.comment}
-              </p>
-              <p className="mt-2 text-sm text-orange-700">請依上述意見補齊後，重新上傳並送出。</p>
-            </div>
-          )}
-
-          <MultiFileUpload
-            files={reportFiles}
-            onUpload={reportEditable ? handleUploadReport : undefined}
-            onRemove={reportEditable ? handleRemoveReport : undefined}
-            uploadLabel="選擇成果報告檔案"
-            emptyState="尚未上傳容額成果報告"
-          />
-
-          {reportEditable && (
-            <div className="mt-4 flex justify-end">
-              <Button
-                className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73] text-white"
-                disabled={reportFiles.length === 0}
-                onClick={handleSubmitReport}
-              >
-                <Send className="h-4 w-4" />
-                {reportStatus === "退回補件" ? "重新送出" : "送出成果報告"}
-              </Button>
-            </div>
-          )}
+      {/* 容額成果報告入口：狀態必須在此可見（尤其「退回補件」），故入口列帶 badge 與摘要，
+          不是一個沒有訊息的按鈕。實際作業在子頁面。 */}
+      <Link
+        href={outcomeReportHref}
+        className="group block rounded-lg border border-blue-200 bg-blue-50/40 px-6 py-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h3 className="text-lg font-bold text-foreground">容額成果報告</h3>
+          <span
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium ${OUTCOME_REPORT_SUB_CONFIG[reportStatus].color}`}
+          >
+            {OUTCOME_REPORT_SUB_CONFIG[reportStatus].label}
+          </span>
+          <span className="ml-auto inline-flex items-center gap-1 text-base font-medium text-blue-700 group-hover:text-blue-800">
+            {reportStatus === "退回補件" ? "前往補件" : "前往上傳"}
+            <ChevronRight className="h-4 w-4" />
+          </span>
         </div>
-      )}
+        <p className="mt-1 text-sm text-muted-foreground">
+          醫學會對各申請醫院的評估結果，為容額申請的前置依據。此作業與審查階段獨立，不影響審查與公告進度。
+        </p>
+        {reportStatus === "退回補件" && (
+          <p className="mt-2 line-clamp-2 rounded border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-800">
+            {MOCK_OUTCOME_REPORT_RETURN.reviewer}於 {MOCK_OUTCOME_REPORT_RETURN.returnedDate} 退回補件：
+            {MOCK_OUTCOME_REPORT_RETURN.comment}
+          </p>
+        )}
+      </Link>
 
       {/* 訓練醫院申請家數統計 */}
       <div>

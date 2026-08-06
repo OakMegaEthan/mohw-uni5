@@ -5,11 +5,13 @@ import { useSearchParams } from "next/navigation"
 
 import { QuotaFilingView } from "@/components/filing/quota-filing-view"
 import {
-  isValidOutcomeReportSubStatus,
   isValidQuotaFilingStage,
-  type OutcomeReportSubStatus,
   type QuotaFilingStage,
 } from "@/lib/mock/quota-filing-stage"
+import {
+  isValidOutcomeReportSubStatus,
+  type OutcomeReportSubStatus,
+} from "@/lib/mock/quota-outcome-report"
 
 /**
  * 容額填報（獨立路由）。單頁工作流，依階段決定可編輯範圍。
