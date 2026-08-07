@@ -56,7 +56,7 @@ export const PENDING_SOURCES: Array<{
     label: "外加/微調容額",
     category: "additional-quota",
     subjectLabel: "申請單位",
-    detailLabel: "申請分科",
+    detailLabel: "申請之專科",
   },
 ]
 
@@ -106,9 +106,9 @@ export interface PendingCase {
   caseKind: PendingCaseKind
   /** 案件主體：醫學會名稱或醫院名稱 */
   subject: string
-  /** 科別（工作台主體欄以此呈現）：醫學會來源＝該會專科，外加容額＝申請分科 */
+  /** 科別（工作台主體欄以此呈現）：醫學會來源＝該會專科，外加容額＝申請之專科 */
   specialty: string
-  /** 次要識別：文件類型／申請分科／年度 */
+  /** 次要識別：文件類型／申請之專科／年度 */
   detail: string
   /** 供公告標題與名單表帶入用的完整案由 */
   title: string

@@ -24,7 +24,16 @@ export interface QuotaAttachment {
 
 export interface CurrentYearQuota {
   specialty: string
+  /**
+   * 當年度已分配容額。
+   * **資料來源：帶入該院該專科最新一次的分配容額數**（歷經容額填報核定、以及其後的容額微調，
+   * 以最新者為準）。mock 為靜態值，未實作抓取邏輯。
+   */
   approved: number
+  /**
+   * 最大可收訓容額。
+   * **資料來源：RRC 會議決議中的最大可收訓容額數**。mock 為靜態值，未實作抓取邏輯。
+   */
   limit: number
   validFrom: string
   validTo: string
@@ -45,11 +54,12 @@ export interface PreviousPeriod {
 export interface AdditionalQuotaApplication {
   id: string
   hospitalName: string
-  specialty: string // 申請分科
+  specialty: string // 申請之專科
   incomingDate: string // 來文日期
   incomingDocNumber: string // 來文字號
   ministryDocNumber: string // 本部文號
   classificationPrinciple: string // 分類原則（自由字串，選項可維護）
+  /** 申請人數（申請的外加容額名額數） */
   requestedQuota: number
   requestReason: string
   requestDescription: string
@@ -198,7 +208,7 @@ export function getAdditionalQuotaApplication(id: string): AdditionalQuotaApplic
   return ADDITIONAL_QUOTA_APPLICATIONS.find((a) => a.id === id)
 }
 
-/** 申請分科的可選清單（去重、依 25 專科醫學會科別）。 */
+/** 申請之專科的可選清單（去重、依 25 專科醫學會科別）。 */
 export function getSpecialtyOptions(): string[] {
   return [...new Set(SPECIALTIES)]
 }

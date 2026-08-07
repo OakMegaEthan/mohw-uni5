@@ -33,7 +33,7 @@ const TEXT_FIELD_LABELS: Record<TextField, string> = {
   ministryDocNumber: "本部文號",
 }
 
-// 多選下拉：申請分科／分類原則共用
+// 多選下拉：申請之專科／分類原則共用
 function MultiSelectFilter({
   label,
   options,
@@ -222,7 +222,7 @@ export default function FilingAdditionalQuotaPage() {
             />
           </div>
           <MultiSelectFilter
-            label="申請分科"
+            label="申請之專科"
             options={specialtyOptions}
             selected={specialtyFilter}
             onChange={setSpecialtyFilter}
@@ -241,7 +241,13 @@ export default function FilingAdditionalQuotaPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>訓練醫院</TableHead>
-                <TableHead>申請分科</TableHead>
+                <TableHead>申請之專科</TableHead>
+                <TableHead className="text-right">申請人數</TableHead>
+                {/* 資料來源：RRC 會議決議中的最大可收訓容額數（見 CurrentYearQuota.limit） */}
+                <TableHead className="text-right">最大可收訓容額</TableHead>
+                {/* 資料來源：該院該專科最新一次的分配容額數（見 CurrentYearQuota.approved） */}
+                <TableHead className="text-right">當年度已分配容額</TableHead>
+                <TableHead>分類原則</TableHead>
                 <TableHead>
                   <button
                     className="flex items-center gap-1 font-medium hover:text-foreground"
@@ -257,8 +263,6 @@ export default function FilingAdditionalQuotaPage() {
                 </TableHead>
                 <TableHead>來文字號</TableHead>
                 <TableHead>本部文號</TableHead>
-                <TableHead className="text-right">申請容額</TableHead>
-                <TableHead>分類原則</TableHead>
                 <TableHead className="w-24">狀態</TableHead>
                 <TableHead className="w-24" />
               </TableRow>
@@ -268,11 +272,17 @@ export default function FilingAdditionalQuotaPage() {
                 <TableRow key={a.id}>
                   <TableCell className="font-medium text-gray-900">{a.hospitalName}</TableCell>
                   <TableCell>{a.specialty}</TableCell>
+                  <TableCell className="text-right">{a.requestedQuota} 名</TableCell>
+                  <TableCell className="text-right text-gray-600">
+                    {a.currentYearQuota.limit} 名
+                  </TableCell>
+                  <TableCell className="text-right text-gray-600">
+                    {a.currentYearQuota.approved} 名
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600">{a.classificationPrinciple}</TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-gray-600">{a.incomingDate}</TableCell>
                   <TableCell className="text-sm text-gray-600">{a.incomingDocNumber}</TableCell>
                   <TableCell className="text-sm text-gray-600">{a.ministryDocNumber || "—"}</TableCell>
-                  <TableCell className="text-right">{a.requestedQuota} 名</TableCell>
-                  <TableCell className="text-sm text-gray-600">{a.classificationPrinciple}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].color}>
                       {ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].label}
@@ -290,7 +300,7 @@ export default function FilingAdditionalQuotaPage() {
               ))}
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="py-12 text-center text-gray-500">
+                  <TableCell colSpan={11} className="py-12 text-center text-gray-500">
                     查無符合條件的申請
                   </TableCell>
                 </TableRow>

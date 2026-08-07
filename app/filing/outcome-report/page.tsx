@@ -177,7 +177,7 @@ export default function AdditionalQuotaOutcomeReportPage() {
             />
           </div>
           <MultiSelectFilter
-            label="申請分科"
+            label="申請之專科"
             options={specialtyOptions}
             selected={specialtyFilter}
             onChange={setSpecialtyFilter}
