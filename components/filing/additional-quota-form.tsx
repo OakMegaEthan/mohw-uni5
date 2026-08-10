@@ -319,17 +319,17 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                 )}
               </div>
 
-              {/* 申請人數：容額現況與試算緊鄰輸入欄，超過最大可收訓容額即為錯誤狀態 */}
+              {/* 申請人數：容額現況與試算緊鄰輸入欄，超過可收訓容額即為錯誤狀態 */}
               <div>
                 <Label className="text-sm font-medium text-gray-700">
                   申請人數 {contentEditable && <span className="text-destructive">*</span>}
                 </Label>
                 <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
                   <span>
-                    當年度已分配容額 <strong className="text-gray-900">{quota.approved}</strong> 名
+                    已分配容額 <strong className="text-gray-900">{quota.approved}</strong> 名
                   </span>
                   <span>
-                    最大可收訓容額 <strong className="text-gray-900">{quota.limit}</strong> 名
+                    可收訓容額 <strong className="text-gray-900">{quota.limit}</strong> 名
                   </span>
                   <span className="text-gray-500">
                     效期 {quota.validFrom} ~ {quota.validTo}
@@ -371,7 +371,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                   {exceedsLimit && (
                     <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
                       <AlertCircle className="h-4 w-4 shrink-0" />
-                      超過最大可收訓容額 {quota.limit} 名，請調整申請人數
+                      超過可收訓容額 {quota.limit} 名，請調整申請人數
                     </span>
                   )}
                 </div>

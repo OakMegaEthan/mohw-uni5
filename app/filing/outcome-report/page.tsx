@@ -219,10 +219,21 @@ export default function AdditionalQuotaOutcomeReportPage() {
                 <TableBody>
                   {rows.map((c) => (
                     <TableRow key={c.applicationId}>
-                      <TableCell className="font-medium text-gray-900">{c.hospitalName}</TableCell>
+                      <TableCell className="font-medium text-gray-900">
+                        <span className="block max-w-[16rem] truncate" title={c.hospitalName}>
+                          {c.hospitalName}
+                        </span>
+                      </TableCell>
                       <TableCell>{c.specialty}</TableCell>
                       <TableCell className="text-right text-sm text-gray-600">{c.approvedQuota} 名</TableCell>
-                      <TableCell className="text-sm text-gray-600">{c.classificationPrinciple}</TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        <span
+                          className="block max-w-[13rem] truncate"
+                          title={c.classificationPrinciple}
+                        >
+                          {c.classificationPrinciple}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-sm text-gray-600">{c.announcementDate}</TableCell>
                       <TableCell className="text-sm text-gray-600">{c.announcementNumber}</TableCell>
                       <TableCell>

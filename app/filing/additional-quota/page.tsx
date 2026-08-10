@@ -244,9 +244,9 @@ export default function FilingAdditionalQuotaPage() {
                 <TableHead>申請專科</TableHead>
                 <TableHead className="text-right">申請人數</TableHead>
                 {/* 資料來源：RRC 會議決議中的最大可收訓容額數（見 CurrentYearQuota.limit） */}
-                <TableHead className="text-right">最大可收訓容額</TableHead>
+                <TableHead className="text-right">可收訓容額</TableHead>
                 {/* 資料來源：該院該專科最新一次的分配容額數（見 CurrentYearQuota.approved） */}
-                <TableHead className="text-right">當年度已分配容額</TableHead>
+                <TableHead className="text-right">已分配容額</TableHead>
                 <TableHead>分類原則</TableHead>
                 <TableHead>
                   <button
@@ -270,7 +270,11 @@ export default function FilingAdditionalQuotaPage() {
             <TableBody>
               {rows.map((a) => (
                 <TableRow key={a.id}>
-                  <TableCell className="font-medium text-gray-900">{a.hospitalName}</TableCell>
+                  <TableCell className="font-medium text-gray-900">
+                    <span className="block max-w-[16rem] truncate" title={a.hospitalName}>
+                      {a.hospitalName}
+                    </span>
+                  </TableCell>
                   <TableCell>{a.specialty}</TableCell>
                   <TableCell className="text-right">{a.requestedQuota} 名</TableCell>
                   <TableCell className="text-right text-gray-600">
@@ -279,7 +283,14 @@ export default function FilingAdditionalQuotaPage() {
                   <TableCell className="text-right text-gray-600">
                     {a.currentYearQuota.approved} 名
                   </TableCell>
-                  <TableCell className="text-sm text-gray-600">{a.classificationPrinciple}</TableCell>
+                  <TableCell className="text-sm text-gray-600">
+                    <span
+                      className="block max-w-[13rem] truncate"
+                      title={a.classificationPrinciple}
+                    >
+                      {a.classificationPrinciple}
+                    </span>
+                  </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-gray-600">{a.incomingDate}</TableCell>
                   <TableCell className="text-sm text-gray-600">{a.incomingDocNumber}</TableCell>
                   <TableCell className="text-sm text-gray-600">{a.ministryDocNumber || "—"}</TableCell>
