@@ -33,7 +33,7 @@ const TEXT_FIELD_LABELS: Record<TextField, string> = {
   ministryDocNumber: "本部文號",
 }
 
-// 多選下拉：申請之專科／分類原則共用
+// 多選下拉：申請專科／分類原則共用
 function MultiSelectFilter({
   label,
   options,
@@ -222,7 +222,7 @@ export default function FilingAdditionalQuotaPage() {
             />
           </div>
           <MultiSelectFilter
-            label="申請之專科"
+            label="申請專科"
             options={specialtyOptions}
             selected={specialtyFilter}
             onChange={setSpecialtyFilter}
@@ -241,7 +241,7 @@ export default function FilingAdditionalQuotaPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>訓練醫院</TableHead>
-                <TableHead>申請之專科</TableHead>
+                <TableHead>申請專科</TableHead>
                 <TableHead className="text-right">申請人數</TableHead>
                 {/* 資料來源：RRC 會議決議中的最大可收訓容額數（見 CurrentYearQuota.limit） */}
                 <TableHead className="text-right">最大可收訓容額</TableHead>

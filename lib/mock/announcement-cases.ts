@@ -56,7 +56,7 @@ export const PENDING_SOURCES: Array<{
     label: "外加/微調容額",
     category: "additional-quota",
     subjectLabel: "申請單位",
-    detailLabel: "申請之專科",
+    detailLabel: "申請專科",
   },
 ]
 
@@ -106,9 +106,9 @@ export interface PendingCase {
   caseKind: PendingCaseKind
   /** 案件主體：醫學會名稱或醫院名稱 */
   subject: string
-  /** 科別（工作台主體欄以此呈現）：醫學會來源＝該會專科，外加容額＝申請之專科 */
+  /** 科別（工作台主體欄以此呈現）：醫學會來源＝該會專科，外加容額＝申請專科 */
   specialty: string
-  /** 次要識別：文件類型／申請之專科／年度 */
+  /** 次要識別：文件類型／申請專科／年度 */
   detail: string
   /** 供公告標題與名單表帶入用的完整案由 */
   title: string
@@ -290,7 +290,7 @@ function seedInitialDocStates() {
     if (i < 3) publish(c, "seed-post-doc-1", "2026-03-12")
   })
 
-  // 外加容額：id 序號為偶數者已公告（含部分「支援偏鄉」，供成果報告反查）
+  // 外加容額：id 序號為偶數者已公告（含部分「支援偏鄉政策」，供成果報告反查）
   const aq = pendingCases.filter((c) => c.sourceModule === "additional-quota")
   aq.forEach((c) => {
     const seq = Number(c.id.replace(/\D/g, "")) || 0

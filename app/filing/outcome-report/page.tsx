@@ -105,7 +105,7 @@ export default function AdditionalQuotaOutcomeReportPage() {
     return [
       { value: "all" as const, label: "全部", count: baseFiltered.length },
       { value: "待審查" as const, label: "待審查", count: count("待審查") },
-      { value: "已歸檔" as const, label: "已歸檔", count: count("已歸檔") },
+      { value: "已歸檔" as const, label: "完成審查", count: count("已歸檔") },
     ]
   }, [baseFiltered])
 
@@ -177,7 +177,7 @@ export default function AdditionalQuotaOutcomeReportPage() {
             />
           </div>
           <MultiSelectFilter
-            label="申請之專科"
+            label="申請專科"
             options={specialtyOptions}
             selected={specialtyFilter}
             onChange={setSpecialtyFilter}
@@ -198,7 +198,9 @@ export default function AdditionalQuotaOutcomeReportPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>訓練醫院</TableHead>
-                    <TableHead className="w-28">分科</TableHead>
+                    <TableHead className="w-28">專科</TableHead>
+                    {/* 該筆外加容額申請案的審查核定名額，非醫院當年度總容額 */}
+                    <TableHead className="w-24 text-right">外加容額數</TableHead>
                     <TableHead className="w-32">分類原則</TableHead>
                     <TableHead className="w-32">
                       <button
@@ -210,7 +212,6 @@ export default function AdditionalQuotaOutcomeReportPage() {
                       </button>
                     </TableHead>
                     <TableHead className="w-44">公告文號</TableHead>
-                    <TableHead className="w-24 text-right">核定容額</TableHead>
                     <TableHead className="w-28">狀態</TableHead>
                     <TableHead className="w-24" />
                   </TableRow>
@@ -220,10 +221,10 @@ export default function AdditionalQuotaOutcomeReportPage() {
                     <TableRow key={c.applicationId}>
                       <TableCell className="font-medium text-gray-900">{c.hospitalName}</TableCell>
                       <TableCell>{c.specialty}</TableCell>
+                      <TableCell className="text-right text-sm text-gray-600">{c.approvedQuota} 名</TableCell>
                       <TableCell className="text-sm text-gray-600">{c.classificationPrinciple}</TableCell>
                       <TableCell className="text-sm text-gray-600">{c.announcementDate}</TableCell>
                       <TableCell className="text-sm text-gray-600">{c.announcementNumber}</TableCell>
-                      <TableCell className="text-right text-sm text-gray-600">{c.approvedQuota} 名</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={AQ_OUTCOME_STATUS_CONFIG[c.status].color}>
                           {AQ_OUTCOME_STATUS_CONFIG[c.status].label}

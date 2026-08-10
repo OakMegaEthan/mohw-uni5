@@ -15,7 +15,7 @@ import { MultiFileUpload } from "@/components/filing/multi-file-upload"
 import { OUTCOME_REPORT_SUB_CONFIG, getQuotaOutcomeReportCase } from "@/lib/mock/quota-outcome-report"
 
 /**
- * 容額成果報告審查詳情（醫事司視角）。
+ * 專科醫師訓練醫院認定作業成果報告審查詳情（醫事司視角）。
  * 報告檔案唯讀；醫事司確認歸檔或退回補件（附退回意見）。不經醫策會、無初審步驟。
  */
 export default function QuotaOutcomeReportReviewDetailPage({
@@ -38,7 +38,7 @@ export default function QuotaOutcomeReportReviewDetailPage({
             className="mb-4 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft className="h-4 w-4" />
-            返回容額成果報告審查
+            返回專科醫師訓練醫院認定作業成果報告審查
           </Link>
           <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
             <p className="text-gray-500">找不到此案件</p>
@@ -74,12 +74,14 @@ export default function QuotaOutcomeReportReviewDetailPage({
           className="mb-4 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
         >
           <ArrowLeft className="h-4 w-4" />
-          返回容額成果報告審查
+          返回專科醫師訓練醫院認定作業成果報告審查
         </Link>
 
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{reportCase.societyName} - 容額成果報告</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {reportCase.societyName} - 專科醫師訓練醫院認定作業成果報告
+            </h1>
             <p className="mt-1 text-sm text-gray-500">
               送出日期：{reportCase.submittedDate}
               {reportCase.archivedDate && `　歸檔日期：${reportCase.archivedDate}`}
@@ -115,7 +117,7 @@ export default function QuotaOutcomeReportReviewDetailPage({
           {/* 報告檔案：醫事司僅檢視 */}
           <Card>
             <CardHeader>
-              <CardTitle>容額成果報告</CardTitle>
+              <CardTitle>專科醫師訓練醫院認定作業成果報告</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="mb-4 text-sm text-muted-foreground">

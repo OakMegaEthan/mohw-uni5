@@ -187,7 +187,7 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
                 onClick={handleArchive}
                 disabled={!reviewerUnit || !comment.trim()}
               >
-                完成審查並歸檔
+                完成審查
               </Button>
             </>
           )}

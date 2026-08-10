@@ -48,6 +48,11 @@ export interface QuotaAdjustmentRow {
   hospitalCode: string
   hospitalName: string
   county: string
+  /**
+   * 可收訓容額（上限）。自容額填報審核通過後的 `HospitalQuotaRow.limit` 帶入，唯讀。
+   * 供使用者檢視目前的調整是否在可收訓容額範圍內；合作機構無自己的上限，為 0。
+   */
+  trainingLimit: number
   /** 基準容額（原公告疊加已通過的微調），自容額填報帶入，不可編輯 */
   baseQuota: number
   /** 調整後容額，醫學會填 */
@@ -106,6 +111,8 @@ export interface BaselineHospital {
   county: string
   /** 合作機構為 0（容額掛主訓機構） */
   quota: number
+  /** 可收訓容額上限（容額填報的 limit）；合作機構為 0 */
+  trainingLimit: number
   applicationType: "single" | "joint"
   isSubRow: boolean
   groupId: string | null
@@ -126,6 +133,7 @@ export function getBaselineHospitals(societyId: string): BaselineHospital[] {
     name: h.name,
     county: h.county ?? "",
     quota: h.currentQuota ?? 0,
+    trainingLimit: h.limit ?? 0,
     applicationType: h.applicationType,
     isSubRow: h.isSubRow,
     groupId: h.groupId,
@@ -217,6 +225,7 @@ export function toAdjustmentRow(h: BaselineHospital): QuotaAdjustmentRow {
     hospitalCode: h.code,
     hospitalName: h.name,
     county: h.county,
+    trainingLimit: h.trainingLimit,
     baseQuota: h.quota,
     adjustedQuota: h.quota,
     reason: "",

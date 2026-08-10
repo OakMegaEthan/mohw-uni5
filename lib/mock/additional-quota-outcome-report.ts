@@ -23,7 +23,7 @@ export type OutcomeReportReviewStatus = "待審查" | "已歸檔"
 
 export const AQ_OUTCOME_STATUS_CONFIG: Record<OutcomeReportReviewStatus, { color: string; label: string }> = {
   待審查: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "待審查" },
-  已歸檔: { color: "bg-green-100 text-green-700 border-green-200", label: "已歸檔" },
+  已歸檔: { color: "bg-green-100 text-green-700 border-green-200", label: "完成審查" },
 }
 
 export interface AqOutcomeReportFile {

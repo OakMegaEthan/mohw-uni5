@@ -47,7 +47,7 @@ export default function HomePage() {
         { name: "文件填報審查", href: "/review/submissions", description: "審查醫學會提交的五份填報文件" },
         { name: "容額填報審查", href: "/review/hospital-quota", description: "審查醫學會提交的訓練醫院容額分配" },
         { name: "容額微調審查", href: "/review/quota-adjustment", description: "審查醫學會的訓練容額微調申請" },
-        { name: "容額成果報告審查", href: "/review/outcome-report", description: "確認醫學會上傳之容額成果報告" },
+        { name: "專科醫師訓練醫院認定作業成果報告審查", href: "/review/outcome-report", description: "確認醫學會上傳之專科醫師訓練醫院認定作業成果報告" },
       ],
     },
     {

@@ -106,10 +106,9 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
       Boolean(principle) &&
       requestedNumber > 0 &&
       !exceedsLimit &&
-      requestReason.trim() !== "" &&
       requestDescription.trim() !== "" &&
       attachments.length > 0,
-    [hospitalName, specialty, incomingDateText, incomingDocNumber, principle, requestedNumber, exceedsLimit, requestReason, requestDescription, attachments],
+    [hospitalName, specialty, incomingDateText, incomingDocNumber, principle, requestedNumber, exceedsLimit, requestDescription, attachments],
   )
 
   const handleQuotaChange = (value: string, setter: (v: string) => void) => {
@@ -198,12 +197,12 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
 
                 <div>
                   <Label className="text-sm font-medium text-gray-700">
-                    申請之專科 {contentEditable && <span className="text-destructive">*</span>}
+                    申請專科 {contentEditable && <span className="text-destructive">*</span>}
                   </Label>
                   {contentEditable ? (
                     <Select value={specialty} onValueChange={setSpecialty}>
                       <SelectTrigger className="mt-1 bg-white">
-                        <SelectValue placeholder="請選擇申請之專科" />
+                        <SelectValue placeholder="請選擇申請專科" />
                       </SelectTrigger>
                       <SelectContent>
                         {getSpecialtyOptions().map((s) => (
@@ -261,7 +260,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                     <Input
                       value={ministryDocNumber}
                       onChange={(e) => setMinistryDocNumber(e.target.value)}
-                      placeholder="核復時填入，例如：衛部醫字第115XXXX號"
+                      placeholder="例如：衛部醫字第115XXXX號"
                       className="mt-1 bg-white"
                     />
                   ) : (
@@ -306,7 +305,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
 
               <div>
                 <Label className="text-sm font-medium text-gray-700">
-                  申請緣由 {contentEditable && <span className="text-destructive">*</span>}
+                  申請緣由
                 </Label>
                 {contentEditable ? (
                   <Textarea

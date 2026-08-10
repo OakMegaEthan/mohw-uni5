@@ -264,6 +264,8 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
                     <TableRow>
                       <TableHead>訓練醫院</TableHead>
                       <TableHead className="w-24">所在地</TableHead>
+                      {/* 自容額填報審核通過後的可收訓容額上限帶入，供檢視調整是否在上限內 */}
+                      <TableHead className="w-28 text-right">可收訓容額</TableHead>
                       <TableHead className="w-28 text-right">原公告容額</TableHead>
                       <TableHead className="w-32 text-right">調整後容額</TableHead>
                       <TableHead className="w-24 text-right">增減</TableHead>
@@ -286,7 +288,10 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
                             <OrgBadges row={r} />
                           </TableCell>
                           <TableCell className="text-base text-gray-600">{r.county}</TableCell>
-                          {/* 合作機構沒有自己的容額，欄位顯示「—」 */}
+                          {/* 合作機構沒有自己的容額與上限，兩欄皆顯示「—」 */}
+                          <TableCell className="text-right text-base text-gray-600">
+                            {r.isSubRow ? "—" : r.trainingLimit}
+                          </TableCell>
                           <TableCell className="text-right text-base text-gray-600">
                             {r.isSubRow ? "—" : r.baseQuota}
                           </TableCell>

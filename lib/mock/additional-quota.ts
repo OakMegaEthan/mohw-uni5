@@ -54,7 +54,7 @@ export interface PreviousPeriod {
 export interface AdditionalQuotaApplication {
   id: string
   hospitalName: string
-  specialty: string // 申請之專科
+  specialty: string // 申請專科
   incomingDate: string // 來文日期
   incomingDocNumber: string // 來文字號
   ministryDocNumber: string // 本部文號
@@ -83,9 +83,11 @@ export interface ClassificationPrinciple {
 }
 
 const DEFAULT_CLASSIFICATION_PRINCIPLES: ClassificationPrinciple[] = [
-  { name: "支援偏鄉", requiresOutcomeReport: true },
-  { name: "健保 IDS 計畫", requiresOutcomeReport: false },
+  { name: "支援偏鄉政策", requiresOutcomeReport: true },
   { name: "醫中支援計畫", requiresOutcomeReport: false },
+  { name: "重點科別公費醫師制度計畫名額", requiresOutcomeReport: false },
+  { name: "地方養成公費醫師計畫", requiresOutcomeReport: false },
+  { name: "國防部戰傷相關政策", requiresOutcomeReport: false },
 ]
 let classificationPrinciples: ClassificationPrinciple[] = DEFAULT_CLASSIFICATION_PRINCIPLES.map((p) => ({ ...p }))
 
@@ -151,7 +153,7 @@ function generateApplications(): AdditionalQuotaApplication[] {
       const approvedBase = 8 + (seq % 6)
       const limit = approvedBase + 6 + (seq % 4)
       // 依醫院索引指派分類原則，與階段（依 seq）解耦，
-      // 使部分已公告案件落在「支援偏鄉」（需成果報告），供外加容額成果報告模組取用
+      // 使部分已公告案件落在「支援偏鄉政策」（需成果報告），供外加容額成果報告模組取用
       const principle = principles[h % principles.length].name
       const month = 1 + (seq % 3)
       const day = 5 + (seq % 20)
@@ -208,7 +210,7 @@ export function getAdditionalQuotaApplication(id: string): AdditionalQuotaApplic
   return ADDITIONAL_QUOTA_APPLICATIONS.find((a) => a.id === id)
 }
 
-/** 申請之專科的可選清單（去重、依 25 專科醫學會科別）。 */
+/** 申請專科的可選清單（去重、依 25 專科醫學會科別）。 */
 export function getSpecialtyOptions(): string[] {
   return [...new Set(SPECIALTIES)]
 }
