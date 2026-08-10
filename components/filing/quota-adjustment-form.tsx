@@ -12,7 +12,18 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ArrowDown, ArrowLeft, ArrowUp, Check, FileText, Info, Plus, Upload, X } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Check,
+  Download,
+  FileText,
+  Info,
+  Plus,
+  Upload,
+  X,
+} from "lucide-react"
 
 import { PageContainer } from "@/components/layout/page-container"
 import { Badge } from "@/components/ui/badge"
@@ -29,6 +40,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   QUOTA_ADJUSTMENT_STAGE_CONFIG,
@@ -77,6 +89,10 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
   const [returned, setReturned] = useState(current?.returnedFrom ?? null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerSelected, setPickerSelected] = useState<string[]>([])
+  // 匯入名單：比照容額填報的流程（先選匯入方式 → 才顯示範例下載與上傳區）。
+  // mock 僅示意 UI，不做實際解析。
+  const [importOpen, setImportOpen] = useState(false)
+  const [importMode, setImportMode] = useState<"append" | "replace" | null>(null)
 
   const baseline = useMemo(
     () => (current ? getEffectiveBaseline(current.societyId, current.year) : []),
@@ -237,19 +253,33 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">一、要調整的訓練醫院（{rows.length}）</CardTitle>
             {editable && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={() => {
-                  setPickerSelected([])
-                  setPickerOpen(true)
-                }}
-                disabled={candidates.length === 0}
-              >
-                <Plus className="h-4 w-4" />
-                加選訓練醫院
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    setImportMode(null)
+                    setImportOpen(true)
+                  }}
+                >
+                  <Upload className="h-4 w-4" />
+                  匯入名單
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    setPickerSelected([])
+                    setPickerOpen(true)
+                  }}
+                  disabled={candidates.length === 0}
+                >
+                  <Plus className="h-4 w-4" />
+                  加選訓練醫院
+                </Button>
+              </div>
             )}
           </CardHeader>
           <CardContent className="p-0">
@@ -518,6 +548,101 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
               className="bg-[#2d3a8c] hover:bg-[#252f73]"
             >
               加入 {pickerSelected.length} 家
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 匯入名單：流程比照容額填報（先選匯入方式，選完才顯示範例下載與上傳區）。
+          mock 僅示意 UI，不做檔案解析與資料寫入。 */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>匯入名單</DialogTitle>
+            <DialogDescription className="text-base">
+              以 Excel 批次帶入要調整的訓練醫院與調整後容額，免逐家加選與輸入。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            <div>
+              <Label className="mb-3 block text-base font-medium">匯入方式</Label>
+              <RadioGroup
+                value={importMode ?? ""}
+                onValueChange={(v) => setImportMode(v as "append" | "replace")}
+                className="space-y-2.5"
+              >
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                    importMode === "append"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <RadioGroupItem value="append" className="mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-base font-medium">附加至現有清單</div>
+                    <div className="mt-0.5 text-sm text-muted-foreground">
+                      將檔案中的訓練醫院新增至目前清單末尾，已加選的醫院與其容額不受影響
+                    </div>
+                  </div>
+                </label>
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                    importMode === "replace"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <RadioGroupItem value="replace" className="mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-base font-medium">覆蓋現有清單</div>
+                    <div className="mt-0.5 text-sm text-muted-foreground">
+                      以檔案內容完整取代目前清單，已加選的醫院與其容額將全部清除
+                    </div>
+                  </div>
+                </label>
+              </RadioGroup>
+            </div>
+
+            {importMode && (
+              <div className="space-y-4 border-t pt-4">
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <p className="mb-3 text-sm text-muted-foreground">
+                    請先下載範例文件，依格式填寫「訓練醫院、調整後容額、微調原因」後再上傳。
+                    可匯入的醫院僅限本會容額填報送過的訓練機構。
+                  </p>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    下載範例文件 (.xlsx)
+                  </Button>
+                </div>
+                <div>
+                  <Label className="mb-2 block text-base font-medium">選擇檔案</Label>
+                  <div className="cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+                    <Upload className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                    <p className="text-base text-muted-foreground">點擊或拖曳檔案至此處上傳</p>
+                    <p className="mt-1 text-sm text-muted-foreground">支援 .xlsx, .xls 格式</p>
+                    <Input type="file" className="hidden" accept=".xlsx,.xls" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>
+              取消
+            </Button>
+            <Button
+              disabled={!importMode}
+              className="bg-[#2d3a8c] text-white hover:bg-[#252f73]"
+              onClick={() => {
+                setImportOpen(false)
+                toast.info("匯入由後端解析檔案後帶入（mock 示意）")
+              }}
+            >
+              上傳
             </Button>
           </DialogFooter>
         </DialogContent>
