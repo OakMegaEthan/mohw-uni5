@@ -56,7 +56,7 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
     )
   }
 
-  const isArchived = reportCase.status === "已歸檔"
+  const isUploaded = reportCase.status === "已上傳"
 
   const handleUploadReport = () =>
     setReports((prev) => [
@@ -65,9 +65,9 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
     ])
   const handleRemoveReport = (id: string) => setReports((prev) => prev.filter((f) => f.id !== id))
 
-  const handleSave = () => toast.success("已儲存審查評論")
-  const handleArchive = () => {
-    toast.success("審查完成，已歸檔備查")
+  const handleSave = () => toast.success("已儲存草稿")
+  const handleUploadDone = () => {
+    toast.success("已完成上傳", { description: "成果報告與審查評論已登錄留存" })
     setTimeout(() => router.push("/filing/outcome-report"), 0)
   }
 
@@ -89,7 +89,7 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
             </h1>
             <p className="mt-1 text-sm text-gray-500">
               分類原則：{reportCase.classificationPrinciple}　公告日期：{reportCase.announcementDate}
-              {reportCase.archivedDate && `　歸檔日期：${reportCase.archivedDate}`}
+              {reportCase.uploadedDate && `　上傳日期：${reportCase.uploadedDate}`}
             </p>
           </div>
           <Badge variant="outline" className={AQ_OUTCOME_STATUS_CONFIG[reportCase.status].color}>
@@ -97,11 +97,11 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
           </Badge>
         </div>
 
-        {isArchived && (
+        {isUploaded && (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
             <div className="flex items-center gap-2 text-green-700">
               <ClipboardCheck className="h-5 w-5 shrink-0" />
-              <span className="font-medium">本成果報告審查完成並已歸檔，僅供查看</span>
+              <span className="font-medium">本案成果報告與審查評論已登錄完成，僅供查看</span>
             </div>
           </div>
         )}
@@ -118,8 +118,8 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
               </p>
               <MultiFileUpload
                 files={reports}
-                onUpload={isArchived ? undefined : handleUploadReport}
-                onRemove={isArchived ? undefined : handleRemoveReport}
+                onUpload={isUploaded ? undefined : handleUploadReport}
+                onRemove={isUploaded ? undefined : handleRemoveReport}
                 uploadLabel="登錄成果報告檔案"
                 emptyState="尚未登錄成果報告"
               />
@@ -132,7 +132,7 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
               <CardTitle className="text-base">審查評論</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isArchived ? (
+              {isUploaded ? (
                 <>
                   <div>
                     <Label className="mb-2 block text-sm text-muted-foreground">審查單位</Label>
@@ -177,17 +177,23 @@ export default function AdditionalQuotaOutcomeReportDetailPage({
           <Button variant="outline" asChild>
             <Link href="/filing/outcome-report">返回</Link>
           </Button>
-          {!isArchived && (
+          {!isUploaded && (
             <>
+              {/* 報告檔案、審查單位、審查評論是同一個動作的三個部分，缺一不可完成 */}
+              {(reports.length === 0 || !reviewerUnit || !comment.trim()) && (
+                <p className="mr-auto text-sm text-amber-700">
+                  請登錄成果報告檔案，並填寫審查單位與審查評論
+                </p>
+              )}
               <Button variant="outline" onClick={handleSave}>
-                儲存
+                儲存草稿
               </Button>
               <Button
                 className="bg-[#2d3a8c] text-white hover:bg-[#252f73]"
-                onClick={handleArchive}
-                disabled={!reviewerUnit || !comment.trim()}
+                onClick={handleUploadDone}
+                disabled={reports.length === 0 || !reviewerUnit || !comment.trim()}
               >
-                完成審查
+                完成上傳
               </Button>
             </>
           )}

@@ -12,18 +12,26 @@ function isoToRoc(iso: string): string {
 
 // 外加容額成果報告的 mock 來源（醫事司＋醫策會共用的獨立模組）。
 //
-// 訓練醫院於外加容額案件公告執行滿一年後，系統外發函給醫事司與醫策會。兩單位系統外
-// 協調分工，實際由其中一方擇一負責審查、留下評論後儲存歸檔（非兩者皆填）。無
-// 「不通過／退回」狀態；審查完成即歸檔，作為該院日後再申請外加容額時的審查依據。
+// 訓練醫院於外加容額案件公告執行滿一年後，系統外發函給醫事司與醫策會（訓練醫院不進系統）。
+// **系統自動算出滿一年的案件、直接列為待辦**，由醫事司或醫策會其中一方進系統，
+// 把報告檔案與審查評論**一次登錄完成**（非兩段式：沒有先上傳、後審查的分離）。
+// 無「不通過／退回」狀態；登錄後即為終點，作為該院日後再申請外加容額時的審查依據。
 //
-// 適用案件：分類原則「需成果報告」開啟、且已公告的外加容額案件。
-// （公告滿一年的時點於實際系統判斷；mock 以已公告 + 需報告近似之。）
+// 適用案件：分類原則「需成果報告」開啟、且已公告滿一年的外加容額案件。
+//
+// ⚠️ **mock 未實作滿一年的日期計算**：現以「已公告 + 分類原則需報告」近似之。
+// 實際系統應以「公告日 + 1 年 ≤ 今日」篩選；**起算點採首次公告日或最新修正公告日尚未定案**
+// （公告文號可疊修正，見 announcement-cases 的 officialDoc.entries），待與客戶確認。
 
-export type OutcomeReportReviewStatus = "待審查" | "已歸檔"
+/**
+ * 狀態機只有兩態，且語意是**登錄進度**而非審查進度——因為上傳報告與填寫審查評論
+ * 是同一個動作，不存在「已上傳但未審查」的中間態。
+ */
+export type OutcomeReportReviewStatus = "待上傳" | "已上傳"
 
 export const AQ_OUTCOME_STATUS_CONFIG: Record<OutcomeReportReviewStatus, { color: string; label: string }> = {
-  待審查: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "待審查" },
-  已歸檔: { color: "bg-green-100 text-green-700 border-green-200", label: "完成審查" },
+  待上傳: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "待上傳" },
+  已上傳: { color: "bg-green-100 text-green-700 border-green-200", label: "已上傳" },
 }
 
 export interface AqOutcomeReportFile {
@@ -47,10 +55,12 @@ export interface AqOutcomeReportCase {
   status: OutcomeReportReviewStatus
   // 訓練醫院提交的成果報告（系統外發函，於系統登錄）
   reports: AqOutcomeReportFile[]
-  // 審查評論：醫事司或醫策會擇一單位填寫（非兩者皆填），故評論與填寫單位一對一
+  // 審查評論：醫事司或醫策會擇一單位填寫（非兩者皆填），故評論與填寫單位一對一。
+  // 與 reports 同一個動作登錄，不會出現有檔案卻無評論的狀態。
   reviewerUnit: ReviewerUnit | null
   comment: string
-  archivedDate: string | null
+  /** 完成登錄的日期（待上傳為 null） */
+  uploadedDate: string | null
 }
 
 export type ReviewerUnit = "MOHW" | "JCT"
@@ -76,9 +86,11 @@ const CASES: AqOutcomeReportCase[] = getPendingCasesBySource("additional-quota")
   .filter(({ app }) => app && principleRequiresReport(app.classificationPrinciple))
   .map(({ c, app }, i) => {
     const a = app!
+    // 首次公告（entries[0]）；滿一年的起算點是否採此筆尚未定案，見檔頭 warning
     const firstEntry = c.officialDoc!.entries[0]
-    const status: OutcomeReportReviewStatus = i % 2 === 0 ? "待審查" : "已歸檔"
-    const archived = status === "已歸檔"
+    // mock 兩種狀態各半，讓畫面同時看得到待上傳與已上傳的案件
+    const status: OutcomeReportReviewStatus = i % 2 === 0 ? "待上傳" : "已上傳"
+    const uploaded = status === "已上傳"
     return {
       applicationId: a.id,
       hospitalName: a.hospitalName,
@@ -89,14 +101,15 @@ const CASES: AqOutcomeReportCase[] = getPendingCasesBySource("additional-quota")
       announcementNumber: firstEntry.docNumber,
       approvedQuota: a.approvedQuota ?? 0,
       status,
-      reports: buildReports(a.hospitalName, a.specialty),
-      reviewerUnit: archived ? (i % 4 === 1 ? "JCT" : "MOHW") : null,
-      comment: !archived
+      // 待上傳＝尚未登錄，故無檔案、無評論、無填寫單位（三者同一動作產生）
+      reports: uploaded ? buildReports(a.hospitalName, a.specialty) : [],
+      reviewerUnit: uploaded ? (i % 4 === 1 ? "JCT" : "MOHW") : null,
+      comment: !uploaded
         ? ""
         : i % 4 === 1
           ? `經醫策會就訓練品質面向審視，${a.specialty}核心課程與師資配置達標，建議留存供後續申請參酌。`
-          : `${a.hospitalName}${a.specialty}外加容額執行一年，訓練成效符合預期，成果報告內容完整，同意歸檔備查。`,
-      archivedDate: archived ? "116/03/15" : null,
+          : `${a.hospitalName}${a.specialty}外加容額執行一年，訓練成效符合預期，成果報告內容完整，同意留存備查。`,
+      uploadedDate: uploaded ? "116/03/15" : null,
     }
   })
 
