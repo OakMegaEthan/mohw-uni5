@@ -76,6 +76,11 @@ export function GlobalNav() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/filing/quota-adjustment" className="cursor-pointer">
+                      容額微調
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/filing/additional-quota" className="cursor-pointer">
                       外加容額管理
                     </Link>
@@ -112,8 +117,13 @@ export function GlobalNav() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/review/quota-adjustment" className="cursor-pointer">
+                      容額微調審查
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/review/outcome-report" className="cursor-pointer">
-                      容額成果報告審查
+                      訓練醫院成果報告審查
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

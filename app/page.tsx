@@ -2,7 +2,7 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getCaseDocStatusCounts } from "@/lib/mock/announcement-cases"
-import { Users, ClipboardCheck, ArrowRight, Globe, BarChart3, Calculator, FileEdit, Settings } from "lucide-react"
+import { Users, ClipboardCheck, ArrowRight, Globe, FileEdit, Settings } from "lucide-react"
 
 export default function HomePage() {
   // 兩個公告模組各自的待辦件數（載入時的快照即可；mock 為 module singleton）
@@ -33,6 +33,7 @@ export default function HomePage() {
       pages: [
         { name: "文件填報", href: "/filing", description: "管理年度文件填報作業" },
         { name: "容額填報", href: "/filing/quota-filing", description: "管理訓練醫院名單與容額分配" },
+        { name: "容額微調", href: "/filing/quota-adjustment", description: "在既有訓練醫院之間調整容額，總數不變" },
         { name: "外加容額管理", href: "/filing/additional-quota", description: "登錄、審查外加容額申請並辦理公告" },
         { name: "外加容額成果報告", href: "/filing/outcome-report", description: "醫事司與醫策會審查訓練醫院外加容額成果報告" },
       ],
@@ -45,7 +46,8 @@ export default function HomePage() {
       pages: [
         { name: "文件填報審查", href: "/review/submissions", description: "審查醫學會提交的五份填報文件" },
         { name: "容額填報審查", href: "/review/hospital-quota", description: "審查醫學會提交的訓練醫院容額分配" },
-        { name: "容額成果報告審查", href: "/review/outcome-report", description: "確認醫學會上傳之容額成果報告" },
+        { name: "容額微調審查", href: "/review/quota-adjustment", description: "審查醫學會的訓練容額微調申請" },
+        { name: "專科醫師訓練醫院認定作業成果報告審查", href: "/review/outcome-report", description: "確認醫學會上傳之專科醫師訓練醫院認定作業成果報告" },
       ],
     },
     {
@@ -68,28 +70,6 @@ export default function HomePage() {
           href: "/announcement-management",
           description: "編製並發布站內公告，可引用已製作的公告文件",
           badge: docCounts["已製作"],
-        },
-      ],
-    },
-    {
-      title: "\u7D71\u8A08\u5C08\u5340",
-      description: "\u6AA2\u8996\u7CFB\u7D71\u7D71\u8A08\u6578\u64DA\u8207\u532F\u51FA\u5831\u8868",
-      icon: BarChart3,
-      color: "bg-indigo-500",
-      pages: [
-        { name: "\u7D71\u8A08\u5100\u8868\u677F", href: "/statistics", description: "\u6AA2\u8996\u6574\u9AD4\u7D71\u8A08\u6578\u64DA\u8207\u8996\u89BA\u5316\u5716\u8868" },
-      ],
-    },
-    {
-      title: "\u5DE5\u5177\u5C08\u5340",
-      description: "\u63D0\u4F9B\u5BE9\u67E5\u4F5C\u696D\u6240\u9700\u7684\u8F14\u52A9\u5DE5\u5177",
-      icon: Calculator,
-      color: "bg-teal-500",
-      pages: [
-        {
-          name: "\u5BB9\u984D\u5206\u914D\u8A66\u7B97",
-          href: "/tools/quota-calculator",
-          description: "\u5354\u52A9\u5206\u7D44\u5BE9\u67E5\u8207 RRC \u5927\u6703\u9032\u884C\u5BB9\u984D\u5206\u914D\u8A0E\u8AD6",
         },
       ],
     },

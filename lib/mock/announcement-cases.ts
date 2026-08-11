@@ -1,9 +1,11 @@
 // 待公告案件池：三條審查主線的終點都回到醫事司，由公告管理模組彙整成公告。
 //
 // 案件不是自己長出來的，而是從既有三個模組「衍生」而來（見 docs/announcement-module-plan.md）：
-//   文件填報審查 /review/submissions      案件粒度＝文件類型 × 醫學會（最多 6 × 25）
-//   容額填報審查 /review/hospital-quota   案件粒度＝醫學會
-//   外加容額     /filing/additional-quota 案件粒度＝申請項目 uid（院 × 分科）
+//   文件填報審查 /review/submissions        案件粒度＝文件類型 × 醫學會（最多 6 × 25）
+//   容額填報審查 /review/hospital-quota     案件粒度＝醫學會
+//   外加容額     /filing/additional-quota   案件粒度＝申請項目 uid（院 × 分科）
+//   容額微調     /review/quota-adjustment   案件粒度＝醫學會 × 年度 × 第 N 次
+// 後兩者同屬「外加/微調容額」這個來源 tab（07-31 決策 #2）。
 //
 // 公告端採「製作→發布」模型（見 docs/business-logic.md）。每案的公告進度：
 //   待製作（無公告檔案）→ 已製作（官網公告文件已產出、有文號）→ 已公告（檔案被已發布的系統內公告引用）
@@ -16,6 +18,7 @@ import {
 } from "@/lib/mock/review-submissions"
 import { mockHospitalQuotaSocieties } from "@/lib/mock/review-hospital-quota"
 import { getAdditionalQuotaApplications } from "@/lib/mock/additional-quota"
+import { getBalance, getQuotaAdjustmentCases } from "@/lib/mock/quota-adjustment"
 import { allSocieties } from "@/lib/data/societies"
 
 /** 醫學會 id → 專科，供工作台「科別」欄帶出（#1：醫學會欄改科別） */
@@ -48,11 +51,12 @@ export const PENDING_SOURCES: Array<{
     detailLabel: "年度",
   },
   {
+    // 外加容額與容額微調同屬一個文件分類（07-31 決策 #2），共用此來源 tab
     value: "additional-quota",
-    label: "外加容額",
+    label: "外加/微調容額",
     category: "additional-quota",
-    subjectLabel: "訓練醫院",
-    detailLabel: "申請分科",
+    subjectLabel: "申請單位",
+    detailLabel: "申請專科",
   },
 ]
 
@@ -82,14 +86,29 @@ export interface OfficialDoc {
   producedDate: string
 }
 
+/**
+ * 案件類型。外加容額與容額微調共用「外加/微調容額」來源 tab，但公告文件內容不同
+ * （外加＝某院某分科增 N 名；微調＝某醫學會容額調整對照表），故需可區分。
+ */
+export type PendingCaseKind = "additional" | "adjustment" | "document" | "quota"
+
+export const CASE_KIND_CONFIG: Record<PendingCaseKind, { label: string; color: string }> = {
+  additional: { label: "外加容額", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  adjustment: { label: "容額微調", color: "bg-teal-100 text-teal-700 border-teal-200" },
+  document: { label: "文件填報", color: "bg-gray-100 text-gray-700 border-gray-200" },
+  quota: { label: "容額填報", color: "bg-gray-100 text-gray-700 border-gray-200" },
+}
+
 export interface PendingCase {
   id: string
   sourceModule: PendingSourceModule
+  /** 案件類型；同一來源 tab 內可能混有多種（外加 vs 微調） */
+  caseKind: PendingCaseKind
   /** 案件主體：醫學會名稱或醫院名稱 */
   subject: string
-  /** 科別（工作台主體欄以此呈現）：醫學會來源＝該會專科，外加容額＝申請分科 */
+  /** 科別（工作台主體欄以此呈現）：醫學會來源＝該會專科，外加容額＝申請專科 */
   specialty: string
-  /** 次要識別：文件類型／申請分科／年度 */
+  /** 次要識別：文件類型／申請專科／年度 */
   detail: string
   /** 供公告標題與名單表帶入用的完整案由 */
   title: string
@@ -146,6 +165,7 @@ function buildFromSubmissions(): PendingCase[] {
         cases.push({
           id: `sub-${docType.id}-${s.societyId}`,
           sourceModule: "submissions",
+          caseKind: "document",
           subject: society.name,
           specialty: SPECIALTY_BY_SOCIETY_ID.get(s.societyId) ?? society.name,
           detail: docType.name,
@@ -169,6 +189,7 @@ function buildFromQuotaFiling(): PendingCase[] {
     .map((s) => ({
       id: `quota-${s.id}`,
       sourceModule: "quota-filing" as const,
+      caseKind: "quota" as const,
       subject: s.name,
       specialty: SPECIALTY_BY_SOCIETY_ID.get(s.id) ?? s.name,
       detail: s.year,
@@ -189,6 +210,7 @@ function buildFromAdditionalQuota(): PendingCase[] {
     .map((a) => ({
       id: `aq-case-${a.id}`,
       sourceModule: "additional-quota" as const,
+      caseKind: "additional" as const,
       subject: a.hospitalName,
       specialty: a.specialty,
       detail: a.specialty,
@@ -200,6 +222,30 @@ function buildFromAdditionalQuota(): PendingCase[] {
       publishedPostId: null,
       publishedDate: null,
     }))
+}
+
+function buildFromQuotaAdjustment(): PendingCase[] {
+  // 容額微調與外加容額共用來源 tab；主體為醫學會（微調是會內既有醫院之間搬動容額）
+  return getQuotaAdjustmentCases()
+    .filter((c) => c.stage === "審查通過" && c.returnedFrom === null)
+    .map((c) => {
+      const b = getBalance(c.rows)
+      return {
+        id: `adj-case-${c.id}`,
+        sourceModule: "additional-quota" as const,
+        caseKind: "adjustment" as const,
+        subject: c.societyName,
+        specialty: c.specialty,
+        detail: `第 ${c.round} 次微調`,
+        title: `${c.societyName}　${c.year}訓練容額第 ${c.round} 次微調（${b.changedCount} 家異動）`,
+        year: c.year,
+        approvedDate: rocToIso(c.approvedDate) ?? "2026-06-18",
+        reviewHref: `/review/quota-adjustment/${c.id}`,
+        officialDoc: null,
+        publishedPostId: null,
+        publishedDate: null,
+      }
+    })
 }
 
 /** 民國 "115/01/05" → 西元 "2026-01-05"；格式不符時回 null */
@@ -215,6 +261,7 @@ const pendingCases: PendingCase[] = [
   ...buildFromSubmissions(),
   ...buildFromQuotaFiling(),
   ...buildFromAdditionalQuota(),
+  ...buildFromQuotaAdjustment(),
 ]
 
 // 種入初始的公告檔案進度，讓「已製作／已公告」與外加容額成果報告有展示資料。
@@ -243,7 +290,7 @@ function seedInitialDocStates() {
     if (i < 3) publish(c, "seed-post-doc-1", "2026-03-12")
   })
 
-  // 外加容額：id 序號為偶數者已公告（含部分「支援偏鄉」，供成果報告反查）
+  // 外加容額：id 序號為偶數者已公告（含部分「支援偏鄉政策」，供成果報告反查）
   const aq = pendingCases.filter((c) => c.sourceModule === "additional-quota")
   aq.forEach((c) => {
     const seq = Number(c.id.replace(/\D/g, "")) || 0

@@ -106,10 +106,9 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
       Boolean(principle) &&
       requestedNumber > 0 &&
       !exceedsLimit &&
-      requestReason.trim() !== "" &&
       requestDescription.trim() !== "" &&
       attachments.length > 0,
-    [hospitalName, specialty, incomingDateText, incomingDocNumber, principle, requestedNumber, exceedsLimit, requestReason, requestDescription, attachments],
+    [hospitalName, specialty, incomingDateText, incomingDocNumber, principle, requestedNumber, exceedsLimit, requestDescription, attachments],
   )
 
   const handleQuotaChange = (value: string, setter: (v: string) => void) => {
@@ -198,12 +197,12 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
 
                 <div>
                   <Label className="text-sm font-medium text-gray-700">
-                    申請分科 {contentEditable && <span className="text-destructive">*</span>}
+                    申請專科 {contentEditable && <span className="text-destructive">*</span>}
                   </Label>
                   {contentEditable ? (
                     <Select value={specialty} onValueChange={setSpecialty}>
                       <SelectTrigger className="mt-1 bg-white">
-                        <SelectValue placeholder="請選擇申請分科" />
+                        <SelectValue placeholder="請選擇申請專科" />
                       </SelectTrigger>
                       <SelectContent>
                         {getSpecialtyOptions().map((s) => (
@@ -261,7 +260,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                     <Input
                       value={ministryDocNumber}
                       onChange={(e) => setMinistryDocNumber(e.target.value)}
-                      placeholder="核復時填入，例如：衛部醫字第115XXXX號"
+                      placeholder="例如：衛部醫字第115XXXX號"
                       className="mt-1 bg-white"
                     />
                   ) : (
@@ -306,7 +305,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
 
               <div>
                 <Label className="text-sm font-medium text-gray-700">
-                  申請緣由 {contentEditable && <span className="text-destructive">*</span>}
+                  申請緣由
                 </Label>
                 {contentEditable ? (
                   <Textarea
@@ -320,17 +319,17 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                 )}
               </div>
 
-              {/* 申請容額數：容額現況與試算緊鄰輸入欄，超過上限即為錯誤狀態 */}
+              {/* 申請人數：容額現況與試算緊鄰輸入欄，超過可收訓容額即為錯誤狀態 */}
               <div>
                 <Label className="text-sm font-medium text-gray-700">
-                  申請容額數 {contentEditable && <span className="text-destructive">*</span>}
+                  申請人數 {contentEditable && <span className="text-destructive">*</span>}
                 </Label>
                 <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
                   <span>
-                    已核定容額 <strong className="text-gray-900">{quota.approved}</strong> 名
+                    已分配容額 <strong className="text-gray-900">{quota.approved}</strong> 名
                   </span>
                   <span>
-                    容額上限 <strong className="text-gray-900">{quota.limit}</strong> 名
+                    可收訓容額 <strong className="text-gray-900">{quota.limit}</strong> 名
                   </span>
                   <span className="text-gray-500">
                     效期 {quota.validFrom} ~ {quota.validTo}
@@ -372,7 +371,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                   {exceedsLimit && (
                     <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
                       <AlertCircle className="h-4 w-4 shrink-0" />
-                      超過容額上限 {quota.limit} 名，請調整申請容額數
+                      超過可收訓容額 {quota.limit} 名，請調整申請人數
                     </span>
                   )}
                 </div>

@@ -15,7 +15,7 @@ import {
 } from "@/lib/mock/quota-outcome-report"
 
 /**
- * 容額成果報告審查（醫事司視角）。
+ * 專科醫師訓練醫院認定作業成果報告審查（醫事司視角）。
  * 醫學會對各申請醫院的評估結果，與審查階段時間解耦（待送件起即可上傳），
  * 直接送醫事司確認歸檔或退回補件（不經醫策會）。
  */
@@ -42,9 +42,9 @@ export default function QuotaOutcomeReportReviewPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">容額成果報告審查</h1>
+          <h1 className="text-2xl font-bold text-gray-900">專科醫師訓練醫院認定作業成果報告審查</h1>
           <p className="mt-1 text-base text-gray-500">
-            醫學會就各申請醫院所送之評估結果（容額申請前置依據），確認無誤即歸檔，或退回補件
+            醫學會辦理專科醫師訓練醫院認定作業，並於衛生福利部規定期限內繳交成果報告，確認無誤即備查，或退回補件
           </p>
         </div>
 

@@ -104,8 +104,8 @@ export default function AdditionalQuotaOutcomeReportPage() {
     const count = (s: OutcomeReportReviewStatus) => baseFiltered.filter((c) => c.status === s).length
     return [
       { value: "all" as const, label: "全部", count: baseFiltered.length },
-      { value: "待審查" as const, label: "待審查", count: count("待審查") },
-      { value: "已歸檔" as const, label: "已歸檔", count: count("已歸檔") },
+      { value: "待上傳" as const, label: "待上傳", count: count("待上傳") },
+      { value: "已上傳" as const, label: "已上傳", count: count("已上傳") },
     ]
   }, [baseFiltered])
 
@@ -130,7 +130,7 @@ export default function AdditionalQuotaOutcomeReportPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">外加容額成果報告</h1>
           <p className="mt-1 text-base text-gray-500">
-            訓練醫院於外加容額公告執行滿一年後提交之成果報告，由醫事司與醫策會分工審查、留存歸檔
+            系統自動列出公告執行滿一年的案件，由醫事司或醫策會登錄訓練醫院所送成果報告與審查評論
           </p>
         </div>
 
@@ -177,7 +177,7 @@ export default function AdditionalQuotaOutcomeReportPage() {
             />
           </div>
           <MultiSelectFilter
-            label="申請分科"
+            label="申請專科"
             options={specialtyOptions}
             selected={specialtyFilter}
             onChange={setSpecialtyFilter}
@@ -198,7 +198,9 @@ export default function AdditionalQuotaOutcomeReportPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>訓練醫院</TableHead>
-                    <TableHead className="w-28">分科</TableHead>
+                    <TableHead className="w-28">專科</TableHead>
+                    {/* 該筆外加容額申請案的審查核定名額，非醫院當年度總容額 */}
+                    <TableHead className="w-24 text-right">外加容額數</TableHead>
                     <TableHead className="w-32">分類原則</TableHead>
                     <TableHead className="w-32">
                       <button
@@ -210,7 +212,6 @@ export default function AdditionalQuotaOutcomeReportPage() {
                       </button>
                     </TableHead>
                     <TableHead className="w-44">公告文號</TableHead>
-                    <TableHead className="w-24 text-right">核定容額</TableHead>
                     <TableHead className="w-28">狀態</TableHead>
                     <TableHead className="w-24" />
                   </TableRow>
@@ -218,12 +219,23 @@ export default function AdditionalQuotaOutcomeReportPage() {
                 <TableBody>
                   {rows.map((c) => (
                     <TableRow key={c.applicationId}>
-                      <TableCell className="font-medium text-gray-900">{c.hospitalName}</TableCell>
+                      <TableCell className="font-medium text-gray-900">
+                        <span className="block max-w-[16rem] truncate" title={c.hospitalName}>
+                          {c.hospitalName}
+                        </span>
+                      </TableCell>
                       <TableCell>{c.specialty}</TableCell>
-                      <TableCell className="text-sm text-gray-600">{c.classificationPrinciple}</TableCell>
+                      <TableCell className="text-right text-sm text-gray-600">{c.approvedQuota} 名</TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        <span
+                          className="block max-w-[13rem] truncate"
+                          title={c.classificationPrinciple}
+                        >
+                          {c.classificationPrinciple}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-sm text-gray-600">{c.announcementDate}</TableCell>
                       <TableCell className="text-sm text-gray-600">{c.announcementNumber}</TableCell>
-                      <TableCell className="text-right text-sm text-gray-600">{c.approvedQuota} 名</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={AQ_OUTCOME_STATUS_CONFIG[c.status].color}>
                           {AQ_OUTCOME_STATUS_CONFIG[c.status].label}
@@ -236,7 +248,7 @@ export default function AdditionalQuotaOutcomeReportPage() {
                             className="flex items-center gap-1"
                           >
                             <FileText className="h-4 w-4" />
-                            {c.status === "已歸檔" ? "檢視" : "審查"}
+                            {c.status === "已上傳" ? "檢視" : "登錄"}
                             <ChevronRight className="h-4 w-4" />
                           </Link>
                         </Button>

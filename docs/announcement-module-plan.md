@@ -356,7 +356,16 @@
 
 ### 尚未處理
 
-- `/statistics` 仍有寫死的「待公告／已公告」假數字（五節已註記，未動）。
 - 官網公告文件的「更正」（`addOfficialCorrection`）仍未接 UI 入口。
-- 首頁 badge 為 server component 於載入時的快照；client 端製作後不會即時更新（mock singleton
-  的既有限制，整頁重載本來就會重置）。
+
+### 後續調整（2026-08-05 晚）
+
+- **移除 `/statistics` 與 `/tools/quota-calculator`**（含首頁兩張卡片）：不在需求範圍，
+  留著會讓後續 session 誤以為是現行功能。`/statistics` 的待公告／已公告統計本就是寫死假數字。
+  註：`lib/mock/role-templates.ts` 仍留有 `statistics`（統計資料檢視）權限項，屬角色模板模組的
+  mock 內容，未一併移除。
+- **工作台階段分頁由三段收斂為兩段**：待製作／已製作。「是否已發站內公告」不再獨立成分頁
+  （那是站內公告模組的狀態，拿來切本模組的作業階段會讓層級變深），改以「系統內公告」欄表達。
+  資料層 `CaseDocStatus` 維持三態不動（`isCaseAnnounced`、首頁 badge 仍依賴），只有畫面合併，
+  兩者以 `WorkbenchStage` / `toWorkbenchStage()` 分離。已公告的列不給勾選框。
+- 首頁 badge 的載入快照限制**確認接受**（mock 畫面，寫死無妨），不再列為待處理。
