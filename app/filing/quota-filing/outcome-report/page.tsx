@@ -65,20 +65,20 @@ function QuotaOutcomeReportContent() {
     reportStatus === "待上傳"
       ? []
       : [
-          { id: "or-1", name: "容額成果報告_審查細節.pdf", size: "2.6 MB" },
-          { id: "or-2", name: "容額成果報告_附件_訓練醫院明細.xlsx", size: "1.1 MB" },
+          { id: "or-1", name: "專科醫師訓練醫院認定作業成果報告_審查細節.pdf", size: "2.6 MB" },
+          { id: "or-2", name: "專科醫師訓練醫院認定作業成果報告_附件_訓練醫院明細.xlsx", size: "1.1 MB" },
         ],
   )
 
   const handleUpload = () =>
     setFiles((prev) => [
       ...prev,
-      { id: `or-${Date.now()}`, name: `容額成果報告_附件${prev.length + 1}.pdf`, size: "1.8 MB" },
+      { id: `or-${Date.now()}`, name: `專科醫師訓練醫院認定作業成果報告_附件${prev.length + 1}.pdf`, size: "1.8 MB" },
     ])
   const handleRemove = (id: string) => setFiles((prev) => prev.filter((f) => f.id !== id))
   const handleSubmit = () => {
     if (files.length === 0) return
-    toast.success("容額成果報告已送出，待醫事司確認")
+    toast.success("成果報告已送出，待醫事司確認")
   }
 
   return (
@@ -92,7 +92,7 @@ function QuotaOutcomeReportContent() {
           返回容額填報
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold text-foreground">容額成果報告</h1>
+          <h1 className="text-2xl font-bold text-foreground">專科醫師訓練醫院認定作業成果報告</h1>
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium ${OUTCOME_REPORT_SUB_CONFIG[reportStatus].color}`}
           >
@@ -127,8 +127,8 @@ function QuotaOutcomeReportContent() {
           </div>
 
           <p className="mb-4 text-base text-muted-foreground">
-            請上傳容額成果報告（醫學會對各申請醫院的評估結果，為容額申請的前置依據），送出後由
-            醫事司確認歸檔留存。此作業與審查階段獨立，不影響審查與公告進度。
+            請上傳專科醫師訓練醫院認定作業成果報告（醫學會對各申請醫院的評估結果，為容額申請的
+            前置依據），送出後由醫事司確認歸檔留存。此作業與審查階段獨立，不影響審查與公告進度。
           </p>
 
           {/* 退回補件意見：醫事司於容額成果報告審查頁填寫的單則意見。
@@ -155,7 +155,7 @@ function QuotaOutcomeReportContent() {
             onUpload={editable ? handleUpload : undefined}
             onRemove={editable ? handleRemove : undefined}
             uploadLabel="選擇成果報告檔案"
-            emptyState="尚未上傳容額成果報告"
+            emptyState="尚未上傳成果報告"
           />
 
           {editable && (

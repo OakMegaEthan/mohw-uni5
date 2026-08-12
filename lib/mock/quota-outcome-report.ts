@@ -37,7 +37,7 @@ export const MOCK_OUTCOME_REPORT_RETURN = {
   reviewer: "醫事司",
   returnedDate: "115/03/06",
   comment:
-    "所送容額成果報告之審查細節未涵蓋全部訓練醫院，計缺漏 3 家（詳如附件標示）。另請補附各訓練醫院之容額分配對照表，以利核對 RRC 審查結論。請補齊後重新送出。",
+    "所送成果報告之審查細節未涵蓋全部訓練醫院，計缺漏 3 家（詳如附件標示）。另請補附各訓練醫院之容額分配對照表，以利核對 RRC 審查結論。請補齊後重新送出。",
 }
 
 export interface QuotaOutcomeReportFile {
@@ -59,8 +59,8 @@ export interface QuotaOutcomeReportCase {
 
 function buildReports(name: string): QuotaOutcomeReportFile[] {
   return [
-    { id: `${name}-1`, name: `${name}_容額成果報告_審查細節.pdf`, size: "2.6 MB" },
-    { id: `${name}-2`, name: `${name}_容額成果報告_附件_訓練醫院明細.xlsx`, size: "1.1 MB" },
+    { id: `${name}-1`, name: `${name}_專科醫師訓練醫院認定作業成果報告_審查細節.pdf`, size: "2.6 MB" },
+    { id: `${name}-2`, name: `${name}_專科醫師訓練醫院認定作業成果報告_附件_訓練醫院明細.xlsx`, size: "1.1 MB" },
   ]
 }
 
@@ -88,7 +88,7 @@ const CASES: QuotaOutcomeReportCase[] = allSocieties.slice(0, STATUSES.length).m
     reports: buildReports(society.name),
     returnComment:
       status === "退回補件"
-        ? `${society.name}所送容額成果報告之審查細節未涵蓋全部訓練醫院，請補齊後重新送出。`
+        ? `${society.name}所送成果報告之審查細節未涵蓋全部訓練醫院，請補齊後重新送出。`
         : "",
     archivedDate: status === "已歸檔" ? `115/0${2 + (i % 2)}/28` : null,
   }

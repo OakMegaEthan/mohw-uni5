@@ -557,7 +557,7 @@ export function QuotaFilingView({
         className="group block rounded-lg border border-blue-200 bg-blue-50/40 px-6 py-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h3 className="text-lg font-bold text-foreground">容額成果報告</h3>
+          <h3 className="text-lg font-bold text-foreground">專科醫師訓練醫院認定作業成果報告</h3>
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium ${OUTCOME_REPORT_SUB_CONFIG[reportStatus].color}`}
           >
