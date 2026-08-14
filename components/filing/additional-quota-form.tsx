@@ -147,7 +147,8 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
     setTimeout(() => router.push("/filing/additional-quota"), 0)
   }
 
-  const title = isNew ? "新增外加容額申請" : `${application.hospitalName}（${application.specialty}）- 外加容額申請`
+  // 用詞：醫事司是「登錄」醫院來文，不是自己提出申請（見 docs/business-logic.md）
+  const title = isNew ? "登錄外加容額申請" : `${application.hospitalName}（${application.specialty}）- 外加容額申請`
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -164,7 +165,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
             <p className="mt-1 text-base text-gray-500">
-              {isNew ? "登錄申請內容並檢附證明文件" : `來文日期：${application.incomingDate}`}
+              {isNew ? "登錄訓練醫院來文之申請內容" : `來文日期：${application.incomingDate}`}
             </p>
           </div>
           {!isNew && (

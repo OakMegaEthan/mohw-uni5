@@ -149,7 +149,8 @@ export default function FilingAdditionalQuotaPage() {
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">外加容額管理</h1>
-            <p className="mt-1 text-base text-gray-500">登錄、審查各訓練醫院之外加容額申請，並辦理公告</p>
+            {/* 公告已移出本模組（審查通過為終點），副標不再提辦理公告 */}
+            <p className="mt-1 text-base text-gray-500">登錄並審查各訓練醫院之外加容額申請</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <DropdownMenu>
@@ -178,7 +179,7 @@ export default function FilingAdditionalQuotaPage() {
             <Button asChild className="gap-2 bg-[#2d3a8c] hover:bg-[#252f73]">
               <Link href="/filing/additional-quota/new">
                 <Plus className="h-4 w-4" />
-                新增申請
+                登錄申請
               </Link>
             </Button>
           </div>

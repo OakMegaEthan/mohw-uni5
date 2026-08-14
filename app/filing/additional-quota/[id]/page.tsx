@@ -9,7 +9,7 @@ import { AdditionalQuotaForm } from "@/components/filing/additional-quota-form"
 import { getAdditionalQuotaApplication } from "@/lib/mock/additional-quota"
 
 /**
- * 外加容額申請詳情。單頁工作流：依階段（待審查／待公告／已公告）決定可編輯範圍，
+ * 外加容額申請詳情。單頁工作流：依階段（待審查／審查通過）決定可編輯範圍，
  * 由 AdditionalQuotaForm 自行切換。
  */
 export default function AdditionalQuotaDetailPage({ params }: { params: Promise<{ id: string }> }) {
