@@ -33,21 +33,18 @@ interface AdditionalQuotaFormProps {
   application?: AdditionalQuotaApplication
 }
 
-const NEW_QUOTA = {
-  specialty: "",
-  approved: 0,
-  limit: 25,
-  validFrom: "2025-08-01",
-  validTo: "2026-07-31",
-  latestAnnouncementDate: "115/01/03",
-  latestAnnouncementNumber: "衛部醫字第1151650000號",
-}
-
 /**
- * 外加容額申請的單頁工作流：登錄申請內容、登錄審查結果、公告，全部在同一頁依階段進行。
- * 待審查：申請內容可編輯，可登錄審查結果（審查通過）。
- * 審查通過（未公告）：申請內容與審查結果唯讀，待公告管理辦理公告。
- * 審查通過（已公告）：全部唯讀，顯示公告文號與日期。
+ * 外加容額申請的單頁工作流：登錄醫院來文、登錄審查結果，依階段在同一頁進行。
+ * 審查通過為終點，公告由公告管理辦理，本頁不處理公告事務。
+ *
+ * **段落的切分依據是「資料由誰、在哪一步產生」**：
+ * - 「本次申請內容」＝醫院來文的事實＋收文當下的分類判斷。醫事司只是忠實登錄，
+ *   故**不含任何審查判斷依據與審查後才產生的欄位**（容額現況、本部文號皆不在此）。
+ * - 「審查結果」＝內部會議後才產生的資料。核定容額要對照當年度容額現況才判斷得了，
+ *   故容額現況（已分配／可收訓／效期／最近公告）與本部文號都放在此段。
+ *
+ * 容額上限只硬擋**核定容額**：申請人數是醫院來文的既成事實，公文已經來了，
+ * 不能因為超過上限就登不進系統；能不能給、給多少是審查階段的事。
  */
 export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
   const router = useRouter()
@@ -87,10 +84,13 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
   const [reviewComment, setReviewComment] = useState(application?.reviewComment ?? "")
   const [reviewMinutes, setReviewMinutes] = useState<UploadedFile[]>(application?.reviewMinutes ?? [])
 
-  const quota = application?.currentYearQuota ?? NEW_QUOTA
+  // 新增時尚未選定醫院與專科，查不到當年度容額現況，故此區塊只在既有案件出現
+  const quota = application?.currentYearQuota ?? null
   const requestedNumber = Number(requestedQuota) || 0
-  const totalAfterApproval = quota.approved + requestedNumber
-  const exceedsLimit = totalAfterApproval > quota.limit
+  const approvedNumber = Number(approvedQuota) || 0
+  // 硬限制只作用在核定容額；申請人數僅記錄來文事實，超過上限不擋
+  const totalAfterApproval = quota ? quota.approved + approvedNumber : 0
+  const exceedsLimit = quota != null && totalAfterApproval > quota.limit
 
   const incomingDateText = incomingDate
     ? format(incomingDate, "yyyy/MM/dd")
@@ -104,10 +104,8 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
       incomingDocNumber.trim() !== "" &&
       Boolean(principle) &&
       requestedNumber > 0 &&
-      !exceedsLimit &&
-      requestReason.trim() !== "" &&
-      attachments.length > 0,
-    [hospitalName, specialty, incomingDateText, incomingDocNumber, principle, requestedNumber, exceedsLimit, requestReason, attachments],
+      requestReason.trim() !== "",
+    [hospitalName, specialty, incomingDateText, incomingDocNumber, principle, requestedNumber, requestReason],
   )
 
   const handleQuotaChange = (value: string, setter: (v: string) => void) => {
@@ -135,8 +133,13 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
   }
 
   const handleRegisterReview = () => {
-    if (!approvedQuota || !reviewComment.trim()) {
+    // 核定 0 名為合法值（審議後未同意外加），故以空字串而非 falsy 判斷未填
+    if (approvedQuota === "" || !reviewComment.trim()) {
       toast.error("請填寫核定容額與審查意見")
+      return
+    }
+    if (exceedsLimit) {
+      toast.error(`核定後總容額超過可收訓容額 ${quota?.limit} 名，請調整核定容額`)
       return
     }
     toast.success("已登錄審查結果，案件審查通過，交由公告管理辦理公告")
@@ -254,20 +257,6 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">本部文號</Label>
-                  {contentEditable ? (
-                    <Input
-                      value={ministryDocNumber}
-                      onChange={(e) => setMinistryDocNumber(e.target.value)}
-                      placeholder="例如：衛部醫字第115XXXX號"
-                      className="mt-1 bg-white"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-900">{ministryDocNumber || "—"}</p>
-                  )}
-                </div>
-
-                <div>
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium text-gray-700">
                       分類原則 {contentEditable && <span className="text-destructive">*</span>}
@@ -302,62 +291,34 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                 </div>
               </div>
 
-              {/* 申請人數：容額現況與試算緊鄰輸入欄，超過可收訓容額即為錯誤狀態 */}
+              {/*
+                申請人數＝醫院來文要幾名，是既成事實，不受可收訓容額限制、不做警示。
+                僅附一行試算供收文時對照；能不能給、給多少由審查段判斷。
+              */}
               <div>
-                <Label className="text-sm font-medium text-gray-700">
+                <Label className="text-base font-medium text-gray-700">
                   申請人數 {contentEditable && <span className="text-destructive">*</span>}
                 </Label>
-                <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
-                  <span>
-                    已分配容額 <strong className="text-gray-900">{quota.approved}</strong> 名
-                  </span>
-                  <span>
-                    可收訓容額 <strong className="text-gray-900">{quota.limit}</strong> 名
-                  </span>
-                  <span className="text-gray-500">
-                    效期 {quota.validFrom} ~ {quota.validTo}
-                  </span>
-                </div>
-                {/* 核定數字的版本依據 */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 border-x border-gray-200 bg-gray-50/60 px-4 py-1.5 text-xs text-gray-500">
-                  <span>最近公告時間：{quota.latestAnnouncementDate}</span>
-                  <span>最近公告文號：{quota.latestAnnouncementNumber}</span>
-                </div>
-                <div className="border-x border-gray-200 bg-white px-4 py-3">
-                  {contentEditable ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={requestedQuota}
-                        onChange={(e) => handleQuotaChange(e.target.value, setRequestedQuota)}
-                        placeholder="0"
-                        inputMode="numeric"
-                        aria-invalid={exceedsLimit}
-                        className={`w-32 ${exceedsLimit ? "border-red-400 focus-visible:ring-red-400" : ""}`}
-                      />
-                      <span className="text-sm text-gray-500">名</span>
-                    </div>
-                  ) : (
-                    <p className="text-lg font-semibold text-blue-600">{application.requestedQuota} 名</p>
-                  )}
-                </div>
-                <div
-                  className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-b-lg border px-4 py-3 ${
-                    exceedsLimit ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"
-                  }`}
-                >
-                  <p className="text-sm text-gray-700">
-                    核定後總容額
-                    <span className={`ml-1.5 text-base font-bold ${exceedsLimit ? "text-red-600" : "text-green-600"}`}>
-                      {totalAfterApproval} 名
-                    </span>
+                {contentEditable ? (
+                  <div className="mt-1 flex items-center gap-2">
+                    <Input
+                      value={requestedQuota}
+                      onChange={(e) => handleQuotaChange(e.target.value, setRequestedQuota)}
+                      placeholder="0"
+                      inputMode="numeric"
+                      className="w-32 bg-white"
+                    />
+                    <span className="text-base text-gray-500">名</span>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-lg font-semibold text-blue-600">{application.requestedQuota} 名</p>
+                )}
+                {quota && (
+                  <p className="mt-1.5 text-base text-gray-500">
+                    申請後總容額 {quota.approved + requestedNumber} 名（現有 {quota.approved} 名 ＋ 本次申請{" "}
+                    {requestedNumber} 名）
                   </p>
-                  {exceedsLimit && (
-                    <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
-                      超過可收訓容額 {quota.limit} 名，請調整申請人數
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
 
               <div>
@@ -377,9 +338,8 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
               </div>
 
               <div>
-                <Label className="mb-2 block text-sm font-medium text-gray-700">
-                  申請上傳文件 {contentEditable && <span className="text-destructive">*</span>}
-                </Label>
+                {/* 選填：醫院可能只發一紙公文而未附件，附件必填會讓來文登不進系統 */}
+                <Label className="mb-2 block text-sm font-medium text-gray-700">申請上傳文件</Label>
                 <MultiFileUpload
                   files={attachments}
                   onUpload={contentEditable ? handleUploadAttachment : undefined}
@@ -404,27 +364,88 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                 {canRegisterReview && (
                   <p className="text-sm text-muted-foreground">內部會議後，於此登錄核定結果與審查意見。</p>
                 )}
+                {/*
+                  核定容額：容額現況（判斷依據）與試算緊鄰輸入欄，
+                  核定後總容額超過可收訓容額即為錯誤狀態，不得完成登錄。
+                */}
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-base font-medium text-gray-700">
                     核定容額 {canRegisterReview && <span className="text-destructive">*</span>}
                   </Label>
-                  {canRegisterReview ? (
-                    <div className="mt-1 flex items-center gap-2">
-                      <Input
-                        value={approvedQuota}
-                        onChange={(e) => handleQuotaChange(e.target.value, setApprovedQuota)}
-                        placeholder="0"
-                        inputMode="numeric"
-                        className="w-32 bg-white"
-                      />
-                      <span className="text-sm text-gray-500">名</span>
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-lg font-semibold text-green-600">
-                      {application?.approvedQuota != null ? `${application.approvedQuota} 名` : "—"}
+                  {quota && (
+                    <>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-base text-gray-600">
+                        <span>
+                          已分配容額 <strong className="text-gray-900">{quota.approved}</strong> 名
+                        </span>
+                        <span>
+                          可收訓容額 <strong className="text-gray-900">{quota.limit}</strong> 名
+                        </span>
+                        <span className="text-gray-500">
+                          效期 {quota.validFrom} ~ {quota.validTo}
+                        </span>
+                      </div>
+                      {/* 核定數字的版本依據：讓審查者確認參照的是否為最新公告 */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 border-x border-gray-200 bg-gray-50/60 px-4 py-1.5 text-sm text-gray-500">
+                        <span>最近公告時間：{quota.latestAnnouncementDate}</span>
+                        <span>最近公告文號：{quota.latestAnnouncementNumber}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className={`border-x border-gray-200 bg-white px-4 py-3 ${quota ? "" : "mt-1 rounded-t-lg border-t"}`}>
+                    {canRegisterReview ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={approvedQuota}
+                          onChange={(e) => handleQuotaChange(e.target.value, setApprovedQuota)}
+                          placeholder="0"
+                          inputMode="numeric"
+                          aria-invalid={exceedsLimit}
+                          className={`w-32 ${exceedsLimit ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+                        />
+                        <span className="text-base text-gray-500">名</span>
+                      </div>
+                    ) : (
+                      <p className="text-lg font-semibold text-green-600">
+                        {application?.approvedQuota != null ? `${application.approvedQuota} 名` : "—"}
+                      </p>
+                    )}
+                  </div>
+                  <div
+                    className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-b-lg border px-4 py-3 ${
+                      exceedsLimit ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"
+                    }`}
+                  >
+                    <p className="text-base text-gray-700">
+                      核定後總容額
+                      <span className={`ml-1.5 text-lg font-bold ${exceedsLimit ? "text-red-600" : "text-green-600"}`}>
+                        {totalAfterApproval} 名
+                      </span>
                     </p>
+                    {exceedsLimit && quota && (
+                      <span className="flex items-center gap-1.5 text-base font-medium text-red-600">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        超過可收訓容額 {quota.limit} 名，請調整核定容額
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 本部文號：醫事司於審查後發文才產生，非醫院來文內容，故置於審查段 */}
+                <div>
+                  <Label className="text-base font-medium text-gray-700">本部文號</Label>
+                  {canRegisterReview ? (
+                    <Input
+                      value={ministryDocNumber}
+                      onChange={(e) => setMinistryDocNumber(e.target.value)}
+                      placeholder="例如：衛部醫字第115XXXX號"
+                      className="mt-1 bg-white"
+                    />
+                  ) : (
+                    <p className="mt-1 text-base text-gray-900">{ministryDocNumber || "—"}</p>
                   )}
                 </div>
+
                 <div>
                   <Label className="text-sm font-medium text-gray-700">
                     審查意見 {canRegisterReview && <span className="text-destructive">*</span>}
