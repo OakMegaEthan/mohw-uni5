@@ -88,7 +88,7 @@ export function AdditionalQuotaHistory({ application }: { application: Additiona
               }`}
             >
               {h.year}
-              <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-sm">
+              <Badge variant="secondary" className="ml-1.5 h-6 px-2 text-base">
                 {h.applications.length}
               </Badge>
             </button>

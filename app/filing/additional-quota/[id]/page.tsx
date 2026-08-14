@@ -22,7 +22,7 @@ export default function AdditionalQuotaDetailPage({ params }: { params: Promise<
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <Link
             href="/filing/additional-quota"
-            className="mb-4 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+            className="mb-4 inline-flex items-center gap-1 text-base text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft className="h-4 w-4" />
             返回外加容額管理

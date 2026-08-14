@@ -58,7 +58,7 @@ function MultiSelectFilter({
             <Filter className="h-3.5 w-3.5 text-gray-400" />
             {label}
             {selected.length > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+              <Badge variant="secondary" className="ml-1 h-6 px-2 text-base">
                 {selected.length}
               </Badge>
             )}
@@ -71,7 +71,7 @@ function MultiSelectFilter({
           {options.map((option) => (
             <label
               key={option}
-              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted"
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-base hover:bg-muted"
             >
               <Checkbox checked={selected.includes(option)} onCheckedChange={() => toggle(option)} />
               <span className="truncate">{option}</span>
@@ -79,7 +79,7 @@ function MultiSelectFilter({
           ))}
         </div>
         {selected.length > 0 && (
-          <Button variant="ghost" size="sm" className="mt-1 w-full text-xs" onClick={() => onChange([])}>
+          <Button variant="ghost" size="sm" className="mt-1 w-full text-base" onClick={() => onChange([])}>
             清除
           </Button>
         )}
@@ -141,7 +141,7 @@ export default function FilingAdditionalQuotaPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <Link href="/" className="mb-4 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+        <Link href="/" className="mb-4 inline-flex items-center gap-1 text-base text-blue-600 hover:text-blue-800">
           <ArrowLeft className="h-4 w-4" />
           返回首頁
         </Link>
@@ -149,7 +149,7 @@ export default function FilingAdditionalQuotaPage() {
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">外加容額管理</h1>
-            <p className="mt-1 text-sm text-gray-500">登錄、審查各訓練醫院之外加容額申請，並辦理公告</p>
+            <p className="mt-1 text-base text-gray-500">登錄、審查各訓練醫院之外加容額申請，並辦理公告</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <DropdownMenu>
@@ -164,13 +164,13 @@ export default function FilingAdditionalQuotaPage() {
                 <DropdownMenuItem onClick={handleExportApplications} className="cursor-pointer">
                   <div className="flex flex-col">
                     <span>匯出申請清單</span>
-                    <span className="text-xs text-muted-foreground">目前檢視之案件，供會議審查</span>
+                    <span className="text-base text-muted-foreground">目前檢視之案件，供會議審查</span>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportReviewed} className="cursor-pointer">
                   <div className="flex flex-col">
                     <span>匯出審查結果清單</span>
-                    <span className="text-xs text-muted-foreground">審查通過案件，供公告管理準備公告文書</span>
+                    <span className="text-base text-muted-foreground">審查通過案件，供公告管理準備公告文書</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -190,14 +190,14 @@ export default function FilingAdditionalQuotaPage() {
             <button
               key={tab.value}
               onClick={() => setStageTab(tab.value)}
-              className={`relative -mb-px flex items-center border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+              className={`relative -mb-px flex items-center border-b-2 px-1 pb-3 text-base font-medium transition-colors ${
                 stageTab === tab.value
                   ? "border-[#2d3a8c] text-[#2d3a8c]"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               {tab.label}
-              <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+              <Badge variant="secondary" className="ml-1.5 h-6 px-2 text-base">
                 {tab.count}
               </Badge>
             </button>
@@ -250,7 +250,7 @@ export default function FilingAdditionalQuotaPage() {
             selected={principleFilter}
             onChange={setPrincipleFilter}
           />
-          <span className="ml-auto text-sm text-muted-foreground">共 {rows.length} 筆</span>
+          <span className="ml-auto text-base text-muted-foreground">共 {rows.length} 筆</span>
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
@@ -300,7 +300,7 @@ export default function FilingAdditionalQuotaPage() {
                   <TableCell className="text-right text-gray-600">
                     {a.currentYearQuota.approved} 名
                   </TableCell>
-                  <TableCell className="text-sm text-gray-600">
+                  <TableCell className="text-base text-gray-600">
                     <span
                       className="block max-w-[13rem] truncate"
                       title={a.classificationPrinciple}
@@ -308,9 +308,18 @@ export default function FilingAdditionalQuotaPage() {
                       {a.classificationPrinciple}
                     </span>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-sm text-gray-600">{a.incomingDate}</TableCell>
-                  <TableCell className="text-sm text-gray-600">{a.incomingDocNumber}</TableCell>
-                  <TableCell className="text-sm text-gray-600">{a.ministryDocNumber || "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap text-base text-gray-600">{a.incomingDate}</TableCell>
+                  {/* 文號為長字串，限寬截斷避免 16px 字級下撐破表格；全文以 title 提供 */}
+                  <TableCell className="text-base text-gray-600">
+                    <span className="block max-w-[11rem] truncate" title={a.incomingDocNumber}>
+                      {a.incomingDocNumber}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-base text-gray-600">
+                    <span className="block max-w-[11rem] truncate" title={a.ministryDocNumber || undefined}>
+                      {a.ministryDocNumber || "—"}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].color}>
                       {ADDITIONAL_QUOTA_STAGE_CONFIG[a.stage].label}

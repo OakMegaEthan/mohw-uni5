@@ -154,7 +154,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           href="/filing/additional-quota"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+          className="mb-4 inline-flex items-center gap-1 text-base text-blue-600 hover:text-blue-800"
         >
           <ArrowLeft className="h-4 w-4" />
           返回外加容額管理
@@ -163,7 +163,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-base text-gray-500">
               {isNew ? "登錄申請內容並檢附證明文件" : `來文日期：${application.incomingDate}`}
             </p>
           </div>
@@ -183,7 +183,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
             <CardContent className="space-y-5">
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-base font-medium text-gray-700">
                     訓練醫院 {contentEditable && <span className="text-destructive">*</span>}
                   </Label>
                   {contentEditable ? (
@@ -194,12 +194,12 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                       className="mt-1 bg-white"
                     />
                   ) : (
-                    <p className="mt-1 text-sm text-gray-900">{hospitalName}</p>
+                    <p className="mt-1 text-base text-gray-900">{hospitalName}</p>
                   )}
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-base font-medium text-gray-700">
                     申請專科 {contentEditable && <span className="text-destructive">*</span>}
                   </Label>
                   {contentEditable ? (
@@ -216,12 +216,12 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <p className="mt-1 text-sm text-gray-900">{specialty}</p>
+                    <p className="mt-1 text-base text-gray-900">{specialty}</p>
                   )}
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-base font-medium text-gray-700">
                     來文日期 {contentEditable && <span className="text-destructive">*</span>}
                   </Label>
                   {contentEditable ? (
@@ -237,12 +237,12 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                       </PopoverContent>
                     </Popover>
                   ) : (
-                    <p className="mt-1 text-sm text-gray-900">{application.incomingDate}</p>
+                    <p className="mt-1 text-base text-gray-900">{application.incomingDate}</p>
                   )}
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-base font-medium text-gray-700">
                     來文字號 {contentEditable && <span className="text-destructive">*</span>}
                   </Label>
                   {contentEditable ? (
@@ -253,20 +253,20 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                       className="mt-1 bg-white"
                     />
                   ) : (
-                    <p className="mt-1 text-sm text-gray-900">{incomingDocNumber}</p>
+                    <p className="mt-1 text-base text-gray-900">{incomingDocNumber}</p>
                   )}
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-gray-700">
+                    <Label className="text-base font-medium text-gray-700">
                       分類原則 {contentEditable && <span className="text-destructive">*</span>}
                     </Label>
                     {contentEditable && (
                       <button
                         type="button"
                         onClick={() => setManageOpen(true)}
-                        className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                        className="flex items-center gap-1 text-base text-blue-600 hover:underline"
                       >
                         <Settings2 className="h-3.5 w-3.5" />
                         管理選項
@@ -287,7 +287,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <p className="mt-1 text-sm text-gray-900">{principle}</p>
+                    <p className="mt-1 text-base text-gray-900">{principle}</p>
                   )}
                 </div>
               </div>
@@ -323,7 +323,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-gray-700">
+                <Label className="text-base font-medium text-gray-700">
                   申請緣由 {contentEditable && <span className="text-destructive">*</span>}
                 </Label>
                 {contentEditable ? (
@@ -334,13 +334,13 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                     className="mt-1 min-h-32 bg-white"
                   />
                 ) : (
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-900">{requestReason}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-base text-gray-900">{requestReason}</p>
                 )}
               </div>
 
               <div>
                 {/* 選填：醫院可能只發一紙公文而未附件，附件必填會讓來文登不進系統 */}
-                <Label className="mb-2 block text-sm font-medium text-gray-700">申請上傳文件</Label>
+                <Label className="mb-2 block text-base font-medium text-gray-700">申請上傳文件</Label>
                 <MultiFileUpload
                   files={attachments}
                   onUpload={contentEditable ? handleUploadAttachment : undefined}
@@ -363,7 +363,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
               </CardHeader>
               <CardContent className="space-y-5">
                 {canRegisterReview && (
-                  <p className="text-sm text-muted-foreground">內部會議後，於此登錄核定結果與審查意見。</p>
+                  <p className="text-base text-muted-foreground">內部會議後，於此登錄核定結果與審查意見。</p>
                 )}
                 {/*
                   核定容額：容額現況（判斷依據）與試算緊鄰輸入欄，
@@ -387,7 +387,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                         </span>
                       </div>
                       {/* 核定數字的版本依據：讓審查者確認參照的是否為最新公告 */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 border-x border-gray-200 bg-gray-50/60 px-4 py-1.5 text-sm text-gray-500">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 border-x border-gray-200 bg-gray-50/60 px-4 py-1.5 text-base text-gray-500">
                         <span>最近公告時間：{quota.latestAnnouncementDate}</span>
                         <span>最近公告文號：{quota.latestAnnouncementNumber}</span>
                       </div>
@@ -448,7 +448,7 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-base font-medium text-gray-700">
                     審查意見 {canRegisterReview && <span className="text-destructive">*</span>}
                   </Label>
                   {canRegisterReview ? (
@@ -459,13 +459,13 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                       className="mt-1 min-h-28 bg-white"
                     />
                   ) : (
-                    <p className="mt-1 whitespace-pre-wrap rounded-lg border bg-white p-3 text-sm text-gray-900">
+                    <p className="mt-1 whitespace-pre-wrap rounded-lg border bg-white p-3 text-base text-gray-900">
                       {reviewComment || "—"}
                     </p>
                   )}
                 </div>
                 <div>
-                  <Label className="mb-2 block text-sm font-medium text-gray-700">審查會議紀錄</Label>
+                  <Label className="mb-2 block text-base font-medium text-gray-700">審查會議紀錄</Label>
                   <MultiFileUpload
                     files={reviewMinutes}
                     onUpload={canRegisterReview ? handleUploadMinutes : undefined}
