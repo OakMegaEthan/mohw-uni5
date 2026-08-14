@@ -9,12 +9,22 @@
 // 全線一致（見 docs/business-logic.md「公告管理」）：外加容額案件審查終點為「審查通過」，
 // 由醫事司登錄審查結果那一刻達成。公告本身移至公告管理辦理，故案件階段不含待公告／已公告；
 // 「是否已公告」改由 announcementDate 是否有值判斷（見 isAdditionalQuotaAnnounced）。
+//
+// **沒有「審查未通過」狀態**：審議後不同意外加，表達方式是核定容額 0 名（approvedQuota === 0），
+// 不另設狀態。案件頁的歷年紀錄據此推導「同意外加／未同意外加」，不存成獨立欄位。
 export type AdditionalQuotaStage = "待審查" | "審查通過"
 
 export const ADDITIONAL_QUOTA_STAGE_CONFIG: Record<AdditionalQuotaStage, { color: string; label: string }> = {
   待審查: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "待審查" },
   審查通過: { color: "bg-green-100 text-green-700 border-green-200", label: "審查通過" },
 }
+
+/**
+ * 申請年度，由新到舊。mock 以 115 年度為當年度，114 年度為系統上線前的既有歷史紀錄
+ * （其公告早已辦畢，故不進公告管理的待製作池，見 announcement-cases）。
+ */
+export const CURRENT_QUOTA_YEAR = "115 年度"
+export const QUOTA_YEARS = [CURRENT_QUOTA_YEAR, "114 年度"] as const
 
 export interface QuotaAttachment {
   id: string
@@ -53,6 +63,11 @@ export interface PreviousPeriod {
 
 export interface AdditionalQuotaApplication {
   id: string
+  /**
+   * 申請年度（如「115 年度」）。外加容額全年隨時可再申請，
+   * 故**同院同專科同年度可能不只一件**，不可用「年度＋醫院＋專科」當唯一鍵。
+   */
+  year: string
   hospitalName: string
   specialty: string // 申請專科
   incomingDate: string // 來文日期
@@ -136,69 +151,150 @@ function buildPreviousPeriod(specialty: string, quota: number): PreviousPeriod {
   }
 }
 
-// 以確定性的方式生成一批擬真案件，跨醫院、分科、階段與分類原則分布，
+interface BuildArgs {
+  id: string
+  year: string
+  seq: number
+  hospitalIndex: number
+  hospitalName: string
+  specialty: string
+  stage: AdditionalQuotaStage
+  requested: number
+  /** 審查通過時的核定容額；0 代表審議後未同意外加（狀態機不另設「未通過」，見檔頭） */
+  approvedQuota: number | null
+}
+
+function buildApplication({
+  id,
+  year,
+  seq,
+  hospitalIndex,
+  hospitalName,
+  specialty,
+  stage,
+  requested,
+  approvedQuota,
+}: BuildArgs): AdditionalQuotaApplication {
+  const roc = year.slice(0, 3)
+  // 該年度的容額效期：民國 115 年度 → 西元 2025-08-01 ~ 2026-07-31
+  const ad = Number(roc) + 1911
+  const approvedBase = 8 + (seq % 6)
+  const reviewed = stage === "審查通過"
+  const mm = String(1 + (seq % 3)).padStart(2, "0")
+  const dd = String(5 + (seq % 20)).padStart(2, "0")
+
+  return {
+    id,
+    year,
+    hospitalName,
+    specialty,
+    incomingDate: `${roc}/${mm}/${dd}`,
+    incomingDocNumber: `${hospitalName.slice(0, 2)}醫字第${roc}${String(1000 + seq)}號`,
+    ministryDocNumber: reviewed ? `衛部醫字第${roc}${String(1660000 + seq)}號` : "",
+    // 依醫院索引指派分類原則，與階段（依 seq）解耦，
+    // 使部分已公告案件落在「支援偏鄉政策」（需成果報告），供外加容額成果報告模組取用
+    classificationPrinciple: DEFAULT_CLASSIFICATION_PRINCIPLES[hospitalIndex % DEFAULT_CLASSIFICATION_PRINCIPLES.length].name,
+    requestedQuota: requested,
+    requestReason: `因應本院${specialty}業務擴展，現有訓練容額已不敷需求。本科近三年業務量持續成長，師資與教學資源充足，擬申請外加容額 ${requested} 名。`,
+    attachments: [
+      { id: `${id}-1`, name: `${specialty}業務量統計報告.pdf`, size: "2.3 MB" },
+      { id: `${id}-2`, name: "師資名單與資格證明.pdf", size: "1.8 MB" },
+    ],
+    currentYearQuota: {
+      specialty,
+      approved: approvedBase,
+      limit: approvedBase + 6 + (seq % 4),
+      validFrom: `${ad - 1}-08-01`,
+      validTo: `${ad}-07-31`,
+      latestAnnouncementDate: `${roc}/01/03`,
+      latestAnnouncementNumber: `衛部醫字第${roc}${String(1650000 + hospitalIndex)}號`,
+    },
+    previousPeriod: buildPreviousPeriod(specialty, 2 + (seq % 3)),
+    stage,
+    approvedQuota,
+    reviewComment: !reviewed
+      ? ""
+      : approvedQuota === 0
+        ? `經 ${roc} 年度外加容額審查會議審議，${hospitalName}${specialty}現有訓練容額尚可支應，本次申請未同意外加。`
+        : `經 ${roc} 年度外加容額審查會議審議，${hospitalName}${specialty}訓練條件符合規定，核定外加容額如上。`,
+    reviewMinutes: reviewed
+      ? [{ id: `${id}-m1`, name: `${roc}年度外加容額審查會議紀錄.pdf`, size: "1.5 MB" }]
+      : [],
+  }
+}
+
+// 當年度的第二次申請：外加容額全年隨時可再申請，同院同專科同年度可能不只一件。
+// 讓案件頁「歷年申請與核定紀錄」的當年度分頁有內容可展示。
+const CURRENT_YEAR_SECOND_ROUND: { hospitalIndex: number; specialty: string; requested: number; stage: AdditionalQuotaStage; approvedQuota: number | null }[] = [
+  { hospitalIndex: 0, specialty: "內科", requested: 2, stage: "審查通過", approvedQuota: 1 },
+  { hospitalIndex: 1, specialty: "急診醫學科", requested: 3, stage: "待審查", approvedQuota: null },
+]
+
+// 以確定性的方式生成一批擬真案件，跨年度、醫院、分科、階段與分類原則分布，
 // 讓列表的表格、篩選與排序有足夠資料展示
 function generateApplications(): AdditionalQuotaApplication[] {
-  const principles = DEFAULT_CLASSIFICATION_PRINCIPLES
   const apps: AdditionalQuotaApplication[] = []
-  let seq = 0
 
-  for (let h = 0; h < HOSPITALS.length; h++) {
-    // 每家醫院在 2~3 個分科提出申請，模擬同院跨科各自申請
-    const specialtyCount = 2 + (h % 2)
-    for (let s = 0; s < specialtyCount; s++) {
-      seq++
-      const hospitalName = HOSPITALS[h]
-      const specialty = SPECIALTIES[(h + s) % SPECIALTIES.length]
-      // 約 1/3 待審查、2/3 審查通過；審查通過者半數已由公告管理公告（有 announcementDate）
-      const stage: AdditionalQuotaStage = seq % 3 === 0 ? "待審查" : "審查通過"
-      const requested = 2 + (seq % 4)
-      const approvedBase = 8 + (seq % 6)
-      const limit = approvedBase + 6 + (seq % 4)
-      // 依醫院索引指派分類原則，與階段（依 seq）解耦，
-      // 使部分已公告案件落在「支援偏鄉政策」（需成果報告），供外加容額成果報告模組取用
-      const principle = principles[h % principles.length].name
-      const month = 1 + (seq % 3)
-      const day = 5 + (seq % 20)
-      const mm = String(month).padStart(2, "0")
-      const dd = String(day).padStart(2, "0")
-      const reviewed = stage === "審查通過"
+  for (const year of QUOTA_YEARS) {
+    const isCurrent = year === CURRENT_QUOTA_YEAR
+    // 當年度沿用既有 id 格式，避免公告管理／成果報告等下游 mock 的既有種子資料位移
+    const idPrefix = isCurrent ? "aq" : `aq-${year.slice(0, 3)}`
+    let seq = 0
 
-      apps.push({
-        id: `aq-${String(seq).padStart(3, "0")}`,
-        hospitalName,
-        specialty,
-        incomingDate: `115/${mm}/${dd}`,
-        incomingDocNumber: `${hospitalName.slice(0, 2)}醫字第115${String(1000 + seq)}號`,
-        ministryDocNumber: reviewed ? `衛部醫字第115${String(1660000 + seq)}號` : "",
-        classificationPrinciple: principle,
-        requestedQuota: requested,
-        requestReason: `因應本院${specialty}業務擴展，現有訓練容額已不敷需求。本科近三年業務量持續成長，師資與教學資源充足，擬申請外加容額 ${requested} 名。`,
-        attachments: [
-          { id: `${seq}-1`, name: `${specialty}業務量統計報告.pdf`, size: "2.3 MB" },
-          { id: `${seq}-2`, name: "師資名單與資格證明.pdf", size: "1.8 MB" },
-        ],
-        currentYearQuota: {
-          specialty,
-          approved: approvedBase,
-          limit,
-          validFrom: "2025-08-01",
-          validTo: "2026-07-31",
-          latestAnnouncementDate: "115/01/03",
-          latestAnnouncementNumber: `衛部醫字第115${String(1650000 + h)}號`,
-        },
-        previousPeriod: buildPreviousPeriod(specialty, 2 + (seq % 3)),
-        stage,
-        approvedQuota: reviewed ? Math.max(1, requested - (seq % 2)) : null,
-        reviewComment: reviewed
-          ? `經 115 年度外加容額審查會議審議，${hospitalName}${specialty}訓練條件符合規定，核定外加容額如上。`
-          : "",
-        reviewMinutes: reviewed
-          ? [{ id: `${seq}-m1`, name: "115年度外加容額審查會議紀錄.pdf", size: "1.5 MB" }]
-          : [],
+    for (let h = 0; h < HOSPITALS.length; h++) {
+      // 每家醫院在 2~3 個分科提出申請，模擬同院跨科各自申請
+      const specialtyCount = 2 + (h % 2)
+      for (let s = 0; s < specialtyCount; s++) {
+        seq++
+        const requested = 2 + (seq % 4)
+        // 當年度約 1/3 待審查、2/3 審查通過；歷史年度皆已審結
+        const stage: AdditionalQuotaStage = isCurrent && seq % 3 === 0 ? "待審查" : "審查通過"
+        // 歷史年度每 7 件有 1 件核定 0 名（審議後未同意外加），供案件頁的歷年紀錄呈現
+        const approvedQuota =
+          stage !== "審查通過"
+            ? null
+            : isCurrent
+              ? Math.max(1, requested - (seq % 2))
+              : seq % 7 === 0
+                ? 0
+                : Math.max(1, requested - (seq % 3))
+
+        apps.push(
+          buildApplication({
+            id: `${idPrefix}-${String(seq).padStart(3, "0")}`,
+            year,
+            seq,
+            hospitalIndex: h,
+            hospitalName: HOSPITALS[h],
+            specialty: SPECIALTIES[(h + s) % SPECIALTIES.length],
+            stage,
+            requested,
+            approvedQuota,
+          }),
+        )
+      }
+    }
+
+    if (isCurrent) {
+      CURRENT_YEAR_SECOND_ROUND.forEach((r, i) => {
+        seq++
+        apps.push(
+          buildApplication({
+            id: `${idPrefix}-r2-${String(i + 1).padStart(3, "0")}`,
+            year,
+            seq,
+            hospitalIndex: r.hospitalIndex,
+            hospitalName: HOSPITALS[r.hospitalIndex],
+            specialty: r.specialty,
+            stage: r.stage,
+            requested: r.requested,
+            approvedQuota: r.approvedQuota,
+          }),
+        )
       })
     }
   }
+
   return apps
 }
 
@@ -215,6 +311,11 @@ export function getAdditionalQuotaApplication(id: string): AdditionalQuotaApplic
 /** 申請專科的可選清單（去重、依 25 專科醫學會科別）。 */
 export function getSpecialtyOptions(): string[] {
   return [...new Set(SPECIALTIES)]
+}
+
+/** 年度篩選的可選清單（由新到舊）。 */
+export function getYearOptions(): string[] {
+  return [...QUOTA_YEARS]
 }
 
 /** 待審查階段可編輯申請內容；審查通過後僅供檢視。 */

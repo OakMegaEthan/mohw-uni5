@@ -21,8 +21,10 @@ import {
 import {
   ADDITIONAL_QUOTA_APPLICATIONS,
   ADDITIONAL_QUOTA_STAGE_CONFIG,
+  CURRENT_QUOTA_YEAR,
   getClassificationPrincipleNames,
   getSpecialtyOptions,
+  getYearOptions,
   type AdditionalQuotaStage,
 } from "@/lib/mock/additional-quota"
 
@@ -87,6 +89,8 @@ function MultiSelectFilter({
 }
 
 export default function FilingAdditionalQuotaPage() {
+  // 年度為單選且預設當年度：清單的主要工作面是本年度案件，歷史年度供查詢
+  const [year, setYear] = useState<string>(CURRENT_QUOTA_YEAR)
   const [textField, setTextField] = useState<TextField>("hospitalName")
   const [textQuery, setTextQuery] = useState("")
   const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([])
@@ -101,12 +105,13 @@ export default function FilingAdditionalQuotaPage() {
   const baseFiltered = useMemo(() => {
     const q = textQuery.trim().toLowerCase()
     return ADDITIONAL_QUOTA_APPLICATIONS.filter((a) => {
+      const matchesYear = a.year === year
       const matchesText = q === "" || a[textField].toLowerCase().includes(q)
       const matchesSpecialty = specialtyFilter.length === 0 || specialtyFilter.includes(a.specialty)
       const matchesPrinciple = principleFilter.length === 0 || principleFilter.includes(a.classificationPrinciple)
-      return matchesText && matchesSpecialty && matchesPrinciple
+      return matchesYear && matchesText && matchesSpecialty && matchesPrinciple
     })
-  }, [textField, textQuery, specialtyFilter, principleFilter])
+  }, [year, textField, textQuery, specialtyFilter, principleFilter])
 
   const stageTabs = useMemo(() => {
     const count = (s: AdditionalQuotaStage) => baseFiltered.filter((a) => a.stage === s).length
@@ -201,6 +206,18 @@ export default function FilingAdditionalQuotaPage() {
 
         {/* 篩選工具列 */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Select value={year} onValueChange={setYear}>
+            <SelectTrigger className="h-9 w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {getYearOptions().map((y) => (
+                <SelectItem key={y} value={y}>
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <div className="flex items-center">
             <Select value={textField} onValueChange={(v) => setTextField(v as TextField)}>
               <SelectTrigger className="h-9 w-32 rounded-r-none border-r-0">
