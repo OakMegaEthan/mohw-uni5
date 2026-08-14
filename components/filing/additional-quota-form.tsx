@@ -69,7 +69,6 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
     application?.requestedQuota ? String(application.requestedQuota) : "",
   )
   const [requestReason, setRequestReason] = useState(application?.requestReason ?? "")
-  const [requestDescription, setRequestDescription] = useState(application?.requestDescription ?? "")
   const [attachments, setAttachments] = useState<QuotaAttachment[]>(application?.attachments ?? [])
 
   // ── 分類原則選項維護 ────────────────────────
@@ -106,9 +105,9 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
       Boolean(principle) &&
       requestedNumber > 0 &&
       !exceedsLimit &&
-      requestDescription.trim() !== "" &&
+      requestReason.trim() !== "" &&
       attachments.length > 0,
-    [hospitalName, specialty, incomingDateText, incomingDocNumber, principle, requestedNumber, exceedsLimit, requestDescription, attachments],
+    [hospitalName, specialty, incomingDateText, incomingDocNumber, principle, requestedNumber, exceedsLimit, requestReason, attachments],
   )
 
   const handleQuotaChange = (value: string, setter: (v: string) => void) => {
@@ -303,22 +302,6 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
                 </div>
               </div>
 
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  申請緣由
-                </Label>
-                {contentEditable ? (
-                  <Textarea
-                    value={requestReason}
-                    onChange={(e) => setRequestReason(e.target.value)}
-                    placeholder="請簡述申請外加容額之緣由..."
-                    className="mt-1 min-h-20 bg-white"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-gray-900">{requestReason}</p>
-                )}
-              </div>
-
               {/* 申請人數：容額現況與試算緊鄰輸入欄，超過可收訓容額即為錯誤狀態 */}
               <div>
                 <Label className="text-sm font-medium text-gray-700">
@@ -379,17 +362,17 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
 
               <div>
                 <Label className="text-sm font-medium text-gray-700">
-                  申請說明 {contentEditable && <span className="text-destructive">*</span>}
+                  申請緣由 {contentEditable && <span className="text-destructive">*</span>}
                 </Label>
                 {contentEditable ? (
                   <Textarea
-                    value={requestDescription}
-                    onChange={(e) => setRequestDescription(e.target.value)}
-                    placeholder="請詳細說明業務量、師資與教學資源等支持本次申請之具體事由..."
+                    value={requestReason}
+                    onChange={(e) => setRequestReason(e.target.value)}
+                    placeholder="請說明業務量、師資與教學資源等支持本次申請之具體事由..."
                     className="mt-1 min-h-32 bg-white"
                   />
                 ) : (
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-900">{requestDescription}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-900">{requestReason}</p>
                 )}
               </div>
 

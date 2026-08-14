@@ -61,8 +61,11 @@ export interface AdditionalQuotaApplication {
   classificationPrinciple: string // 分類原則（自由字串，選項可維護）
   /** 申請人數（申請的外加容額名額數） */
   requestedQuota: number
+  /**
+   * 申請緣由。原本拆為「申請緣由」＋「申請說明」兩欄，但兩者同為自由文字、
+   * 內容重疊且區分依據講不出來，2026-08-14 合併為單一欄位。
+   */
   requestReason: string
-  requestDescription: string
   attachments: QuotaAttachment[]
   currentYearQuota: CurrentYearQuota
   previousPeriod: PreviousPeriod
@@ -170,8 +173,7 @@ function generateApplications(): AdditionalQuotaApplication[] {
         ministryDocNumber: reviewed ? `衛部醫字第115${String(1660000 + seq)}號` : "",
         classificationPrinciple: principle,
         requestedQuota: requested,
-        requestReason: `因應本院${specialty}業務擴展，申請外加容額以充實訓練人力。`,
-        requestDescription: `本院${specialty}近三年業務量持續成長，現有訓練容額已不敷需求。本科師資與教學資源充足，擬申請外加容額 ${requested} 名。`,
+        requestReason: `因應本院${specialty}業務擴展，現有訓練容額已不敷需求。本科近三年業務量持續成長，師資與教學資源充足，擬申請外加容額 ${requested} 名。`,
         attachments: [
           { id: `${seq}-1`, name: `${specialty}業務量統計報告.pdf`, size: "2.3 MB" },
           { id: `${seq}-2`, name: "師資名單與資格證明.pdf", size: "1.8 MB" },
