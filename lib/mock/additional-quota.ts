@@ -52,15 +52,6 @@ export interface CurrentYearQuota {
   latestAnnouncementNumber: string
 }
 
-export interface PreviousPeriod {
-  year: string
-  quota: number
-  requestReason: string
-  requestDescription: string
-  report: QuotaAttachment
-  reviewComment: string
-}
-
 export interface AdditionalQuotaApplication {
   id: string
   /**
@@ -83,7 +74,6 @@ export interface AdditionalQuotaApplication {
   requestReason: string
   attachments: QuotaAttachment[]
   currentYearQuota: CurrentYearQuota
-  previousPeriod: PreviousPeriod
   stage: AdditionalQuotaStage
   // 審查結果（會議後登錄；待審查階段尚無）
   approvedQuota: number | null
@@ -139,17 +129,6 @@ const HOSPITALS = [
 
 // 常見申請外加容額的分科（取自 25 專科醫學會之科別）
 const SPECIALTIES = ["內科", "外科", "急診醫學科", "兒科", "麻醉科", "骨科", "婦產科", "重症醫學科"]
-
-function buildPreviousPeriod(specialty: string, quota: number): PreviousPeriod {
-  return {
-    year: "114 年度",
-    quota,
-    requestReason: `因應${specialty}夜間業務量增加，申請外加容額以確保值班人力充足。`,
-    requestDescription: `本院${specialty} 114 年度業務量較前一年成長，為維持醫療與訓練品質，申請外加容額 ${quota} 名。`,
-    report: { id: "pr1", name: "114年度外加容額成果報告書.pdf", size: "4.2 MB" },
-    reviewComment: `該院於 114 年度外加容額執行成效良好，訓練計畫完整，教學品質優良。`,
-  }
-}
 
 interface BuildArgs {
   id: string
@@ -209,7 +188,6 @@ function buildApplication({
       latestAnnouncementDate: `${roc}/01/03`,
       latestAnnouncementNumber: `衛部醫字第${roc}${String(1650000 + hospitalIndex)}號`,
     },
-    previousPeriod: buildPreviousPeriod(specialty, 2 + (seq % 3)),
     stage,
     approvedQuota,
     reviewComment: !reviewed
@@ -316,6 +294,36 @@ export function getSpecialtyOptions(): string[] {
 /** 年度篩選的可選清單（由新到舊）。 */
 export function getYearOptions(): string[] {
   return [...QUOTA_YEARS]
+}
+
+export interface YearlyApplicationHistory {
+  year: string
+  applications: AdditionalQuotaApplication[]
+}
+
+/**
+ * 同院同專科的申請紀錄，依年度由新到舊分組（排除本案）。
+ *
+ * 用途：輔助醫事司判斷本次該核定多少外加容額——看該院這一科歷年申請幾名、
+ * 是否同意外加、核定幾名、當時的申請緣由與審查意見。
+ *
+ * **不含成果報告**：報告是案件公告執行滿一年後才提交，本年度作業時前一年度的
+ * 報告尚未產生；成果報告另在獨立模組（見 docs/business-logic.md）。
+ *
+ * 每個年度都會回傳（即使沒有紀錄），讓「該年度無申請紀錄」本身也是一項資訊。
+ */
+export function getApplicationHistory(
+  hospitalName: string,
+  specialty: string,
+  excludeId: string,
+): YearlyApplicationHistory[] {
+  return QUOTA_YEARS.map((year) => ({
+    year,
+    applications: ADDITIONAL_QUOTA_APPLICATIONS.filter(
+      (a) =>
+        a.year === year && a.hospitalName === hospitalName && a.specialty === specialty && a.id !== excludeId,
+    ).sort((a, b) => a.incomingDate.localeCompare(b.incomingDate)),
+  }))
 }
 
 /** 待審查階段可編輯申請內容；審查通過後僅供檢視。 */

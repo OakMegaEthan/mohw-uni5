@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ArrowLeft, FileText, Download, AlertCircle, Upload, X, Settings2, CalendarIcon, ClipboardCheck, Megaphone } from "lucide-react"
+import { ArrowLeft, AlertCircle, Settings2, CalendarIcon, ClipboardCheck } from "lucide-react"
 import { format } from "date-fns"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AdditionalQuotaHistory } from "@/components/filing/additional-quota-history"
 import { ClassificationPrincipleDialog } from "@/components/filing/classification-principle-dialog"
 import { MultiFileUpload, type UploadedFile } from "@/components/filing/multi-file-upload"
 import {
@@ -492,45 +493,8 @@ export function AdditionalQuotaForm({ application }: AdditionalQuotaFormProps) {
             </Card>
           )}
 
-          {/* 前一期間資訊：唯讀參考 */}
-          {application?.previousPeriod && (
-            <Card>
-              <CardHeader>
-                <CardTitle>前一期間資訊（{application.previousPeriod.year}）</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">核定容額</Label>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">{application.previousPeriod.quota} 名</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">前次申請說明</Label>
-                  <p className="mt-1 text-sm text-gray-900">{application.previousPeriod.requestDescription}</p>
-                </div>
-                <div>
-                  <Label className="mb-2 block text-sm font-medium text-gray-700">成果報告書</Label>
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{application.previousPeriod.report.name}</p>
-                        <p className="text-sm text-gray-500">{application.previousPeriod.report.size}</p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">前次審查意見</Label>
-                  <p className="mt-1 rounded-lg bg-gray-50 p-3 text-sm text-gray-900">
-                    {application.previousPeriod.reviewComment}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* 歷年申請與核定紀錄：唯讀參考，輔助判斷本次該核定多少容額 */}
+          {application && <AdditionalQuotaHistory application={application} />}
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-3">
