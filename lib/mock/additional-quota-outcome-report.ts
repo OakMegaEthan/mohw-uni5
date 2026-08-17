@@ -87,10 +87,12 @@ function buildReports(hospitalName: string, specialty: string): AqOutcomeReportF
 const CASES: AqOutcomeReportCase[] = getPendingCasesBySource("additional-quota")
   .filter(isCaseAnnounced)
   .map((c) => ({ c, app: getAdditionalQuotaApplication(c.id.replace("aq-case-", "")) }))
+  // 核定 0 名＝審議後未同意外加，沒有容額可執行，自然無成果可報告，不列入應繳交
+  .filter(({ app }) => app && (app.approvedQuota ?? 0) > 0)
   .filter(({ app }) => app && principleRequiresReport(app.classificationPrinciple))
   .map(({ c, app }, i) => {
     const a = app!
-    // 首次公告（entries[0]）；滿一年的起算點是否採此筆尚未定案，見檔頭 warning
+    // 公告檔案的首筆（entries[0]）；mock 以此代表該案已公告，正式邏輯改按年度，見檔頭
     const firstEntry = c.officialDoc!.entries[0]
     // mock 兩種狀態各半，讓畫面同時看得到待上傳與已上傳的案件
     const status: OutcomeReportReviewStatus = i % 2 === 0 ? "待上傳" : "已上傳"
