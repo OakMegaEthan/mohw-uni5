@@ -154,8 +154,8 @@ export function getAdjustmentRecords(
       approvedDate: `${y}/${round === 1 ? "04" : "10"}/${String(8 + ((seed + round) % 18)).padStart(2, "0")}`,
       societyName: society,
       delta,
-      reason: ADJUSTMENT_REASONS[(seed + round) % ADJUSTMENT_REASONS.length],
-      reviewComment: `經醫事司審查，${society}${year}第 ${round} 次容額微調符合總容額守恆，准予備查。`,
+      reason: ADJUSTMENT_REASONS[(seed + round + y) % ADJUSTMENT_REASONS.length],
+      reviewComment: `經醫事司審查，${society} ${year}第 ${round} 次容額微調符合總容額守恆，准予備查。`,
     }
   })
 }
