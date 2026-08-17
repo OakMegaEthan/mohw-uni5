@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { AdjustmentReasonHint } from "@/components/filing/adjustment-reason-hint"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -176,7 +177,10 @@ export default function QuotaAdjustmentReviewDetailPage({
                     <TableHead className="w-28 text-right">原公告</TableHead>
                     <TableHead className="w-28 text-right">調整後</TableHead>
                     <TableHead className="w-24 text-right">增減</TableHead>
-                    <TableHead className="w-64">微調原因</TableHead>
+                    <TableHead className="w-64">
+                      微調原因
+                      <AdjustmentReasonHint />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

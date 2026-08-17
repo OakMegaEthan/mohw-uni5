@@ -25,6 +25,7 @@ import {
   X,
 } from "lucide-react"
 
+import { AdjustmentReasonHint } from "@/components/filing/adjustment-reason-hint"
 import { PageContainer } from "@/components/layout/page-container"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -299,7 +300,10 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
                       <TableHead className="w-28 text-right">原公告容額</TableHead>
                       <TableHead className="w-32 text-right">調整後容額</TableHead>
                       <TableHead className="w-24 text-right">增減</TableHead>
-                      <TableHead className="w-56">微調原因</TableHead>
+                      <TableHead className="w-56">
+                        微調原因
+                        <AdjustmentReasonHint />
+                      </TableHead>
                       {editable && <TableHead className="w-16" />}
                     </TableRow>
                   </TableHeader>
