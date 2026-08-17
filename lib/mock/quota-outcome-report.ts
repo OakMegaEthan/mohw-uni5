@@ -40,6 +40,17 @@ export const MOCK_OUTCOME_REPORT_RETURN = {
     "所送成果報告之審查細節未涵蓋全部訓練醫院，計缺漏 3 家（詳如附件標示）。另請補附各訓練醫院之容額分配對照表，以利核對 RRC 審查結論。請補齊後重新送出。",
 }
 
+/**
+ * 本模組實際要繳交的那一份文件名稱（客戶指定 wording，2026-08-17 確認）。
+ *
+ * 與模組名的關係：模組名「專科醫師訓練醫院認定作業成果報告」是**這件作業**的名稱，
+ * 此為作業底下要繳交的**那一份文件**。目前只收這一份，但上傳區仍允許多檔
+ * （同一份文件可能拆成名單與評核分數等多個檔案）。
+ */
+export function outcomeReportDocumentName(specialty: string): string {
+  return `${specialty}專科醫師訓練醫院認定結果名單及訓練容量（含委員評核分數）`
+}
+
 export interface QuotaOutcomeReportFile {
   id: string
   name: string
@@ -49,6 +60,8 @@ export interface QuotaOutcomeReportFile {
 export interface QuotaOutcomeReportCase {
   societyId: string
   societyName: string
+  /** 該醫學會的科別，用於組出文件名稱（見 outcomeReportDocumentName）。 */
+  specialty: string
   status: Exclude<OutcomeReportSubStatus, "待上傳">
   submittedDate: string
   reports: QuotaOutcomeReportFile[]
@@ -57,10 +70,11 @@ export interface QuotaOutcomeReportCase {
   archivedDate: string | null
 }
 
-function buildReports(name: string): QuotaOutcomeReportFile[] {
+// 檔名跟著文件名稱走：避免標題已改、檔名仍是舊名的不一致（同 2026-08-06 全稱化的處理）
+function buildReports(specialty: string): QuotaOutcomeReportFile[] {
   return [
-    { id: `${name}-1`, name: `${name}_專科醫師訓練醫院認定作業成果報告_審查細節.pdf`, size: "2.6 MB" },
-    { id: `${name}-2`, name: `${name}_專科醫師訓練醫院認定作業成果報告_附件_訓練醫院明細.xlsx`, size: "1.1 MB" },
+    { id: `${specialty}-1`, name: `${specialty}專科醫師訓練醫院認定結果名單及訓練容量.pdf`, size: "2.6 MB" },
+    { id: `${specialty}-2`, name: `${specialty}_委員評核分數表.xlsx`, size: "1.1 MB" },
   ]
 }
 
@@ -83,9 +97,10 @@ const CASES: QuotaOutcomeReportCase[] = allSocieties.slice(0, STATUSES.length).m
   return {
     societyId: society.id,
     societyName: society.name,
+    specialty: society.specialty,
     status,
     submittedDate: `115/0${1 + (i % 3)}/${10 + i}`,
-    reports: buildReports(society.name),
+    reports: buildReports(society.specialty),
     returnComment:
       status === "退回補件"
         ? `${society.name}所送成果報告之審查細節未涵蓋全部訓練醫院，請補齊後重新送出。`

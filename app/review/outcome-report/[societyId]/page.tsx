@@ -12,7 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MultiFileUpload } from "@/components/filing/multi-file-upload"
-import { OUTCOME_REPORT_SUB_CONFIG, getQuotaOutcomeReportCase } from "@/lib/mock/quota-outcome-report"
+import {
+  OUTCOME_REPORT_SUB_CONFIG,
+  getQuotaOutcomeReportCase,
+  outcomeReportDocumentName,
+} from "@/lib/mock/quota-outcome-report"
 
 /**
  * 專科醫師訓練醫院認定作業成果報告審查詳情（醫事司視角）。
@@ -117,11 +121,12 @@ export default function QuotaOutcomeReportReviewDetailPage({
           {/* 報告檔案：醫事司僅檢視 */}
           <Card>
             <CardHeader>
-              <CardTitle>專科醫師訓練醫院認定作業成果報告</CardTitle>
+              {/* 卡片標題用「要繳交的那份文件」名稱；頁面標題已是模組名，此處重複無資訊 */}
+              <CardTitle>{outcomeReportDocumentName(reportCase.specialty)}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="mb-4 text-sm text-muted-foreground">
-                {reportCase.societyName}上傳之審查細節補充資料，共 {reportCase.reports.length} 份。
+                {reportCase.societyName}上傳，共 {reportCase.reports.length} 份檔案。
               </p>
               <MultiFileUpload files={reportCase.reports} emptyState="尚無報告檔案" />
             </CardContent>

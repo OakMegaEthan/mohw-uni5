@@ -26,9 +26,13 @@ import {
   MOCK_OUTCOME_REPORT_RETURN,
   OUTCOME_REPORT_SUB_CONFIG,
   isValidOutcomeReportSubStatus,
+  outcomeReportDocumentName,
   type OutcomeReportSubStatus,
 } from "@/lib/mock/quota-outcome-report"
 import { useSearchParams } from "next/navigation"
+
+// 填報端固定以內科醫學會為登入身分（同容額微調的 CURRENT_SOCIETY_ID 慣例）
+const CURRENT_SPECIALTY = "內科"
 
 export default function QuotaOutcomeReportPage() {
   return (
@@ -65,15 +69,15 @@ function QuotaOutcomeReportContent() {
     reportStatus === "待上傳"
       ? []
       : [
-          { id: "or-1", name: "專科醫師訓練醫院認定作業成果報告_審查細節.pdf", size: "2.6 MB" },
-          { id: "or-2", name: "專科醫師訓練醫院認定作業成果報告_附件_訓練醫院明細.xlsx", size: "1.1 MB" },
+          { id: "or-1", name: `${CURRENT_SPECIALTY}專科醫師訓練醫院認定結果名單及訓練容量.pdf`, size: "2.6 MB" },
+          { id: "or-2", name: `${CURRENT_SPECIALTY}_委員評核分數表.xlsx`, size: "1.1 MB" },
         ],
   )
 
   const handleUpload = () =>
     setFiles((prev) => [
       ...prev,
-      { id: `or-${Date.now()}`, name: `專科醫師訓練醫院認定作業成果報告_附件${prev.length + 1}.pdf`, size: "1.8 MB" },
+      { id: `or-${Date.now()}`, name: `${CURRENT_SPECIALTY}_認定結果名單_附件${prev.length + 1}.pdf`, size: "1.8 MB" },
     ])
   const handleRemove = (id: string) => setFiles((prev) => prev.filter((f) => f.id !== id))
   const handleSubmit = () => {
@@ -150,12 +154,18 @@ function QuotaOutcomeReportContent() {
             </div>
           )}
 
+          {/* 要繳交的文件名稱。做成欄位標題而非第二個 h1——頁面 h1 與本文件名前段幾乎相同，
+              兩個大標題疊在一起難以掃讀。只收這一份，但允許多檔（名單與評核分數可分開）。 */}
+          <h2 className="mb-2 text-lg font-bold text-foreground">
+            {outcomeReportDocumentName(CURRENT_SPECIALTY)}
+          </h2>
+
           <MultiFileUpload
             files={files}
             onUpload={editable ? handleUpload : undefined}
             onRemove={editable ? handleRemove : undefined}
-            uploadLabel="選擇成果報告檔案"
-            emptyState="尚未上傳成果報告"
+            uploadLabel="選擇檔案"
+            emptyState="尚未上傳檔案"
           />
 
           {editable && (
