@@ -1,3 +1,11 @@
+import {
+  getAccreditation,
+  getAdjustmentRecords,
+  getAnnualApproval,
+  type AnnualQuotaApproval,
+  type QuotaAdjustmentRecord,
+} from "@/lib/mock/hospital-quota-history"
+
 // 外加容額申請的 mock 來源（登錄 → 審查 → 公告，全程醫事司單一角色）。
 //
 // 此流程全由醫事司操作：醫院以公文提出申請，醫事司登錄（故有來文日期／來文字號／
@@ -35,14 +43,14 @@ export interface QuotaAttachment {
 export interface CurrentYearQuota {
   specialty: string
   /**
-   * 當年度已分配容額。
-   * **資料來源：帶入該院該專科最新一次的分配容額數**（歷經容額填報核定、以及其後的容額微調，
-   * 以最新者為準）。mock 為靜態值，未實作抓取邏輯。
+   * 當年度已分配容額，＝**本案來文當下**該院該專科的容額
+   * （年度基準核定 ＋ 在此之前已生效的外加容額與容額微調；本案自己的核定不計入）。
+   * 由 getQuotaSettlement 推導、applyDerivedQuota 寫入，非靜態值。
    */
   approved: number
   /**
-   * 最大可收訓容額。
-   * **資料來源：RRC 會議決議中的最大可收訓容額數**。mock 為靜態值，未實作抓取邏輯。
+   * 最大可收訓容額（RRC 會議決議的上限）。取自認定資格，**一期內固定**，
+   * 故同院同專科同年度的每件案子都相同。由 applyDerivedQuota 寫入。
    */
   limit: number
   validFrom: string
@@ -160,7 +168,6 @@ function buildApplication({
   const roc = year.slice(0, 3)
   // 該年度的容額效期：民國 115 年度 → 西元 2025-08-01 ~ 2026-07-31
   const ad = Number(roc) + 1911
-  const approvedBase = 8 + (seq % 6)
   const reviewed = stage === "審查通過"
   const mm = String(monthBase + (seq % 3)).padStart(2, "0")
   const dd = String(5 + (seq % 20)).padStart(2, "0")
@@ -183,9 +190,10 @@ function buildApplication({
       { id: `${id}-2`, name: "師資名單與資格證明.pdf", size: "1.8 MB" },
     ],
     currentYearQuota: {
+      // approved／limit 於 applyDerivedQuota 由年度結算覆寫，此處僅為佔位
       specialty,
-      approved: approvedBase,
-      limit: approvedBase + 6 + (seq % 4),
+      approved: 0,
+      limit: 0,
       validFrom: `${ad - 1}-08-01`,
       validTo: `${ad}-07-31`,
       latestAnnouncementDate: `${roc}/01/03`,
@@ -281,6 +289,108 @@ function generateApplications(): AdditionalQuotaApplication[] {
 }
 
 export const ADDITIONAL_QUOTA_APPLICATIONS: AdditionalQuotaApplication[] = generateApplications()
+
+// ── 年度容額結算 ────────────────────────────────────────────
+// 該院該專科在某年度的容額，是「基準核定 → 歷次外加與微調」逐筆疊出來的。
+// 三處畫面都吃這個結果，故只算一次：
+//   1. 案件頁審查段的「已分配容額」＝本案來文當下的容額（本案自己的異動尚未計入）
+//   2. 歷年紀錄「容額調整紀錄」分頁的時間軸與結算列
+//   3. 列表的已分配容額欄
+// 早期這些是各自寫死的靜態值，會在同一頁上互相矛盾。
+
+export interface QuotaTimelineEntry {
+  kind: "外加容額" | "容額微調"
+  /** 民國 yyy/mm/dd */
+  date: string
+  before: number
+  after: number
+  /** 尚未審結者為 0（還沒真的改變容額） */
+  delta: number
+  /** kind === "外加容額" 時有值 */
+  application?: AdditionalQuotaApplication
+  /** kind === "容額微調" 時有值 */
+  adjustment?: QuotaAdjustmentRecord
+}
+
+export interface QuotaYearSettlement {
+  year: string
+  /** 該年度由醫學會申請、審查後核定的基準容額 */
+  base: AnnualQuotaApproval
+  /** 依日期由舊到新 */
+  entries: QuotaTimelineEntry[]
+  /** 結算後的目前容額 */
+  finalQuota: number
+}
+
+/**
+ * 該院該專科在指定年度的容額結算：基準核定 ＋ 歷次外加容額與容額微調，依日期混排。
+ *
+ * 外加容額取自本模組的真實 mock；基準核定與微調取自 hospital-quota-history
+ * （該檔為本區塊專用的展示資料，未與容額填報／微調模組連動，原因見該檔檔頭）。
+ */
+export function getQuotaSettlement(
+  hospitalName: string,
+  specialty: string,
+  year: string,
+): QuotaYearSettlement {
+  const base = getAnnualApproval(hospitalName, specialty, year)
+
+  const additional = ADDITIONAL_QUOTA_APPLICATIONS.filter(
+    (a) => a.hospitalName === hospitalName && a.specialty === specialty && a.year === year,
+  ).map((a) => ({
+    kind: "外加容額" as const,
+    date: a.incomingDate,
+    // 待審查者尚未改變容額；審查通過核定 0 名（未同意外加）亦為 0
+    delta: a.stage === "審查通過" ? a.approvedQuota ?? 0 : 0,
+    application: a,
+  }))
+
+  const adjustments = getAdjustmentRecords(hospitalName, specialty, year).map((r) => ({
+    kind: "容額微調" as const,
+    date: r.approvedDate,
+    delta: r.delta,
+    adjustment: r,
+  }))
+
+  let running = base.approvedQuota
+  const entries: QuotaTimelineEntry[] = [...additional, ...adjustments]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((e) => {
+      const before = running
+      // 容額不會是負數
+      const after = Math.max(0, before + e.delta)
+      running = after
+      return { ...e, before, after }
+    })
+
+  return { year, base, entries, finalQuota: running }
+}
+
+/**
+ * 把結算結果寫回各案件的 currentYearQuota，取代原本寫死的靜態值。
+ * - 已分配容額＝**本案來文當下**的容額（本案自己的核定尚未計入，否則審查時會重複計算）
+ * - 可收訓容額＝認定資格的上限，一期內固定；原本每件案子各算一個值，同院同科同年度會不一致
+ */
+function applyDerivedQuota(apps: AdditionalQuotaApplication[]): void {
+  const seen = new Set<string>()
+
+  for (const app of apps) {
+    const key = `${app.hospitalName}|${app.specialty}|${app.year}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    const { trainingLimit } = getAccreditation(app.hospitalName, app.specialty)
+    const { entries } = getQuotaSettlement(app.hospitalName, app.specialty, app.year)
+
+    for (const entry of entries) {
+      if (!entry.application) continue
+      entry.application.currentYearQuota.approved = entry.before
+      entry.application.currentYearQuota.limit = trainingLimit
+    }
+  }
+}
+
+applyDerivedQuota(ADDITIONAL_QUOTA_APPLICATIONS)
 
 export function getAdditionalQuotaApplications(): AdditionalQuotaApplication[] {
   return ADDITIONAL_QUOTA_APPLICATIONS
