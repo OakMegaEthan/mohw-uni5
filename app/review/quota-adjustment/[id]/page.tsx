@@ -165,7 +165,10 @@ export default function QuotaAdjustmentReviewDetailPage({
         {/* 二、異動對照表：只列有變動的醫院 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">一、容額異動對照（{changedRows.length} 家）</CardTitle>
+            {/* 名稱與醫學會匯出、隨紙本公文檢附的那份文件一致，避免同一張表兩個名字 */}
+            <CardTitle className="text-lg">
+              一、容額異動修正對照表（{changedRows.length} 家）
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">

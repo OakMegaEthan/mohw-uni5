@@ -10,7 +10,6 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
   ArrowDown,
@@ -77,7 +76,6 @@ function OrgBadges({ row }: { row: QuotaAdjustmentRow }) {
 }
 
 export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
-  const router = useRouter()
   const current = getQuotaAdjustmentCase(caseId)
 
   const [rows, setRows] = useState<QuotaAdjustmentRow[]>(
@@ -94,6 +92,7 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
   // mock 僅示意 UI，不做實際解析。
   const [importOpen, setImportOpen] = useState(false)
   const [importMode, setImportMode] = useState<"append" | "replace" | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const baseline = useMemo(
     () => (current ? getEffectiveBaseline(current.societyId, current.year) : []),
@@ -152,13 +151,23 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
       { id: `up-${Date.now()}`, name: `容額微調附件${prev.length + 1}.pdf`, size: "0.8 MB" },
     ])
 
+  // mock 保真：兩份文件由後端產製，前端只做按鈕與回饋，不真的落地檔案。
+  // 用途是印出來附在紙本公文裡寄給醫事司，故僅在案件送出後提供——
+  // 草稿階段內容還會變，此時下載反而會附到舊版本。
+  const handleExportApplication = () =>
+    toast.success("已匯出容額微調申請內容", { description: "文件由後端產製（mock 示意）" })
+  const handleExportComparison = () =>
+    toast.success("已匯出容額異動修正對照表", { description: "文件由後端產製（mock 示意）" })
+
   const handleSubmit = () => {
     if (!canSubmit) return
     submitAdjustment(current.id, rows, TODAY_ROC)
     setStage("醫事司審查")
     setReturned(null)
+    setConfirmOpen(false)
+    // 刻意**不導回列表**：送出只完成了系統這一半，使用者接著要下載兩份文件去發紙本公文。
+    // 留在案件頁，畫面轉為唯讀並顯示紙本待辦與下載入口，動線才接得上。
     toast.success("已送出容額微調申請", { description: "案件已進入醫事司審查" })
-    setTimeout(() => router.push("/filing/quota-adjustment"), 0)
   }
 
   return (
@@ -190,10 +199,40 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
         </div>
       )}
 
+      {/*
+        已送出後的常駐區塊。除了「不可修改」之外，主要作用是承接**紙本流程**：
+        送出只完成系統這一半，醫學會還要發文給衛福部並檢附兩份文件，醫事司才受理。
+        兩顆下載按鈕就放在這裡——這是使用者送出後第一眼會看到的地方，
+        之後回來重印也走同一個入口，不必另設一個匯出選單。
+      */}
       {!editable && (
-        <div className="mb-6 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <Info className="h-5 w-5 shrink-0 text-blue-600" />
-          <span className="text-base text-blue-900">案件已送出，審查期間不可修改，僅供檢視。</span>
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-start gap-2">
+            <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <div className="min-w-0">
+              <p className="text-base text-blue-900">
+                {stage === "審查通過"
+                  ? "案件已審結，僅供檢視。"
+                  : "案件已送出，審查期間不可修改，僅供檢視。"}
+              </p>
+              {stage === "醫事司審查" && (
+                <p className="mt-1.5 text-base text-blue-900">
+                  <strong>系統送出後，仍須發文予衛生福利部</strong>
+                  ，並檢附下列兩份由系統匯出的文件，醫事司始予受理。
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="outline" className="gap-1 bg-white" onClick={handleExportApplication}>
+                  <Download className="h-4 w-4" />
+                  下載申請內容
+                </Button>
+                <Button variant="outline" className="gap-1 bg-white" onClick={handleExportComparison}>
+                  <Download className="h-4 w-4" />
+                  下載容額異動修正對照表
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -403,7 +442,7 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-base text-muted-foreground">
-              比照來文檢附微調對照表與更新後之認定合格名單。
+              比照來文檢附容額異動修正對照表與更新後之認定合格名單。
             </p>
             {editable && (
               <div
@@ -465,7 +504,7 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
               儲存草稿
             </Button>
             <Button
-              onClick={handleSubmit}
+              onClick={() => setConfirmOpen(true)}
               disabled={!canSubmit}
               className="bg-[#2d3a8c] hover:bg-[#252f73]"
             >
@@ -652,11 +691,43 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
         </DialogContent>
       </Dialog>
 
-      <div className="mt-6">
-        <Label className="text-sm text-muted-foreground">
-          送出後案件直接進醫事司審查，不經醫策會初審、分組會議與 RRC 大會。
-        </Label>
-      </div>
+      {/*
+        送出確認：使用者最需要知道「還有紙本這一段」的時刻就是按下送出之前。
+        原本點了直接送，送完就導回列表，紙本流程無處可講。
+      */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>送出容額微調申請</DialogTitle>
+            <DialogDescription className="text-base">
+              本次共 {balance.changedCount} 家機構異動，送出後案件直接進醫事司審查，
+              不經醫策會初審、分組會議與 RRC 大會；審查期間不可修改。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <p className="text-base font-medium text-amber-900">送出後仍須發文予衛生福利部</p>
+            <p className="mt-1.5 text-base text-amber-900">
+              系統送件不等同完成申請。請另發正式公文予衛生福利部，並檢附下列兩份由系統匯出的文件，
+              醫事司始予受理：
+            </p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-base text-amber-900">
+              <li>容額微調申請內容</li>
+              <li>容額異動修正對照表</li>
+            </ol>
+            <p className="mt-2 text-base text-amber-800">送出後可於本頁下載這兩份文件。</p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleSubmit} className="bg-[#2d3a8c] hover:bg-[#252f73]">
+              確認送出
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   )
 }
