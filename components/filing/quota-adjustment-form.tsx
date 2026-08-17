@@ -151,11 +151,9 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
       { id: `up-${Date.now()}`, name: `容額微調附件${prev.length + 1}.pdf`, size: "0.8 MB" },
     ])
 
-  // mock 保真：兩份文件由後端產製，前端只做按鈕與回饋，不真的落地檔案。
+  // mock 保真：文件由後端產製，前端只做按鈕與回饋，不真的落地檔案。
   // 用途是印出來附在紙本公文裡寄給醫事司，故僅在案件送出後提供——
   // 草稿階段內容還會變，此時下載反而會附到舊版本。
-  const handleExportApplication = () =>
-    toast.success("已匯出容額微調申請內容", { description: "文件由後端產製（mock 示意）" })
   const handleExportComparison = () =>
     toast.success("已匯出容額異動修正對照表", { description: "文件由後端產製（mock 示意）" })
 
@@ -218,14 +216,10 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
               {stage === "醫事司審查" && (
                 <p className="mt-1.5 text-base text-blue-900">
                   <strong>系統送出後，仍須發文予衛生福利部</strong>
-                  ，並檢附下列兩份由系統匯出的文件，醫事司始予受理。
+                  ，並檢附由系統匯出的容額異動修正對照表，醫事司始予受理。
                 </p>
               )}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button variant="outline" className="gap-1 bg-white" onClick={handleExportApplication}>
-                  <Download className="h-4 w-4" />
-                  下載申請內容
-                </Button>
+              <div className="mt-3">
                 <Button variant="outline" className="gap-1 bg-white" onClick={handleExportComparison}>
                   <Download className="h-4 w-4" />
                   下載容額異動修正對照表
@@ -708,14 +702,10 @@ export function QuotaAdjustmentForm({ caseId }: { caseId: string }) {
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
             <p className="text-base font-medium text-amber-900">送出後仍須發文予衛生福利部</p>
             <p className="mt-1.5 text-base text-amber-900">
-              系統送件不等同完成申請。請另發正式公文予衛生福利部，並檢附下列兩份由系統匯出的文件，
-              醫事司始予受理：
+              系統送件不等同完成申請。請另發正式公文予衛生福利部，並檢附由系統匯出的
+              <strong>容額異動修正對照表</strong>，醫事司始予受理。
             </p>
-            <ol className="mt-2 list-decimal space-y-1 pl-5 text-base text-amber-900">
-              <li>容額微調申請內容</li>
-              <li>容額異動修正對照表</li>
-            </ol>
-            <p className="mt-2 text-base text-amber-800">送出後可於本頁下載這兩份文件。</p>
+            <p className="mt-2 text-base text-amber-800">送出後可於本頁下載該份文件。</p>
           </div>
 
           <DialogFooter>
