@@ -141,6 +141,8 @@ interface BuildArgs {
   requested: number
   /** 審查通過時的核定容額；0 代表審議後未同意外加（狀態機不另設「未通過」，見檔頭） */
   approvedQuota: number | null
+  /** 來文月份的起點：第一次申請落在上半年、第二次落在下半年，使異動時間軸讀得出先後 */
+  monthBase: number
 }
 
 function buildApplication({
@@ -153,13 +155,14 @@ function buildApplication({
   stage,
   requested,
   approvedQuota,
+  monthBase,
 }: BuildArgs): AdditionalQuotaApplication {
   const roc = year.slice(0, 3)
   // 該年度的容額效期：民國 115 年度 → 西元 2025-08-01 ~ 2026-07-31
   const ad = Number(roc) + 1911
   const approvedBase = 8 + (seq % 6)
   const reviewed = stage === "審查通過"
-  const mm = String(1 + (seq % 3)).padStart(2, "0")
+  const mm = String(monthBase + (seq % 3)).padStart(2, "0")
   const dd = String(5 + (seq % 20)).padStart(2, "0")
 
   return {
@@ -201,13 +204,6 @@ function buildApplication({
   }
 }
 
-// 當年度的第二次申請：外加容額全年隨時可再申請，同院同專科同年度可能不只一件。
-// 讓案件頁「歷年申請與核定紀錄」的當年度分頁有內容可展示。
-const CURRENT_YEAR_SECOND_ROUND: { hospitalIndex: number; specialty: string; requested: number; stage: AdditionalQuotaStage; approvedQuota: number | null }[] = [
-  { hospitalIndex: 0, specialty: "內科", requested: 2, stage: "審查通過", approvedQuota: 1 },
-  { hospitalIndex: 1, specialty: "急診醫學科", requested: 3, stage: "待審查", approvedQuota: null },
-]
-
 // 以確定性的方式生成一批擬真案件，跨年度、醫院、分科、階段與分類原則分布，
 // 讓列表的表格、篩選與排序有足夠資料展示
 function generateApplications(): AdditionalQuotaApplication[] {
@@ -248,28 +244,36 @@ function generateApplications(): AdditionalQuotaApplication[] {
             stage,
             requested,
             approvedQuota,
+            monthBase: 1,
           }),
         )
       }
     }
 
-    if (isCurrent) {
-      CURRENT_YEAR_SECOND_ROUND.forEach((r, i) => {
-        seq++
-        apps.push(
-          buildApplication({
-            id: `${idPrefix}-r2-${String(i + 1).padStart(3, "0")}`,
-            year,
-            seq,
-            hospitalIndex: r.hospitalIndex,
-            hospitalName: HOSPITALS[r.hospitalIndex],
-            specialty: r.specialty,
-            stage: r.stage,
-            requested: r.requested,
-            approvedQuota: r.approvedQuota,
-          }),
-        )
-      })
+    // 第二次申請：外加容額全年隨時可再申請，同院同專科同年度可能不只一件。
+    // 每家醫院的第一個專科在每個年度都再申請一次（落在下半年），
+    // 讓案件頁的「容額調整紀錄」每個年度都有兩筆外加容額異動可展示。
+    for (let h = 0; h < HOSPITALS.length; h++) {
+      seq++
+      const requested = 1 + (h % 3)
+      const stage: AdditionalQuotaStage = isCurrent && h % 4 === 0 ? "待審查" : "審查通過"
+      const approvedQuota =
+        stage !== "審查通過" ? null : h % 5 === 0 ? 0 : Math.max(1, requested - (h % 2))
+
+      apps.push(
+        buildApplication({
+          id: `${idPrefix}-r2-${String(h + 1).padStart(3, "0")}`,
+          year,
+          seq,
+          hospitalIndex: h,
+          hospitalName: HOSPITALS[h],
+          specialty: SPECIALTIES[h % SPECIALTIES.length],
+          stage,
+          requested,
+          approvedQuota,
+          monthBase: 7,
+        }),
+      )
     }
   }
 
