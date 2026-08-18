@@ -17,11 +17,15 @@ function isoToRoc(iso: string): string {
 // 把報告檔案與審查評論**一次登錄完成**（非兩段式：沒有先上傳、後審查的分離）。
 // 無「不通過／退回」狀態；登錄後即為終點，作為該院日後再申請外加容額時的審查依據。
 //
-// 適用案件：分類原則「需成果報告」開啟、且已公告滿一年的外加容額案件。
+// 適用案件：分類原則「需成果報告」開啟、且已到繳交時點的外加容額案件。
 //
-// ⚠️ **mock 未實作滿一年的日期計算**：現以「已公告 + 分類原則需報告」近似之。
-// 實際系統應以「公告日 + 1 年 ≤ 今日」篩選；**起算點採首次公告日或最新修正公告日尚未定案**
-// （公告文號可疊修正，見 announcement-cases 的 officialDoc.entries），待與客戶確認。
+// 執行期間與繳交期限（2026-08-17 確認，**與公告日期無關**）：
+//   核定年度 8/1 ～ 次年 7/31 為執行期間，成果報告應於次年 8/31 前送交，
+//   系統自**次年 7/31** 起列出應繳交的醫院。同年度案件不論何時公告，期間都相同。
+//
+// ⚠️ **mock 未實作上述日期計算**：現以「已公告 + 分類原則需報告」近似之。
+// 要照正式邏輯做需改資料來源——目前自公告管理的待製作池反查，而歷史年度案件不進該池
+// （見 announcement-cases 的 buildFromAdditionalQuota），故按年度篩會取不到應繳交的那一批。
 
 /**
  * 狀態機只有兩態，且語意是**登錄進度**而非審查進度——因為上傳報告與填寫審查評論
@@ -83,10 +87,12 @@ function buildReports(hospitalName: string, specialty: string): AqOutcomeReportF
 const CASES: AqOutcomeReportCase[] = getPendingCasesBySource("additional-quota")
   .filter(isCaseAnnounced)
   .map((c) => ({ c, app: getAdditionalQuotaApplication(c.id.replace("aq-case-", "")) }))
+  // 核定 0 名＝審議後未同意外加，沒有容額可執行，自然無成果可報告，不列入應繳交
+  .filter(({ app }) => app && (app.approvedQuota ?? 0) > 0)
   .filter(({ app }) => app && principleRequiresReport(app.classificationPrinciple))
   .map(({ c, app }, i) => {
     const a = app!
-    // 首次公告（entries[0]）；滿一年的起算點是否採此筆尚未定案，見檔頭 warning
+    // 公告檔案的首筆（entries[0]）；mock 以此代表該案已公告，正式邏輯改按年度，見檔頭
     const firstEntry = c.officialDoc!.entries[0]
     // mock 兩種狀態各半，讓畫面同時看得到待上傳與已上傳的案件
     const status: OutcomeReportReviewStatus = i % 2 === 0 ? "待上傳" : "已上傳"

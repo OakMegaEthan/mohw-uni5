@@ -17,7 +17,7 @@ import {
   getSocieties,
 } from "@/lib/mock/review-submissions"
 import { mockHospitalQuotaSocieties } from "@/lib/mock/review-hospital-quota"
-import { getAdditionalQuotaApplications } from "@/lib/mock/additional-quota"
+import { CURRENT_QUOTA_YEAR, getAdditionalQuotaApplications } from "@/lib/mock/additional-quota"
 import { getBalance, getQuotaAdjustmentCases } from "@/lib/mock/quota-adjustment"
 import { allSocieties } from "@/lib/data/societies"
 
@@ -204,9 +204,11 @@ function buildFromQuotaFiling(): PendingCase[] {
 }
 
 function buildFromAdditionalQuota(): PendingCase[] {
-  // 審查通過的外加容額案件皆進池；是否已公告由公告檔案是否被引用決定（見 seedInitialDocStates）
+  // 審查通過的外加容額案件皆進池；是否已公告由公告檔案是否被引用決定（見 seedInitialDocStates）。
+  // **限當年度**：歷史年度（114）案件是系統上線前的既有紀錄、公告早已辦畢，
+  // 只供案件頁的「歷年申請與核定紀錄」參考，不得進待製作池變成假待辦。
   return getAdditionalQuotaApplications()
-    .filter((a) => a.stage === "審查通過")
+    .filter((a) => a.stage === "審查通過" && a.year === CURRENT_QUOTA_YEAR)
     .map((a) => ({
       id: `aq-case-${a.id}`,
       sourceModule: "additional-quota" as const,
@@ -215,7 +217,7 @@ function buildFromAdditionalQuota(): PendingCase[] {
       specialty: a.specialty,
       detail: a.specialty,
       title: `${a.hospitalName}　${a.specialty}外加容額 ${a.approvedQuota ?? 0} 名`,
-      year: "115 年度",
+      year: a.year,
       approvedDate: rocToIso(a.incomingDate) ?? "2026-01-08",
       reviewHref: `/filing/additional-quota/${a.id}`,
       officialDoc: null,

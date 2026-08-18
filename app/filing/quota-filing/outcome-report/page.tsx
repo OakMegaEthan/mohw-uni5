@@ -26,9 +26,13 @@ import {
   MOCK_OUTCOME_REPORT_RETURN,
   OUTCOME_REPORT_SUB_CONFIG,
   isValidOutcomeReportSubStatus,
+  outcomeReportDocumentName,
   type OutcomeReportSubStatus,
 } from "@/lib/mock/quota-outcome-report"
 import { useSearchParams } from "next/navigation"
+
+// 填報端固定以內科醫學會為登入身分（同容額微調的 CURRENT_SOCIETY_ID 慣例）
+const CURRENT_SPECIALTY = "內科"
 
 export default function QuotaOutcomeReportPage() {
   return (
@@ -65,15 +69,15 @@ function QuotaOutcomeReportContent() {
     reportStatus === "待上傳"
       ? []
       : [
-          { id: "or-1", name: "專科醫師訓練醫院認定作業成果報告_審查細節.pdf", size: "2.6 MB" },
-          { id: "or-2", name: "專科醫師訓練醫院認定作業成果報告_附件_訓練醫院明細.xlsx", size: "1.1 MB" },
+          { id: "or-1", name: `${CURRENT_SPECIALTY}專科醫師訓練醫院認定結果名單及訓練容量.pdf`, size: "2.6 MB" },
+          { id: "or-2", name: `${CURRENT_SPECIALTY}_委員評核分數表.xlsx`, size: "1.1 MB" },
         ],
   )
 
   const handleUpload = () =>
     setFiles((prev) => [
       ...prev,
-      { id: `or-${Date.now()}`, name: `專科醫師訓練醫院認定作業成果報告_附件${prev.length + 1}.pdf`, size: "1.8 MB" },
+      { id: `or-${Date.now()}`, name: `${CURRENT_SPECIALTY}_認定結果名單_附件${prev.length + 1}.pdf`, size: "1.8 MB" },
     ])
   const handleRemove = (id: string) => setFiles((prev) => prev.filter((f) => f.id !== id))
   const handleSubmit = () => {
@@ -150,12 +154,29 @@ function QuotaOutcomeReportContent() {
             </div>
           )}
 
+          {/* 要繳交的文件名稱。做成欄位標題而非第二個 h1——頁面 h1 與本文件名前段幾乎相同，
+              兩個大標題疊在一起難以掃讀。只收這一份，但允許多檔（名單與評核分數可分開）。 */}
+          <h2 className="mb-2 text-lg font-bold text-foreground">
+            {outcomeReportDocumentName(CURRENT_SPECIALTY)}
+          </h2>
+
+          {/* 這一格要傳什麼的說明，屬欄位層級，故置於文件名稱之下、上傳區之上
+              （上方那段是講整件作業的頁面層級說明）。
+              用中性的灰底左框而非純文字：這句話的作用是指出「真正的格式與期限規範不在系統裡，
+              在採購案」，使用者日後可能要回頭找，不該混在一般敘述中被略過；
+              也不用橘色——那是退回補件的警示色，兩者性質不同。 */}
+          <div className="mb-4 border-l-4 border-slate-300 bg-slate-50 px-4 py-3">
+            <p className="text-base leading-relaxed text-gray-700">
+              本文件為「專科醫師訓練醫院認定計畫」採購案之繳交文件，其格式與繳交期限依採購案規定辦理。
+            </p>
+          </div>
+
           <MultiFileUpload
             files={files}
             onUpload={editable ? handleUpload : undefined}
             onRemove={editable ? handleRemove : undefined}
-            uploadLabel="選擇成果報告檔案"
-            emptyState="尚未上傳成果報告"
+            uploadLabel="選擇檔案"
+            emptyState="尚未上傳檔案"
           />
 
           {editable && (

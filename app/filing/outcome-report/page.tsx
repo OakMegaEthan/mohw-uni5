@@ -130,7 +130,8 @@ export default function AdditionalQuotaOutcomeReportPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">外加容額成果報告</h1>
           <p className="mt-1 text-base text-gray-500">
-            系統自動列出公告執行滿一年的案件，由醫事司或醫策會登錄訓練醫院所送成果報告與審查評論
+            外加容額執行期間統一為核定年度 8/1 至次年 7/31（不論公告時間為何），成果報告應於次年 8/31
+            前送交。系統自次年 7/31 起列出應繳交的醫院，由醫事司或醫策會登錄所送報告與審查評論
           </p>
         </div>
 

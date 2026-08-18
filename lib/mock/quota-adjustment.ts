@@ -325,7 +325,7 @@ const cases: QuotaAdjustmentCase[] = [
       { index: 2, delta: -2, reason: "本年度未招收，釋出全部容額" },
     ]),
     attachments: [
-      { id: "adj5-1", name: "訓練容量修正對照表.pdf", size: "0.5 MB" },
+      { id: "adj5-1", name: "容額異動修正對照表.pdf", size: "0.5 MB" },
       { id: "adj5-2", name: "更新後婦產科專科醫師訓練醫院認定合格名單.pdf", size: "1.6 MB" },
     ],
     reviewComment: "",
@@ -347,7 +347,7 @@ const cases: QuotaAdjustmentCase[] = [
       { index: 0, delta: 1, reason: "配合實際招收情況調增" },
       { index: 6, delta: -1, reason: "釋出容額" },
     ]),
-    attachments: [{ id: "adj2-1", name: "訓練容量修正對照表.pdf", size: "0.5 MB" }],
+    attachments: [{ id: "adj2-1", name: "容額異動修正對照表.pdf", size: "0.5 MB" }],
     reviewComment: "增減相抵為 0，總容額維持不變，同意備查並辦理公告。",
     history: [
       { at: "115/03/12", by: SOCIETY("2").name, action: "送出容額微調申請" },
@@ -369,7 +369,7 @@ const cases: QuotaAdjustmentCase[] = [
       { index: 1, delta: 1, reason: "招收住院醫師" },
       { index: 2, delta: -1, reason: "本年度未招收，釋出容額" },
     ]),
-    attachments: [{ id: "adj2-2", name: "訓練容量修正對照表_第2次.pdf", size: "0.5 MB" }],
+    attachments: [{ id: "adj2-2", name: "容額異動修正對照表_第2次.pdf", size: "0.5 MB" }],
     reviewComment: "與第 1 次微調結果一併核計，總容額未變動，同意備查。",
     history: [
       { at: "115/05/08", by: SOCIETY("2").name, action: "送出容額微調申請" },

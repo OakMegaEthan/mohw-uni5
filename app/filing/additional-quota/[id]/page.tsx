@@ -9,7 +9,7 @@ import { AdditionalQuotaForm } from "@/components/filing/additional-quota-form"
 import { getAdditionalQuotaApplication } from "@/lib/mock/additional-quota"
 
 /**
- * 外加容額申請詳情。單頁工作流：依階段（待審查／待公告／已公告）決定可編輯範圍，
+ * 外加容額申請詳情。單頁工作流：依階段（待審查／審查通過）決定可編輯範圍，
  * 由 AdditionalQuotaForm 自行切換。
  */
 export default function AdditionalQuotaDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +22,7 @@ export default function AdditionalQuotaDetailPage({ params }: { params: Promise<
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <Link
             href="/filing/additional-quota"
-            className="mb-4 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+            className="mb-4 inline-flex items-center gap-1 text-base text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft className="h-4 w-4" />
             返回外加容額管理
