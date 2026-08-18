@@ -160,6 +160,17 @@ function QuotaOutcomeReportContent() {
             {outcomeReportDocumentName(CURRENT_SPECIALTY)}
           </h2>
 
+          {/* 這一格要傳什麼的說明，屬欄位層級，故置於文件名稱之下、上傳區之上
+              （上方那段是講整件作業的頁面層級說明）。
+              用中性的灰底左框而非純文字：這句話的作用是指出「真正的格式與期限規範不在系統裡，
+              在採購案」，使用者日後可能要回頭找，不該混在一般敘述中被略過；
+              也不用橘色——那是退回補件的警示色，兩者性質不同。 */}
+          <div className="mb-4 border-l-4 border-slate-300 bg-slate-50 px-4 py-3">
+            <p className="text-base leading-relaxed text-gray-700">
+              本文件為「專科醫師訓練醫院認定計畫」採購案之繳交文件，其格式與繳交期限依採購案規定辦理。
+            </p>
+          </div>
+
           <MultiFileUpload
             files={files}
             onUpload={editable ? handleUpload : undefined}
